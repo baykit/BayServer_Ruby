@@ -1,0 +1,14 @@
+export BSERV_HOME=`realpath ../../`
+
+export RUBYLIB=${BSERV_HOME}/lib/core
+
+dockers=${BSERV_HOME}/lib/docker
+
+if [ -e $dockers ]; then
+  for f in ${dockers}/*; do
+    export RUBYLIB=$RUBYLIB:${f}
+  done
+fi
+
+export BSERV_LOGLEVEL=debug
+

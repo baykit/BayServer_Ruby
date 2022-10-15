@@ -1,0 +1,12 @@
+require 'baykit/bayserver/docker/docker'
+require 'baykit/bayserver/docker/city'
+require 'baykit/bayserver/docker/club'
+require 'baykit/bayserver/docker/harbor'
+require 'baykit/bayserver/docker/log'
+require 'baykit/bayserver/docker/permission'
+require 'baykit/bayserver/docker/port'
+require 'baykit/bayserver/docker/reroute'
+require 'baykit/bayserver/docker/secure'
+require 'baykit/bayserver/docker/town'
+require 'baykit/bayserver/docker/trouble'
+

@@ -1,0 +1,6 @@
+require 'baykit/bayserver/docker/fcgi/command/cmd_begin_request'
+require 'baykit/bayserver/docker/fcgi/command/cmd_end_request'
+require 'baykit/bayserver/docker/fcgi/command/cmd_params'
+require 'baykit/bayserver/docker/fcgi/command/cmd_stdin'
+require 'baykit/bayserver/docker/fcgi/command/cmd_stdout'
+require 'baykit/bayserver/docker/fcgi/command/cmd_stderr'

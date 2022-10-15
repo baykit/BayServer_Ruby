@@ -1,0 +1,22 @@
+harbor              Baykit::BayServer::Docker::BuiltIn::BuiltInHarborDocker
+port                Baykit::BayServer::Docker::Http::HtpPortDocker
+port:http           Baykit::BayServer::Docker::Http::HtpPortDocker
+port:ajp            Baykit::BayServer::Docker::Ajp::AjpPortDocker
+port:fcgi           Baykit::BayServer::Docker::Fcgi::FcgPortDocker
+city                Baykit::BayServer::Docker::BuiltIn::BuiltInCityDocker
+town                Baykit::BayServer::Docker::BuiltIn::BuiltInTownDocker
+club                Baykit::BayServer::Docker::SendFile::SendFileDocker
+club:file           Baykit::BayServer::Docker::SendFile::SendFileDocker
+club:servlet        Baykit::BayServer::Docker::Servlet::ServletDocker
+club:cgi            Baykit::BayServer::Docker::Cgi::CgiDocker
+club:phpCgi         Baykit::BayServer::Docker::Cgi::PhpCgiDocker
+club:ajpWarp        Baykit::BayServer::Docker::Ajp::AjpWarpDocker
+club:fcgiWarp       Baykit::BayServer::Docker::Fcgi::FcgWarpDocker
+club:httpWarp       Baykit::BayServer::Docker::Http::HtpWarpDocker
+club:terminal       Baykit::BayServer::Docker::Terminal::TerminalDocker
+log                 Baykit::BayServer::Docker::BuiltIn::BuiltInLogDocker
+permission          Baykit::BayServer::Docker::BuiltIn::BuiltInPermissionDocker
+secure              Baykit::BayServer::Docker::BuiltIn::BuiltInSecureDocker
+trouble             Baykit::BayServer::Docker::BuiltIn::BuiltInTroubleDocker
+reroute:wordpress   Baykit::BayServer::Docker::WordPress::WordPressDocker
+

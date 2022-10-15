@@ -1,0 +1,7 @@
+require 'baykit/bayserver/docker/ajp/command/cmd_data'
+require 'baykit/bayserver/docker/ajp/command/cmd_end_response'
+require 'baykit/bayserver/docker/ajp/command/cmd_forward_request'
+require 'baykit/bayserver/docker/ajp/command/cmd_get_body_chunk'
+require 'baykit/bayserver/docker/ajp/command/cmd_send_body_chunk'
+require 'baykit/bayserver/docker/ajp/command/cmd_send_headers'
+require 'baykit/bayserver/docker/ajp/command/cmd_shutdown'
