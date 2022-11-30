@@ -1,4 +1,4 @@
-# BayServer for PHP
+# BayServer for Ruby
 
 
 # 2.0.1
