@@ -61,7 +61,7 @@
           environment production
 
     [log log/access.log]
-        format %h %l %u %t "%r" %>s %b
+        format %a %l %u %t "%r" %>s %b
 
     [log log/agent.log]
         format %{User-Agent}i
