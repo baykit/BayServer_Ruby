@@ -123,6 +123,8 @@ module Baykit
           else
             begin
               city.enter(self)
+            rescue Sink => e
+              raise e
             rescue HttpException => e
               BayLog.error_e(e)
               raise e
