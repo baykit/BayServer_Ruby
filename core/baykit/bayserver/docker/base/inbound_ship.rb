@@ -164,6 +164,11 @@ module Baykit
 
             if tur.zombie? || tur.aborted?
               # Don't send peer any data
+              BayLog::debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, tur, tur.state)
+              tur.change_state(check_id, TourState::ENDED)
+              if callback != nil
+                callback.call()
+              end
               return
             end
 

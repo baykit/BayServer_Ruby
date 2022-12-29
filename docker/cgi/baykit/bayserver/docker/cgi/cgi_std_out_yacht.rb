@@ -138,13 +138,13 @@ module Baykit
           # Custom methods
           ######################################################
 
-          def init(tur, tp)
+          def init(tur, valve)
             init_yacht()
             @tour = tur
             @tour_id = tur.tour_id
             tur.res.set_consume_listener do |len, resume|
               if resume
-                tp.open_valve();
+                valve.open_valve();
               end
             end
           end
