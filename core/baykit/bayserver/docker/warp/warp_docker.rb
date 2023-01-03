@@ -77,7 +77,7 @@ module Baykit
             super
             @scheme = nil
             @host = nil
-            @port = 80
+            @port = 0
             @warp_base = nil
             @max_ships = -1
             @cur_ships = 0
@@ -99,16 +99,17 @@ module Baykit
               @warp_base = "/"
             end
 
-            if @port == -1
-              @port = 80
-            end
-
             @host_addr = []
             if @host && @host.start_with?(":unix:")
               @host_addr << :UNIX
               @host_addr <<  Socket.sockaddr_un(@host[6 .. -1])
-
+              @port = -1
             else
+
+              if @port <= 0
+                @port = 80
+              end
+
               @host_addr << :INET
 
               begin
@@ -216,7 +217,7 @@ module Baykit
               wsip.start_warp_tour(tur)
 
               if need_connect
-                agt.non_blocking_handler.add_channel_listener(wsip.socket, wsip.postman)
+                agt.non_blocking_handler.add_channel_listener(wsip.socket, tp)
                 agt.non_blocking_handler.ask_to_connect(wsip.socket, @host_addr[1])
               end
 
