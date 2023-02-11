@@ -157,6 +157,9 @@ module Baykit
               return @ch != nil && !@ch_valid
             end
 
+            ######################################################
+            # Implements Reusable
+            ######################################################
             def reset()
 
               # Check write queue
