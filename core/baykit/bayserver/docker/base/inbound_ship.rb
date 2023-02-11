@@ -223,9 +223,9 @@ module Baykit
             end
           end
 
-          def send_error(check_id, tour, status, message, e)
+          def send_error(chk_id, tour, status, message, e)
 
-            check_ship_id(check_id)
+            check_ship_id(chk_id)
 
             BayLog.debug("%s send error: status=%d, message=%s ex=%s", self, status, message, e == nil ? "" : e.message)
 
@@ -257,7 +257,7 @@ module Baykit
             #end
 
             tour.res.headers.status = status
-            send_error_content(check_id, tour, body)
+            send_error_content(chk_id, tour, body)
           end
 
 
@@ -288,7 +288,7 @@ module Baykit
           end
 
           protected
-          def send_error_content(check_id, tour, content)
+          def send_error_content(chk_id, tour, content)
 
             #Get charset
             charset = tour.res.charset
@@ -303,10 +303,10 @@ module Baykit
             if StringUtil.set? content
               tour.res.headers.set_content_length(content.length)
             end
-            send_headers(check_id, tour)
+            send_headers(chk_id, tour)
 
             if StringUtil.set? content
-              send_res_content(check_id, tour, content, 0, content.length)
+              send_res_content(chk_id, tour, content, 0, content.length)
             end
           end
 
