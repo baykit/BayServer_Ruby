@@ -86,7 +86,7 @@ module Baykit
                       end
 
                       case next_act
-                      when NextSocketAction::CONTINUE
+                      when NextSocketAction::CONTINUE, NextSocketAction::SUSPEND
                         if @cmd_upacker.finished()
                           change_state(STATE_END)
                         else

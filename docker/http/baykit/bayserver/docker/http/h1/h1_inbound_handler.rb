@@ -121,9 +121,11 @@ module Baykit
               # Send dummy end request command
               cmd = CmdEndContent.new()
 
+              sid = @ship.ship_id
               ensure_func = lambda do
                 if keep_alive && !@ship.postman.zombie?
                   @ship.keeping = true
+                  @ship.resume(sid)
                 else
                   @command_packer.end(@ship)
                 end
@@ -239,7 +241,7 @@ module Baykit
 
                 if req_cont_len <= 0
                   end_req_content(@cur_tour_id, tur)
-                  return NextSocketAction::CONTINUE
+                  return NextSocketAction::SUSPEND
                 else
                   change_state(STATE_READ_CONTENT)
                   return NextSocketAction::CONTINUE
