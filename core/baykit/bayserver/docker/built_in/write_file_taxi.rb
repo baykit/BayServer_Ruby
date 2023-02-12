@@ -81,7 +81,7 @@ module Baykit
             end
           end
 
-          def post(data, tag)
+          def post(data, adr, tag)
             @lock.synchronize do
               empty = @write_queue.empty?
               @write_queue.append(data)
