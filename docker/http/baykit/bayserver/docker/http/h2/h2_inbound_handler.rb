@@ -166,7 +166,10 @@ module Baykit
                   BayLog.info("%s req header: %s=%s :%s", tur, @analyzer.name, @analyzer.value, blk);
                 end
 
-                if @analyzer.name[0] != ":"
+                if @analyzer.name == nil
+                  next
+
+                elsif @analyzer.name[0] != ":"
                   tur.req.headers.add(@analyzer.name, @analyzer.value)
 
                 elsif @analyzer.method != nil
