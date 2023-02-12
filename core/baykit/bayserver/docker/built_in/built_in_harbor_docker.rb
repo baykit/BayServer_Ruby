@@ -198,7 +198,7 @@ module Baykit
               @multi_core = StringUtil.parse_bool(kv.value)
             when "gzipcomp"
               @gzip_comp = StringUtil.parse_bool(kv.value)
-            when "filesendmethod"
+            when "sendfilemethod"
               case kv.value.downcase()
               when "select"
                 @file_send_method = FILE_SEND_METHOD_SELECT

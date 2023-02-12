@@ -98,7 +98,8 @@ module Baykit
         end
 
         def check_read(len)
-          if @max_len > 0 && @pos + len > @max_len
+          max_len = (@max_len >= 0) ? @max_len : (@packet.buf.length - @start)
+          if @pos + len > max_len
             raise Sink.new("Invalid array index")
           end
         end

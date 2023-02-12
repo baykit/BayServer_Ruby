@@ -21,6 +21,7 @@ module Baykit
 
             class AgentListener
               include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener  # implements
+              include Baykit::BayServer::Agent::Transporter
 
               attr :log_docker
 
@@ -35,7 +36,7 @@ module Baykit
 
                 case @log_docker.log_write_method
                 when LOG_WRITE_METHOD_SELECT
-                  tp = PlainTransporter.new(false, 0)  # write only
+                  tp = PlainTransporter.new(false, 0, true)  # write only
                   tp.init(agt.non_blocking_handler, File.open(file_name, "a"), boat)
 
                 when LOG_WRITE_METHOD_SPIN

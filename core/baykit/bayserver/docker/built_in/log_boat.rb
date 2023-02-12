@@ -61,7 +61,7 @@ module Baykit
             end
             data += CharUtil::LF
 
-            @postman.post(data, file_name)
+            @postman.post(data, nil, file_name)
           end
         end
       end

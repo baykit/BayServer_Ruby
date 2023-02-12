@@ -374,6 +374,7 @@ module Baykit
           rescue HttpException => e
             raise e
           rescue => e
+            BayLog.error_e(e)
             raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, file)
           end
 

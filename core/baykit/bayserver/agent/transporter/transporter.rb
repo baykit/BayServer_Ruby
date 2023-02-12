@@ -74,8 +74,9 @@ module Baykit
             attr :lock
             attr :capacity
             attr :non_blocking_handler
+            attr :write_only
 
-            def initialize(server_mode, bufsiz, trace_ssl)
+            def initialize(server_mode, bufsiz, trace_ssl, write_only = false)
               @server_mode = server_mode
               @write_queue = []
               @lock = Monitor.new()
@@ -83,6 +84,7 @@ module Baykit
               @read_buf = StringUtil.alloc(bufsiz)
               @trace_ssl = trace_ssl
               reset()
+              @write_only = write_only
             end
 
             def to_s()
@@ -113,6 +115,26 @@ module Baykit
               set_valid(true)
               @handshaked = false
               @channel_handler.add_channel_listener(ch, self)
+            end
+
+            ######################################################
+            # Implements Reusable
+            ######################################################
+            def reset()
+
+              # Check write queue
+              if !@write_queue.empty?
+                raise Sink.new("Write queue is not empty")
+              end
+
+              @finale = false
+              @initialized = false
+              @ch = nil
+              set_valid(false)
+              @handshaked = false
+              @socket_io = nil
+              @read_buf.clear()
+              @write_only = false
             end
 
             ######################################################
@@ -157,24 +179,6 @@ module Baykit
               return @ch != nil && !@ch_valid
             end
 
-            ######################################################
-            # Implements Reusable
-            ######################################################
-            def reset()
-
-              # Check write queue
-              if !@write_queue.empty?
-                raise Sink.new("Write queue is not empty")
-              end
-
-              @finale = false
-              @initialized = false
-              @ch = nil
-              set_valid(false)
-              @handshaked = false
-              @socket_io = nil
-              @read_buf.clear()
-            end
 
             ######################################################
             # Implements ChannelListener
@@ -201,6 +205,7 @@ module Baykit
               # read data
               # If closed, EOFError is raised
               if @read_buf.length == 0
+                eof = false
                 begin
                   adr = read_nonblock()
                 rescue IO::WaitReadable => e
@@ -212,9 +217,13 @@ module Baykit
                   return NextSocketAction::CONTINUE
                 rescue EOFError => e
                   BayLog.debug("%s EOF", self)
-                  return @data_listener.notify_eof()
+                  eof = true
                 rescue SystemCallError => e
                   BayLog.error_e(e)
+                  eof = true
+                end
+
+                if eof
                   return @data_listener.notify_eof()
                 end
               end
@@ -315,6 +324,8 @@ module Baykit
                 if @finale
                   BayLog.trace("%s finale return Close", self)
                   state = NextSocketAction::CLOSE
+                elsif @write_only
+                  state = NextSocketAction::SUSPEND
                 else
                   state = NextSocketAction::READ
                 end

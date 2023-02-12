@@ -11,8 +11,8 @@ module Baykit
             include Baykit::BayServer::Protocol
             include Baykit::BayServer::Util
 
-            def initialize(server_mode, bufsiz)
-              super(server_mode, bufsiz, false)
+            def initialize(server_mode, bufsiz, write_only = false)
+              super(server_mode, bufsiz, false, write_only)
             end
 
             def init(nb_hnd, ch, lis)

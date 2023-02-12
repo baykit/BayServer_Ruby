@@ -310,7 +310,7 @@ module Baykit
               return
             end
 
-            add_operation(ch, Selector::OP_READ | Selector::OP_WRITE)
+            add_operation(ch, Selector::OP_WRITE)
 
             if ch_state == nil
               BayLog.error("Unknown socket (or closed)")
