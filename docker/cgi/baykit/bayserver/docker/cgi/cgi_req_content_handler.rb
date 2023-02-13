@@ -112,7 +112,7 @@ module Baykit
           def process_finished()
             pid, stat = Process.wait2(@pid)
 
-            BayLog.debug("CGI Process finished: pid=%s code=%s", pid, stat.exitstatus)
+            BayLog.debug("%s CGI Process finished: pid=%s code=%s", @tour, pid, stat.exitstatus)
             if pid == nil
               BayLog.error("Process not finished: %d", @pid)
             end
@@ -120,7 +120,7 @@ module Baykit
             begin
               if stat.exitstatus != 0
                 # Exec failed
-                BayLog.error("CGI Exec error pid=%d code=%s", @pid, stat.exitstatus)
+                BayLog.error("%s CGI Exec error pid=%d code=%s", @tour, @pid, stat.exitstatus)
                 @tour.res.send_error(@tour_id, HttpStatus::INTERNAL_SERVER_ERROR, "Exec failed")
               else
                 @tour.res.end_content(@tour_id)
