@@ -133,7 +133,7 @@ module Baykit
             attr_accessor :protocol
             attr_accessor :req_uri
             attr_accessor :remote_addr
-            attr_accessor :remote_host_func
+            attr_accessor :remote_host
             attr_accessor :server_name
             attr_accessor :server_port
             attr_accessor :is_ssl
