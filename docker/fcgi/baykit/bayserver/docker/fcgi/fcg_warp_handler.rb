@@ -84,7 +84,7 @@ module Baykit
           end
 
           def post_warp_end(tur)
-            send_stdin(tur, nil, 0, 0, nil)
+            send_stdin(tur, nil, 0, 0)
           end
 
           def verify_protocol(proto)
