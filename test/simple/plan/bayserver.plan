@@ -55,7 +55,7 @@
             docker cgi
 
         [club *.php]
-            docker php_cgi
+            docker phpCgi
 
     [town /rack-demo]
        [club *]
