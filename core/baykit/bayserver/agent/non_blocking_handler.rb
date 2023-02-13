@@ -117,7 +117,9 @@ module Baykit
                   if next_action == nil
                     raise Sink.new("unknown next action")
                   elsif next_action == NextSocketAction::WRITE
-                    ask_to_write(ch)
+                    op = @agent.selector.get_op(ch)
+                    op = op | Selector::OP_WRITE
+                    @agent.selector.modify(ch, op)
                   end
                 end
 
@@ -127,7 +129,16 @@ module Baykit
                   if next_action == nil
                     raise Sink.new("unknown next action")
                   elsif next_action == NextSocketAction::READ
-                    ask_to_read(ch)
+                    # Handle as "Write Off"
+                    op = @agent.selector.get_op(ch)
+                    op = op & ~Selector::OP_WRITE
+                    if op == 0
+                      BayLog.debug("%s Unregister ch %s", @agent, ch)
+                      @agent.selector.unregister(ch)
+                    else
+                      BayLog.debug("%s Modify OP %s", @agent, ch)
+                      @agent.selector.modify(ch, op)
+                    end
                   end
                 end
               end
@@ -161,10 +172,10 @@ module Baykit
               close_channel(ch, ch_state)
               cancel = false   # already canceled in close_channel method
 
-            when NextSocketAction::SUSPEND, NextSocketAction::READ, NextSocketAction::WRITE
+            when NextSocketAction::SUSPEND
               cancel = true
 
-            when NextSocketAction::CONTINUE
+            when NextSocketAction::CONTINUE, NextSocketAction::READ, NextSocketAction::WRITE
               # do nothing
 
             else
@@ -172,7 +183,7 @@ module Baykit
             end
 
             if cancel
-              BayLog.trace("%s cancel key chState=%s", @agent, ch_state);
+              BayLog.trace("%s cancel key chState=%s", @agent, ch_state)
               @agent.selector.unregister(ch)
             end
           end

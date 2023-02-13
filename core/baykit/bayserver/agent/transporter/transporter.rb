@@ -327,7 +327,7 @@ module Baykit
                 elsif @write_only
                   state = NextSocketAction::SUSPEND
                 else
-                  state = NextSocketAction::READ
+                  state = NextSocketAction::READ # will be handled as "Write Off"
                 end
               else
                 state = NextSocketAction::CONTINUE

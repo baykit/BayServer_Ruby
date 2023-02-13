@@ -65,6 +65,8 @@ module Baykit
               pos = 0
               buf_start = 0
               line_len = 0
+              suspend = false
+
               if @state == STATE_READ_HEADERS
                 while pos < buf.length
                   b = buf[pos]
@@ -100,6 +102,7 @@ module Baykit
                         raise RuntimeError.new("Invalid next action: #{next_act}")
                       end
 
+                      suspend = (next_act == NextSocketAction::SUSPEND)
                       break
                     end
                     line_len = 0
@@ -112,7 +115,6 @@ module Baykit
                 end
               end
 
-              suspend = false
               if @state == STATE_READ_CONTENT
                 while pos < buf.length
                   pkt = @pkt_store.rent(H1Type::CONTENT)
@@ -151,7 +153,7 @@ module Baykit
               end
 
               if suspend
-                BayLog.debug("%s read suspend", self)
+                BayLog.debug("H1 Read suspend")
                 return NextSocketAction::SUSPEND
               else
                 return NextSocketAction::CONTINUE

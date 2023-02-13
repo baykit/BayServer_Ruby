@@ -37,7 +37,7 @@ module Baykit
 
           def notify_read(buf, adr)
             BayLog.trace("%s notify_read", self)
-            @ship.protocol_handler.bytes_received(buf)
+            return @ship.protocol_handler.bytes_received(buf)
           end
 
           def notify_eof()
