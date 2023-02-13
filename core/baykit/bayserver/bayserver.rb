@@ -60,6 +60,8 @@ module Baykit
 
       # define class instance accessor
       class << self
+        attr :script_name
+        attr :commandline_args
         attr :bserv_home
         attr :bserv_plan
         attr :my_host_name
@@ -72,6 +74,8 @@ module Baykit
         attr :ractor_local_map
         attr :software_name
         attr :rack_app
+        attr :derived_port_nos
+        attr :derived_pipe_nos
       end
 
       def self.get_version
@@ -79,11 +83,13 @@ module Baykit
       end
 
       def self.main(args)
+        @commandline_args = args
         cmd = nil
         home = ENV[ENV_BSERV_HOME]
         plan = ENV[ENV_BSERV_PLAN]
         mkpass = nil
         log_level = nil
+        agt_id = -1
 
         args.each do |arg|
           if arg.casecmp? "-start"
@@ -106,6 +112,12 @@ module Baykit
             mkpass = arg[8 .. nil]
           elsif arg.start_with? "-loglevel="
             log_level = arg[10 .. nil]
+          elsif arg.start_with? "-agentid="
+            agt_id = arg[9 .. nil].to_i
+          elsif arg.start_with? "-ports="
+            @derived_port_nos = arg[7 .. nil].split(",")
+          elsif arg.start_with? "-pipe="
+            @derived_pipe_nos = arg[6 .. nil].split(",")
           end
         end
 
@@ -117,7 +129,7 @@ module Baykit
         BayServer.init(home, plan, log_level)
 
         if cmd == nil
-          BayServer.start
+          BayServer.start(agt_id)
         else
           SignalSender.new().send_command(cmd)
         end
@@ -182,11 +194,8 @@ module Baykit
       #
       # Start the system
       #
-      def self.start
+      def self.start(agt_id)
         begin
-          puts @ports
-          puts BayServer.ports
-
           BayMessage.init(@bserv_home + "/lib/conf/messages", Locale.new('ja', 'JP'))
 
           @dockers = BayDockers.new
@@ -216,80 +225,12 @@ module Baykit
           $stdout.sync = true
           $stderr.sync = true
 
-          print_version()
-          create_pid_file(Process.pid)
-
-          #
-          #if(ports.size() == 0) {
-          #  throw new BayError(msg.getMessage(BayMessage.Sym.CFG_NO_PORT_DOCKER));
-          #}
-
-          @my_host_name = Socket.gethostname
-          # @my_host_addr = Socket.unpack_sockaddr_in(@my_host_name)[1]
-
-          BayLog.info("Host name    : " + @my_host_name)
-          #  BayLog.info("Host address : " + @my_host_addr);
-
-          anchored_port_map = {}
-          unanchored_port_map = {}
-          @ports.each do |dkr|
-            # open port
-            adr = dkr.address()
-
-            if dkr.anchored
-              # Open TCP port
-              BayLog.info(BayMessage.get(:MSG_OPENING_TCP_PORT, dkr.host, dkr.port, dkr.protocol))
-
-              if adr.instance_of? String
-                adr = Socket.sockaddr_un(adr)
-                skt = Socket.new(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
-              else
-                adr = Socket.sockaddr_in(adr[0], adr[1])
-                skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-              end
-              if not SysUtil.run_on_windows()
-                skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-              end
-
-              begin
-                skt.bind(adr)
-              rescue SystemCallError => e
-                BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
-                return
-              end
-
-              skt.listen(0)
-
-              #skt = port_dkr.new_server_socket skt
-              anchored_port_map[skt] = dkr
-            else
-              # Open UDP port
-              BayLog.info(BayMessage.get(:MSG_OPENING_UDP_PORT, dkr.host, dkr.port, dkr.protocol()))
-
-              skt = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM)
-              if not SysUtil.run_on_windows()
-                skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-              end
-              begin
-                skt.bind(adr)
-              rescue SystemCallError => e
-                BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
-                return
-              end
-              unanchored_port_map[skt] = dkr
-
-            end
-          end
-
           # Init stores, memory usage managers
           PacketStore.init()
           InboundShipStore.init()
           ProtocolHandlerStore.init()
           TourStore.init(TourStore::MAX_TOURS)
           MemUsage.init()
-          GrandAgent.init(@harbor.grand_agents, anchored_port_map, unanchored_port_map, @harbor.max_ships, @harbor.multi_core)
-          SignalAgent.init(@harbor.control_port)
-
 
           if SysUtil.run_on_rubymine()
             ::Signal.trap(:INT) do
@@ -299,13 +240,24 @@ module Baykit
             end
           end
 
-          while not GrandAgent.monitors.empty?
+          BayLog.debug("Command line: %s", @commandline_args.join(" "))
+
+          if agt_id == -1
+            print_version()
+            @my_host_name = Socket.gethostname
+            BayLog.info("Host name    : %s", @my_host_name)
+            parent_start()
+          else
+            child_start(agt_id)
+          end
+
+          while not GrandAgentMonitor.monitors.empty?
             sel = Selector.new()
             pip_to_mon_map = {}
-            GrandAgent.monitors.each do |mon|
+            GrandAgentMonitor.monitors.values.each do |mon|
               BayLog.debug("Monitoring pipe of %s", mon)
-              sel.register(mon.recv_pipe[0], Selector::OP_READ)
-              pip_to_mon_map[mon.recv_pipe[0]] = mon
+              sel.register(mon.recv_fd, Selector::OP_READ)
+              pip_to_mon_map[mon.recv_fd] = mon
             end
             server_skt = nil
             if SignalAgent.signal_agent
@@ -331,7 +283,117 @@ module Baykit
         end
       end
 
+      def self.parent_start()
+        anchored_port_map = {}
+        unanchored_port_map = {}
+        @ports.each do |dkr|
+          # open port
+          adr = dkr.address()
 
+          if dkr.anchored
+            # Open TCP port
+            BayLog.info(BayMessage.get(:MSG_OPENING_TCP_PORT, dkr.host, dkr.port, dkr.protocol))
+
+            if adr.instance_of? String
+              adr = Socket.sockaddr_un(adr)
+              skt = Socket.new(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
+            else
+              adr = Socket.sockaddr_in(adr[0], adr[1])
+              skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+            end
+            if not SysUtil.run_on_windows()
+              skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
+            end
+
+            begin
+              skt.bind(adr)
+            rescue SystemCallError => e
+              BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
+              return
+            end
+
+            skt.listen(0)
+
+            #skt = port_dkr.new_server_socket skt
+            anchored_port_map[skt] = dkr
+          else
+            # Open UDP port
+            BayLog.info(BayMessage.get(:MSG_OPENING_UDP_PORT, dkr.host, dkr.port, dkr.protocol()))
+
+            skt = Socket.new(Socket::AF_INET, Socket::SOCK_DGRAM)
+            if not SysUtil.run_on_windows()
+              skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
+            end
+            begin
+              skt.bind(adr)
+            rescue SystemCallError => e
+              BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
+              return
+            end
+            unanchored_port_map[skt] = dkr
+
+          end
+        end
+
+        if !@harbor.multi_core
+          GrandAgent.init(
+            1.repeat { |x| x + 1 }.take(@harbor.grand_agents),
+            anchored_port_map,
+            unanchored_port_map,
+            @harbor.max_ships,
+            @harbor.multi_core)
+
+          cur_index = 0
+          GrandAgent.anchorable_port_map.each do |portMap|
+
+          end
+        end
+
+        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
+        SignalAgent.init(@harbor.control_port)
+        create_pid_file(Process.pid)
+      end
+
+      def self.child_start(agt_id)
+        anchored_port_map = {}
+
+        @derived_port_nos.each do |no|
+          # Rebuild server socket
+          skt = Socket.for_fd(no.to_i)
+          portDkr = nil
+
+          @ports.each do |p|
+            port = skt.local_address.ip_port
+            if p.port == port
+              portDkr = p
+              break
+            end
+          end
+
+          if portDkr == nil
+            BayLog.fatal("Cannot find port docker: %d", port)
+            exit(1)
+          end
+
+          anchored_port_map[skt] = portDkr
+        end
+
+
+        GrandAgent.init(
+          [agt_id],
+          anchored_port_map,
+          nil,
+          @harbor.max_ships,
+          @harbor.multi_core
+        )
+        agt = GrandAgent.get(agt_id)
+
+        recv_fd = IO.for_fd(@derived_pipe_nos[0].to_i)
+        send_fd = IO.for_fd(@derived_pipe_nos[1].to_i)
+        agt.run_command_receiver(recv_fd, send_fd)
+
+        agt.run()
+      end
 
       def self.find_city(city_name)
         return @cities.find_city(city_name)

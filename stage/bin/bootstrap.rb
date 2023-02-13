@@ -20,4 +20,7 @@ if File.directory?(docker.to_s)
 end
 
 require 'baykit/bayserver/bayserver'
-Baykit::BayServer::BayServer.main ARGV
+
+new_argv = ARGV.dup
+new_argv.insert(0, __FILE__ )
+Baykit::BayServer::BayServer.main new_argv

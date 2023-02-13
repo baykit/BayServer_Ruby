@@ -2,6 +2,7 @@ require 'socket'
 
 require 'baykit/bayserver/sink'
 require 'baykit/bayserver/agent/accept_handler'
+require 'baykit/bayserver/agent/command_receiver'
 require 'baykit/bayserver/agent/grand_agent_monitor'
 require 'baykit/bayserver/agent/spin_handler'
 require 'baykit/bayserver/agent/signal/signal_agent'
@@ -29,65 +30,6 @@ module Baykit
           #             void add(int agentId);
           #             void remove(int agentId);
           #
-        end
-
-        #
-        # CommandReceiver receives commands from GrandAgentMonitor
-        #
-        class CommandReceiver
-          include Baykit::BayServer::Util
-          attr :agent
-          attr :read_fd
-          attr :write_fd
-          attr :aborted
-
-          def initialize(agent, read_fd, write_fd)
-            @agent = agent
-            @read_fd = read_fd
-            @write_fd = write_fd
-            @aborted = false
-          end
-
-          def to_s()
-            return "ComReceiver##{@agent.agent_id}"
-          end
-
-          def on_pipe_readable()
-            cmd = IOUtil.read_int32(@read_fd)
-            if cmd == nil
-              BayLog.debug("%s pipe closed: %d", self, @read_fd)
-              @agent.abort()
-            else
-              BayLog.debug("%s receive command %d pipe=%d", self, cmd, @read_fd)
-              begin
-                case cmd
-                  when CMD_RELOAD_CERT
-                    @agent.reload_cert()
-                  when CMD_MEM_USAGE
-                    @agent.print_usage()
-                  when CMD_SHUTDOWN
-                    @agent.shutdown()
-                    @aborted = true
-                  when CMD_ABORT
-                    IOUtil.write_int32(@write_fd, CMD_OK)
-                    @agent.abort()
-                    return
-                  else
-                    BayLog.error("Unknown command: %d", cmd)
-                end
-                IOUtil.write_int32(@write_fd, CMD_OK)
-              rescue IOError => e
-                BayLog.debug("%s Read failed (maybe agent shut down): %s", self, e)
-              ensure
-                BayLog.debug("%s Command ended", self)
-              end
-            end
-          end
-
-          def abort()
-            BayLog.debug("%s end", self)
-            IOUtil.write_int32(@write_fd, CMD_CLOSE)
-          end
         end
 
         SELECT_TIMEOUT_SEC = 10
@@ -125,18 +67,21 @@ module Baykit
           attr :multi_core
           attr :finale
         end
+
+        # Class variables
+        @agent_count = 0
+        @max_agent_id = 0
+        @max_ships = 0
+        @multi_core = false
+
         @agents = []
         @listeners = []
-        @monitors = []
-        @agent_count = 0
+
         @anchorable_port_map = {}
         @unanchorable_port_map = {}
-        @max_ships = 0
-        @max_agent_id = 0
-        @multi_core = false
         @finale = false
 
-        def initialize (agent_id, max_ships, anchorable, recv_pipe, send_pipe)
+        def initialize (agent_id, max_ships, anchorable)
           @agent_id = agent_id
           @anchorable = anchorable
 
@@ -154,7 +99,6 @@ module Baykit
           @selector = Selector.new()
           @aborted = false
           @unanchorable_transporters = {}
-          @command_receiver = CommandReceiver.new(self, recv_pipe[0], send_pipe[1])
 
         end
 
@@ -257,8 +201,7 @@ module Baykit
             raise e
           ensure
             BayLog.info("%s end", self)
-            @command_receiver.abort()
-            GrandAgent.listeners.each { |lis| lis.remove(self)}
+            abort_agent(nil, 0)
           end
         end
 
@@ -267,11 +210,29 @@ module Baykit
           if @accept_handler != nil
             @accept_handler.shutdown()
           end
+          abort_agent(nil, 0)
         end
 
-        def abort()
-          BayLog.debug("%s abort", self)
-          exit(1)
+        def abort_agent(err = nil, status = 1)
+          if err
+            BayLog.fatal("%s end", self)
+            BayLog.fatal_e(err)
+          end
+
+          @command_receiver.end()
+          GrandAgent.listeners.each do |lis|
+            lis.remove(self)
+          end
+
+          GrandAgent.agents.delete(@agent_id)
+
+          if BayServer.harbor.multi_core
+            exit(1)
+          else
+            clean()
+          end
+
+          @aborted = true
         end
 
         def reload_cert()
@@ -297,6 +258,9 @@ module Baykit
           IOUtil.write_int32(@select_wakeup_pipe[1], 0)
         end
 
+        def run_command_receiver(recv_fd, send_fd)
+          @command_receiver = CommandReceiver.new(self, recv_fd, send_fd)
+        end
 
         private
         def on_waked_up(pipe_fd)
@@ -304,108 +268,54 @@ module Baykit
           val = IOUtil.read_int32(pipe_fd)
         end
 
+        def clean()
+          @non_blocking_handler.close_all()
+          @agent_id = -1
+        end
 
         ######################################################
         # class methods
         ######################################################
-        def GrandAgent.init(count, anchorable_port_map, unanchorable_port_map, max_ships, multi_core)
-          @agent_count = count
+        def GrandAgent.init(agt_ids, anchorable_port_map, unanchorable_port_map, max_ships, multi_core)
+          @agent_count = agt_ids.length
           @anchorable_port_map = anchorable_port_map
-          @unanchorable_port_map = unanchorable_port_map
+          @unanchorable_port_map = unanchorable_port_map != nil ? unanchorable_port_map : {}
           @max_ships = max_ships
           @multi_core = multi_core
-          if GrandAgent.unanchorable_port_map.length > 0
-            add(false)
+
+          #if GrandAgent.unanchorable_port_map.length > 0
+          #  add(false)
+          #end
+          agt_ids.each do | agt_id |
+            add(agt_id, true)
           end
-          count.times do
-            add(true)
+
+          invoke_runners()
+        end
+
+        def GrandAgent.get(agt_id)
+          return @agents[agt_id]
+        end
+
+        def GrandAgent.get_by_idex(idx)
+          agents = @agents.values
+          return agents[idx]
+        end
+
+        def self.add(agt_id, anchorable)
+          if agt_id == -1
+            agt_id = @max_agent_id + 1
           end
-        end
-
-        def GrandAgent.get(id)
-          @agents.each do |agt|
-            if agt.id = id
-              return agt
-            end
+          BayLog.debug("Add agent: id=%d", agt_id)
+          if agt_id > @max_agent_id
+            @max_agent_id = agt_id
           end
-          return nil
-        end
 
-        def GrandAgent.add(anchorable)
-          @max_agent_id += 1
-          agt_id = @max_agent_id
-          send_pipe = IO.pipe()
-          recv_pipe = IO.pipe()
+          agt = GrandAgent.new(agt_id, @max_ships, anchorable)
+          @agents[agt_id] = agt
 
-          if @multi_core
-
-            # Agents run on multi core (process mode)
-            pid = Process.fork do
-              # train runners and tax runners run in the new process
-              invoke_runners()
-
-              agt = GrandAgent.new(agt_id, BayServer.harbor.max_ships, anchorable, send_pipe, recv_pipe)
-              @agents.append(agt)
-              @listeners.each { |lis| lis.add(agt)}
-
-              agent_thread = Thread.new() do
-                agt.run
-              end
-
-              # Main thread sleeps until agent finished
-              agent_thread.join()
-            end
-
-            mon = GrandAgentMonitor.new(agt_id, anchorable, send_pipe, recv_pipe)
-            @monitors.append(mon)
-
-          else
-            invoke_runners()
-
-            # Agents run on single core (thread mode)
-            agent_thread = Thread.new() do
-              agt = GrandAgent.new(agt_id, BayServer.harbor.max_ships, anchorable, send_pipe, recv_pipe)
-              @agents.append(agt)
-              @listeners.each { |lis| lis.add(agt)}
-              agt.run
-            end
-
-            mon = GrandAgentMonitor.new(agt_id, anchorable, send_pipe, recv_pipe)
-            @monitors.append(mon)
-
-          end
-        end
-
-        def GrandAgent.reload_cert_all()
-          @monitors.each { |mon| mon.reload_cert() }
-        end
-
-        def GrandAgent.restart_all()
-          old_monitors = @monitors.dup()
-
-          #@agent_count.times {add()}
-
-          old_monitors.each { |mon| mon.shutdown() }
-        end
-
-        def GrandAgent.shutdown_all()
-          @finale = true
-          @monitors.dup().each do |mon|
-            mon.shutdown()
-          end
-        end
-
-        def GrandAgent.abort_all()
-          @finale = true
-          @monitors.dup().each do |mon|
-            mon.abort()
-          end
-          exit(1)
-        end
-
-        def GrandAgent.print_usage_all()
-          @monitors.each do |mon|
-            mon.print_usage()
+          @listeners.each do |lis|
+            lis.add(agt)
           end
         end
 
@@ -414,30 +324,14 @@ module Baykit
         end
 
 
-        def GrandAgent.agent_aborted(agt_id, anchorable)
-          BayLog.info(BayMessage.get(:MSG_GRAND_AGENT_SHUTDOWN, agt_id))
 
-          @agents.delete_if do |agt|
-            agt.agent_id == agt_id
-          end
-
-          @monitors.delete_if do |mon|
-            mon.agent_id == agt_id
-          end
-
-          if not @finale
-            if @agents.length < @agent_count
-              add(anchorable)
-            end
-          end
-        end
 
         private
         #
         # Run train runners and taxi runners inner process
         #   ALl the train runners and taxi runners run in each process (not thread)
         #
-        def GrandAgent.invoke_runners()
+        def self.invoke_runners()
           n = BayServer.harbor.train_runners
           TrainRunner.init(n)
 
