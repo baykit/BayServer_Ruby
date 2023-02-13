@@ -133,10 +133,8 @@ module Baykit
                     op = @agent.selector.get_op(ch)
                     op = op & ~Selector::OP_WRITE
                     if op == 0
-                      BayLog.debug("%s Unregister ch %s", @agent, ch)
                       @agent.selector.unregister(ch)
                     else
-                      BayLog.debug("%s Modify OP %s", @agent, ch)
                       @agent.selector.modify(ch, op)
                     end
                   end

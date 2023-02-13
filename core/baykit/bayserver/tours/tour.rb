@@ -116,7 +116,7 @@ module Baykit
           if city == nil
             city = BayServer.find_city(@req.req_host)
           end
-          BayLog.debug("%s GO TOUR! ...( ^_^)/: url=%s", self, @req.uri);
+          BayLog.debug("%s GO TOUR! ...( ^_^)/: city=%s url=%s", self, @req.req_host, @req.uri);
 
           if city == nil
             raise HttpException.new HttpStatus::NOT_FOUND, @req.uri

@@ -23,7 +23,6 @@ module Baykit
         def find_city(name)
           # Check exact match
           @cities.each do |city|
-            BayLog.debug "City #{city} V.S #{name}"
             if city.name == name
               return city
             end
