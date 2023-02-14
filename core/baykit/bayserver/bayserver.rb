@@ -337,7 +337,7 @@ module Baykit
 
         if !@harbor.multi_core
           GrandAgent.init(
-            1.repeat { |x| x + 1 }.take(@harbor.grand_agents),
+            (1..@harbor.grand_agents).to_a,
             anchored_port_map,
             unanchored_port_map,
             @harbor.max_ships,
