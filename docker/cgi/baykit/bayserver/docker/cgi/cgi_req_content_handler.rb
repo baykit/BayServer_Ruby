@@ -120,8 +120,8 @@ module Baykit
             begin
               if stat.exitstatus != 0
                 # Exec failed
-                BayLog.error("%s CGI Exec error pid=%d code=%s", @tour, @pid, stat.exitstatus)
-                @tour.res.send_error(@tour_id, HttpStatus::INTERNAL_SERVER_ERROR, "Exec failed")
+                BayLog.error("%s CGI Invalid exit status pid=%d code=%s", @tour, @pid, stat.exitstatus)
+                @tour.res.send_error(@tour_id, HttpStatus::INTERNAL_SERVER_ERROR, "Invalid exit Status")
               else
                 @tour.res.end_content(@tour_id)
               end

@@ -48,7 +48,7 @@ module Baykit
               begin
                 rel_path = URLDecoder.decode(rel_path, tur.req.charset)
               rescue Encoding::UndefinedConversionError => e
-                BayLog.error_e(e, "%s Cannot decode request path: %s", tur, rel_path)
+                BayLog.warn("%s Cannot decode request path: %s (encoding=%s)", tur, rel_path, tur.req.charset)
               end
 
               real = "#{tur.town.location}/#{rel_path}"

@@ -344,7 +344,7 @@ module Baykit
             end
 
             def handle_go_away(cmd)
-              BayLog.error("%s received GoAway: lastStm=%d code=%d desc=%s debug=%s",
+              BayLog.debug("%s received GoAway: lastStm=%d code=%d desc=%s debug=%s",
                            @ship, cmd.last_stream_id, cmd.error_code, H2ErrorCode.msg.get(cmd.error_code.to_s.to_sym), cmd.debug_data);
               return NextSocketAction::CLOSE
             end
@@ -358,7 +358,7 @@ module Baykit
             end
 
             def handle_rst_stream(cmd)
-              BayLog.error("%s received RstStream: stmid=%d code=%d desc=%s",
+              BayLog.debug("%s received RstStream: stmid=%d code=%d desc=%s",
                            @ship, cmd.stream_id, cmd.error_code, H2ErrorCode.msg.get(cmd.error_code.to_s.to_sym))
               return NextSocketAction::CONTINUE
             end

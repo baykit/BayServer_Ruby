@@ -227,10 +227,10 @@ module Baykit
 
             check_ship_id(chk_id)
 
-            BayLog.debug("%s send error: status=%d, message=%s ex=%s", self, status, message, e == nil ? "" : e.message)
+            BayLog.info("%s send error: status=%d, message=%s ex=%s", self, status, message, e == nil ? "" : e.message)
 
             if e != nil
-              BayLog.error_e(e)
+              BayLog.debug_e(e)
             end
 
             # Create body

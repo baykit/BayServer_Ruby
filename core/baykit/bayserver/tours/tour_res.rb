@@ -281,8 +281,8 @@ module Baykit
           end
 
           if @header_sent
-            BayLog.error("Try to send error after response header is sent (Ignore)")
-            BayLog.error("%s: status=%d, message=%s", self, status, msg)
+            BayLog.warn("Try to send error after response header is sent (Ignore)")
+            BayLog.warn("%s: status=%d, message=%s", self, status, msg)
             if err != nil
               BayLog.error_e(err);
             end
