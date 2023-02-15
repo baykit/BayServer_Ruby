@@ -241,7 +241,7 @@ module Baykit
 
                 if req_cont_len <= 0
                   end_req_content(@cur_tour_id, tur)
-                  return NextSocketAction::SUSPEND
+                  return NextSocketAction::SUSPEND  # end reading
                 else
                   change_state(STATE_READ_CONTENT)
                   return NextSocketAction::CONTINUE
@@ -287,7 +287,7 @@ module Baykit
                 else
                   begin
                     end_req_content(tur_id, tur)
-                    return NextSocketAction::CONTINUE
+                    return NextSocketAction::SUSPEND # end reading
                   rescue HttpException => e
                     tur.res.send_http_exception(tur_id, e)
                     reset_state()
