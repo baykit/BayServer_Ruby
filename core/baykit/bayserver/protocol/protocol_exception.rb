@@ -8,7 +8,7 @@ module Baykit
                 elsif args == nil
                   sprintf("%s", fmt)
                 else
-                  sprintf(fmt, args)
+                  sprintf(fmt, *args)
                 end)
           super
         end
