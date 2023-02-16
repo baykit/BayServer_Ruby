@@ -209,6 +209,11 @@ module Baykit
         end
 
         def abort()
+          if !@tour.preparing?
+            BayLog.debug("%s cannot abort non-preparing tour", @tour)
+            return
+          end
+
           BayLog.debug("%s abort", @tour)
           if @tour.aborted?
             raise Sink.new("tour has already aborted")

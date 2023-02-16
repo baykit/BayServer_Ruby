@@ -139,6 +139,10 @@ module Baykit
           return @state == TourState::PREPARING || @state == TourState::RUNNING
         end
 
+        def preparing?()
+          return @state == TourState::PREPARING
+        end
+
         def running?()
           return @state == TourState::RUNNING
         end
