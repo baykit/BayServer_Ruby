@@ -116,7 +116,7 @@ module Baykit
           BayLog.info(BayMessage.get(:MSG_RUNNING_GRAND_AGENT, self))
           @select_wakeup_pipe = IO.pipe
           @selector.register(@select_wakeup_pipe[0], Selector::OP_READ)
-          @selector.register(@command_receiver.read_fd, Selector::OP_READ)
+          @selector.register(@command_receiver.communication_channel, Selector::OP_READ)
 
           # Set up unanchorable channel
           for ch in GrandAgent.unanchorable_port_map.keys() do
@@ -175,7 +175,7 @@ module Baykit
                   if ch == @select_wakeup_pipe[0]
                     # Waked up by ask_to_*
                     on_waked_up(ch)
-                  elsif ch == @command_receiver.read_fd
+                  elsif ch == @command_receiver.communication_channel
                     @command_receiver.on_pipe_readable()
                   elsif @accept_handler && @accept_handler.server_socket?(ch)
                     @accept_handler.on_acceptable(ch)
@@ -258,8 +258,8 @@ module Baykit
           IOUtil.write_int32(@select_wakeup_pipe[1], 0)
         end
 
-        def run_command_receiver(recv_fd, send_fd)
-          @command_receiver = CommandReceiver.new(self, recv_fd, send_fd)
+        def run_command_receiver(com_channel)
+          @command_receiver = CommandReceiver.new(self, com_channel)
         end
 
         private

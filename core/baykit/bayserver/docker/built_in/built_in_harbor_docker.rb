@@ -128,11 +128,6 @@ module Baykit
               BayLog.warn(BayMessage.get(:CFG_MAX_SHIPS_IS_TO_SMALL, @max_ships))
             end
 
-            if @multi_core and !SysUtil.support_fork()
-              BayLog.warn(BayMessage.get(:CFG_MULTICORE_NOT_SUPPORTED))
-              @multi_core = false
-            end
-
             if @file_send_method == FILE_SEND_METHOD_SELECT and !SysUtil.support_select_file()
               BayLog.warn(BayMessage.get(:CFG_FILE_SEND_METHOD_SELECT_NOT_SUPPORTED))
               @file_send_method = FILE_SEND_METHOD_TAXI

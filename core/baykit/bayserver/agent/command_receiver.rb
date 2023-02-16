@@ -10,14 +10,12 @@ module Baykit
       class CommandReceiver
         include Baykit::BayServer::Util
         attr :agent
-        attr :read_fd
-        attr :write_fd
+        attr :communication_channel
         attr :aborted
 
-        def initialize(agent, read_fd, write_fd)
+        def initialize(agent, com_ch)
           @agent = agent
-          @read_fd = read_fd
-          @write_fd = write_fd
+          @communication_channel = com_ch
           @aborted = false
         end
 
@@ -26,12 +24,12 @@ module Baykit
         end
 
         def on_pipe_readable()
-          cmd = IOUtil.read_int32(@read_fd)
+          cmd = IOUtil.read_int32(@communication_channel)
           if cmd == nil
-            BayLog.debug("%s pipe closed: %d", self, @read_fd)
+            BayLog.debug("%s pipe closed: %d", self, @communication_channel)
             @agent.abort()
           else
-            BayLog.debug("%s receive command %d pipe=%d", self, cmd, @read_fd)
+            BayLog.debug("%s receive command %d pipe=%d", self, cmd, @communication_channel)
             begin
               case cmd
               when GrandAgent::CMD_RELOAD_CERT
@@ -42,13 +40,13 @@ module Baykit
                 @agent.shutdown()
                 @aborted = true
               when GrandAgent::CMD_ABORT
-                IOUtil.write_int32(@write_fd, GrandAgent::CMD_OK)
+                IOUtil.write_int32(@communication_channel, GrandAgent::CMD_OK)
                 @agent.abort()
                 return
               else
                 BayLog.error("Unknown command: %d", cmd)
               end
-              IOUtil.write_int32(@write_fd, GrandAgent::CMD_OK)
+              IOUtil.write_int32(@communication_channel, GrandAgent::CMD_OK)
             rescue IOError => e
               BayLog.debug("%s Read failed (maybe agent shut down): %s", self, e)
             ensure
@@ -60,7 +58,7 @@ module Baykit
         def end()
           BayLog.debug("%s end", self)
           begin
-            IOUtil.write_int32(@write_fd, GrandAgent::CMD_CLOSE)
+            IOUtil.write_int32(@communication_channel, GrandAgent::CMD_CLOSE)
           rescue => e
             BayLog.error_e(e, "%s Write error", @agent);
           end
@@ -68,8 +66,7 @@ module Baykit
         end
 
         def close()
-          @read_fd.close()
-          @write_fd.close()
+          @communication_channel.close()
         end
 
       end

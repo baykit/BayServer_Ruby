@@ -76,7 +76,7 @@ module Baykit
             @towns.sort! { |dkr1, dkr2| dkr2.name.length <=> dkr1.name.length }
 
             @towns.each do |t|
-              BayLog.info(BayMessage.get(:MSG_SETTING_UP_TOWN, t.name, t.location))
+              BayLog.debug(BayMessage.get(:MSG_SETTING_UP_TOWN, t.name, t.location))
             end
 
             @default_town = BuiltInTownDocker.new

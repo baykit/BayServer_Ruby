@@ -1,3 +1,4 @@
+require 'fcntl'
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/util/io_util'
 
@@ -10,27 +11,23 @@ module Baykit
         class << self
           attr :num_agents
           attr :cur_id
-          attr :anchored_port_map
           attr :monitors
           attr :finale
         end
 
         @num_agents = 0
         @cur_id = 0
-        @anchored_port_map = []
         @monitors = {}
         @finale = false
 
         attr :agent_id
         attr :anchorable
-        attr :send_fd
-        attr :recv_fd
+        attr :communication_channel
 
-        def initialize(agt_id, anchorable, send_fd, recv_fd)
+        def initialize(agt_id, anchorable, com_channel)
           @agent_id = agt_id
           @anchorable = anchorable
-          @send_fd = send_fd
-          @recv_fd = recv_fd
+          @communication_channel = com_channel
         end
 
         def to_s()
@@ -39,7 +36,7 @@ module Baykit
 
         def on_readable()
           begin
-            res = IOUtil.read_int32(@recv_fd)
+            res = IOUtil.read_int32(@communication_channel)
             if res == nil || res == GrandAgent::CMD_CLOSE
               BayLog.debug("%s read Close", self)
               close()
@@ -73,22 +70,20 @@ module Baykit
         end
 
         def send(cmd)
-          BayLog.debug("%s send command %s pipe=%s", self, cmd, @send_fd)
-          IOUtil.write_int32(@send_fd, cmd)
+          BayLog.debug("%s send command %s ch=%s", self, cmd, @communication_channel)
+          IOUtil.write_int32(@communication_channel, cmd)
         end
 
         def close()
-          @send_fd.close()
-          @recv_fd.close()
+          @communication_channel.close()
         end
 
         ########################################
         # Class methods
         ########################################
 
-        def self.init(num_agents, anchored_port_map)
+        def self.init(num_agents)
           @num_agents = num_agents
-          @anchored_port_map = anchored_port_map
           @num_agents.times do
             add(true)
           end
@@ -107,46 +102,31 @@ module Baykit
             new_argv.insert(0, "ruby")
             new_argv << "-agentid=" + agt_id.to_s
 
-            ports = ""
+            server = TCPServer.open("localhost", 0)
+            #BayLog.info("port=%d", server.local_address.ip_port)
+            new_argv << "-monitor_port=" + server.local_address.ip_port.to_s
 
-            no_close_io = {}
-            @anchored_port_map.each_key do |ch|
-              no_close_io[ch] = ch
-              if ports != ""
-                ports +=","
-              end
-              ports += ch.fileno.to_s
-            end
-            new_argv << "-ports=" + ports
+            child = spawn(ENV, new_argv.join(" "))
+            BayLog.debug("Process spawned cmd=%s pid=%d", new_argv, child)
 
-            mon_to_agt_pipe = IO.pipe()
-            agt_to_mon_pipe = IO.pipe()
-            no_close_io[mon_to_agt_pipe[0]] = mon_to_agt_pipe[0]
-            no_close_io[agt_to_mon_pipe[1]] = agt_to_mon_pipe[1]
-            new_argv << "-pipe=" + mon_to_agt_pipe[0].fileno.to_s + "," + agt_to_mon_pipe[1].fileno.to_s
+            client_socket = server.accept()
+            server.close()
 
-            BayLog.info("Process spawned: %s", new_argv.join(" "))
-            child = spawn(ENV, new_argv.join(" "), no_close_io)
-            BayLog.info("Process spawned pid=%d", child)
-
-            mon_to_agt_pipe[0].close
-            agt_to_mon_pipe[1].close
 
             @monitors[agt_id] =
               GrandAgentMonitor.new(
                 agt_id,
                 anchoroable,
-                mon_to_agt_pipe[1],
-                agt_to_mon_pipe[0])
+                client_socket)
 
           else
-            p = IO.pipe()
-            @monitors[agt_id] =
-              GrandAgentMonitor.new(
-                agt_id,
-                anchoroable,
-                mon_to_agt_pipe[1],
-                agt_to_mon_pipe[0])
+            #            p = IO.pipe()
+            #@monitors[agt_id] =
+            #  GrandAgentMonitor.new(
+            #    agt_id,
+            #    anchoroable,
+            #    mon_to_agt_pipe[1],
+            #    agt_to_mon_pipe[0])
           end
 
         end

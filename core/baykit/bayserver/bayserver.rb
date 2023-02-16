@@ -74,8 +74,7 @@ module Baykit
         attr :ractor_local_map
         attr :software_name
         attr :rack_app
-        attr :derived_port_nos
-        attr :derived_pipe_nos
+        attr :monitor_port
       end
 
       def self.get_version
@@ -114,10 +113,8 @@ module Baykit
             log_level = arg[10 .. nil]
           elsif arg.start_with? "-agentid="
             agt_id = arg[9 .. nil].to_i
-          elsif arg.start_with? "-ports="
-            @derived_port_nos = arg[7 .. nil].split(",")
-          elsif arg.start_with? "-pipe="
-            @derived_pipe_nos = arg[6 .. nil].split(",")
+          elsif arg.start_with? "-monitor_port="
+            @monitor_port = arg[14 .. nil].to_i
           end
         end
 
@@ -256,8 +253,8 @@ module Baykit
             pip_to_mon_map = {}
             GrandAgentMonitor.monitors.values.each do |mon|
               BayLog.debug("Monitoring pipe of %s", mon)
-              sel.register(mon.recv_fd, Selector::OP_READ)
-              pip_to_mon_map[mon.recv_fd] = mon
+              sel.register(mon.communication_channel, Selector::OP_READ)
+              pip_to_mon_map[mon.communication_channel] = mon
             end
             server_skt = nil
             if SignalAgent.signal_agent
@@ -283,16 +280,14 @@ module Baykit
         end
       end
 
-      def self.parent_start()
-        anchored_port_map = {}
-        unanchored_port_map = {}
+      def self.open_ports(anchored_port_map, unanchored_port_map)
         @ports.each do |dkr|
           # open port
           adr = dkr.address()
 
           if dkr.anchored
             # Open TCP port
-            BayLog.info(BayMessage.get(:MSG_OPENING_TCP_PORT, dkr.host, dkr.port, dkr.protocol))
+            BayLog.debug(BayMessage.get(:MSG_OPENING_TCP_PORT, dkr.host, dkr.port, dkr.protocol))
 
             if adr.instance_of? String
               adr = Socket.sockaddr_un(adr)
@@ -301,9 +296,9 @@ module Baykit
               adr = Socket.sockaddr_in(adr[0], adr[1])
               skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
             end
-            if not SysUtil.run_on_windows()
+            #if not SysUtil.run_on_windows()
               skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-            end
+            #end
 
             begin
               skt.bind(adr)
@@ -334,8 +329,15 @@ module Baykit
 
           end
         end
+      end
 
+      def self.parent_start()
         if !@harbor.multi_core
+
+          anchored_port_map = {}
+          unanchored_port_map = {}
+          open_ports(anchored_port_map, unanchored_port_map)
+
           GrandAgent.init(
             (1..@harbor.grand_agents).to_a,
             anchored_port_map,
@@ -349,35 +351,17 @@ module Baykit
           end
         end
 
-        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
+        GrandAgentMonitor.init(@harbor.grand_agents)
         SignalAgent.init(@harbor.control_port)
         create_pid_file(Process.pid)
       end
 
       def self.child_start(agt_id)
         anchored_port_map = {}
+        unanchored_port_map = {}
+        open_ports(anchored_port_map, unanchored_port_map)
 
-        @derived_port_nos.each do |no|
-          # Rebuild server socket
-          skt = Socket.for_fd(no.to_i)
-          portDkr = nil
-
-          @ports.each do |p|
-            port = skt.local_address.ip_port
-            if p.port == port
-              portDkr = p
-              break
-            end
-          end
-
-          if portDkr == nil
-            BayLog.fatal("Cannot find port docker: %d", port)
-            exit(1)
-          end
-
-          anchored_port_map[skt] = portDkr
-        end
-
+        skt= TCPSocket.new("localhost", @monitor_port)
 
         GrandAgent.init(
           [agt_id],
@@ -388,9 +372,7 @@ module Baykit
         )
         agt = GrandAgent.get(agt_id)
 
-        recv_fd = IO.for_fd(@derived_pipe_nos[0].to_i)
-        send_fd = IO.for_fd(@derived_pipe_nos[1].to_i)
-        agt.run_command_receiver(recv_fd, send_fd)
+        agt.run_command_receiver(skt)
 
         agt.run()
       end
