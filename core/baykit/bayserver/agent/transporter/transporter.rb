@@ -299,10 +299,15 @@ module Baykit
                 BayLog.debug("%s Try to write: pkt=%s buflen=%d chValid=%s", self, wunit.tag, wunit.buf.length, @ch_valid)
 
                 if @ch_valid && wunit.buf.length > 0
-                  len = write_nonblock(wunit.buf, wunit.adr)
-                  wunit.buf[0, len] = ""
-                  if wunit.buf.length > 0
-                    # Data remains
+                  begin
+                    len = write_nonblock(wunit.buf, wunit.adr)
+                    wunit.buf[0, len] = ""
+                    if wunit.buf.length > 0
+                      # Data remains
+                      break
+                    end
+                  rescue IO::WaitWritable => e
+                    BayLog.debug_e(e, "%s Write will be pended", self)
                     break
                   end
                 end
