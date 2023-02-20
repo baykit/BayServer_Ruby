@@ -112,23 +112,26 @@ module Baykit
             client_socket = server.accept()
             server.close()
 
-
-            @monitors[agt_id] =
-              GrandAgentMonitor.new(
-                agt_id,
-                anchoroable,
-                client_socket)
-
           else
-            #            p = IO.pipe()
-            #@monitors[agt_id] =
-            #  GrandAgentMonitor.new(
-            #    agt_id,
-            #    anchoroable,
-            #    mon_to_agt_pipe[1],
-            #    agt_to_mon_pipe[0])
+
+            pair = Socket.socketpair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+            client_socket = pair[0]
+            GrandAgent.add(agt_id, anchoroable)
+
+            # Agents run on single core (thread mode)
+            Thread.new() do
+              agt = GrandAgent.get(agt_id)
+              agt.run_command_receiver(pair[1])
+              agt.run()
+            end
+
           end
 
+          @monitors[agt_id] =
+            GrandAgentMonitor.new(
+              agt_id,
+              anchoroable,
+              client_socket)
         end
 
         def self.agent_aborted(agt_id, anchorable)

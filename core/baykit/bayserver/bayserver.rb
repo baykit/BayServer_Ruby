@@ -333,7 +333,7 @@ module Baykit
 
       def self.parent_start()
         if !@harbor.multi_core
-
+          # Thread mode
           anchored_port_map = {}
           unanchored_port_map = {}
           open_ports(anchored_port_map, unanchored_port_map)
@@ -348,7 +348,9 @@ module Baykit
           cur_index = 0
           GrandAgent.anchorable_port_map.each do |portMap|
 
+
           end
+          invoke_runners()
         end
 
         GrandAgentMonitor.init(@harbor.grand_agents)
@@ -357,6 +359,9 @@ module Baykit
       end
 
       def self.child_start(agt_id)
+
+        invoke_runners()
+
         anchored_port_map = {}
         unanchored_port_map = {}
         open_ports(anchored_port_map, unanchored_port_map)
@@ -461,6 +466,19 @@ module Baykit
         File.open(BayServer.get_location(@harbor.pid_file), "w") do |f|
           f.write(pid.to_s())
         end
+      end
+
+      #
+      # Run train runners and taxi runners inner process
+      #   ALl the train runners and taxi runners run in each process (not thread)
+      #
+      def self.invoke_runners()
+        n = @harbor.train_runners
+        TrainRunner.init(n)
+
+        n = @harbor.taxi_runners
+        TaxiRunner.init(n)
+
       end
     end
   end

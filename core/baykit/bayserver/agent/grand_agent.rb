@@ -283,14 +283,11 @@ module Baykit
           @max_ships = max_ships
           @multi_core = multi_core
 
-          #if GrandAgent.unanchorable_port_map.length > 0
-          #  add(false)
-          #end
-          agt_ids.each do | agt_id |
-            add(agt_id, true)
+          if(BayServer.harbor.multi_core?)
+            agt_ids.each do | agt_id |
+              add(agt_id, true)
+            end
           end
-
-          invoke_runners()
         end
 
         def GrandAgent.get(agt_id)
@@ -299,7 +296,7 @@ module Baykit
 
         def GrandAgent.get_by_idex(idx)
           agents = @agents.values
-          return agents[idx]
+          return @agents[idx]
         end
 
         def self.add(agt_id, anchorable)
@@ -321,23 +318,6 @@ module Baykit
 
         def GrandAgent.add_lifecycle_listener(lis)
           @listeners.append(lis)
-        end
-
-
-
-
-        private
-        #
-        # Run train runners and taxi runners inner process
-        #   ALl the train runners and taxi runners run in each process (not thread)
-        #
-        def self.invoke_runners()
-          n = BayServer.harbor.train_runners
-          TrainRunner.init(n)
-
-          n = BayServer.harbor.taxi_runners
-          TaxiRunner.init(n)
-
         end
       end
     end
