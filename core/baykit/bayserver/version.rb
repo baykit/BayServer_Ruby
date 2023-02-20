@@ -1,7 +1,7 @@
 module Baykit
   module BayServer
       class Version
-        VERSION='2.0.3'
+        VERSION='2.4.0'
       end
   end
 end
