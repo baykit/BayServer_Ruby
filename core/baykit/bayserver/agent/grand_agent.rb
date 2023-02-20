@@ -247,16 +247,13 @@ module Baykit
                   @spin_handler.stop_timeout_spins()
                 end
 
-              rescue Sink => e
-                raise e
               rescue => e
-                BayLog.error_e(e)
-                break
+                raise e
               end
-            end
+            end # while
 
           rescue => e
-            #@BayServer.error_e(err, null)
+            BayLog.error_e(e)
             raise e
           ensure
             BayLog.info("%s end", self)

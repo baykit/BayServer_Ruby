@@ -219,7 +219,7 @@ module Baykit
                   BayLog.debug("%s EOF", self)
                   eof = true
                 rescue SystemCallError => e
-                  BayLog.error_e(e)
+                  BayLog.debug_e(e, "SystemCall Error")
                   eof = true
                 end
 

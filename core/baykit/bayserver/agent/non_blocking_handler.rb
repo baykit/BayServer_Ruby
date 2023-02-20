@@ -151,11 +151,16 @@ module Baykit
 
             rescue => e
               if e.kind_of? EOFError
-                BayLog.info("%s Socket closed by peer: skt=%s", @agent, ch.inspect)
+                BayLog.debug("%s Socket closed by peer: skt=%s", @agent, ch.inspect)
               elsif e.kind_of? SystemCallError
-                BayLog.info("%s O/S error: %s (skt=%s)", @agent, e.message, ch.inspect)
+                BayLog.debug("%s O/S error: %s (skt=%s)", @agent, e.message, ch.inspect)
+              elsif e.kind_of? IOError
+                BayLog.debug("%s IO error: %s (skt=%s)", @agent, e.message, ch.inspect)
+              elsif e.kind_of? OpenSSL::SSL::SSLError
+                BayLog.debug("%s SSL error: %s (skt=%s)", @agent, e.message, ch.inspect)
               else
-                BayLog.info("%s Unhandled error error: %s (skt=%s)", @agent, e, ch.inspect)
+                BayLog.error("%s Unhandled error error: %s (skt=%s)", @agent, e, ch.inspect)
+                throw e
               end
               # Cannot handle Exception any more
               ch_state.listener.on_error(ch, e)
