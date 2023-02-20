@@ -10,7 +10,6 @@ module Baykit
                 else
                   sprintf(fmt, *args)
                 end)
-          super
         end
       end
     end
