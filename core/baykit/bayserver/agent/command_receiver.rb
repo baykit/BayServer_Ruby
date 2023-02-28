@@ -27,7 +27,7 @@ module Baykit
           cmd = IOUtil.read_int32(@communication_channel)
           if cmd == nil
             BayLog.debug("%s pipe closed: %d", self, @communication_channel)
-            @agent.abort()
+            @agent.abort_agent()
           else
             BayLog.debug("%s receive command %d pipe=%d", self, cmd, @communication_channel)
             begin
