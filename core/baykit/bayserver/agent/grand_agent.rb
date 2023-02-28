@@ -215,7 +215,7 @@ module Baykit
 
         def abort_agent(err = nil, status = 1)
           if err
-            BayLog.fatal("%s end", self)
+            BayLog.fatal("%s abort", self)
             BayLog.fatal_e(err)
           end
 
@@ -292,11 +292,6 @@ module Baykit
 
         def GrandAgent.get(agt_id)
           return @agents[agt_id]
-        end
-
-        def GrandAgent.get_by_idex(idx)
-          agents = @agents.values
-          return @agents[idx]
         end
 
         def self.add(agt_id, anchorable)

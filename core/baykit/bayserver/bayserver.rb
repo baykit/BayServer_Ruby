@@ -345,11 +345,6 @@ module Baykit
             @harbor.max_ships,
             @harbor.multi_core)
 
-          cur_index = 0
-          GrandAgent.anchorable_port_map.each do |portMap|
-
-
-          end
           invoke_runners()
         end
 
