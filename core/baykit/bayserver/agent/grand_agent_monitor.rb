@@ -121,7 +121,12 @@ module Baykit
             #BayLog.info("port=%d", server.local_address.ip_port)
             new_argv << "-monitor_port=" + server.local_address.ip_port.to_s
 
-            child = spawn(ENV, new_argv.join(" "), no_close_io)
+            if SysUtil.run_on_windows()
+              child = spawn(ENV, new_argv.join(" "))
+            else
+              child = spawn(ENV, new_argv.join(" "), no_close_io)
+            end
+
             BayLog.debug("Process spawned cmd=%s pid=%d", new_argv, child)
 
             client_socket = server.accept()

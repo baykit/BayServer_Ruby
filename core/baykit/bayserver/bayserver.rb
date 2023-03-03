@@ -337,9 +337,15 @@ module Baykit
       def self.parent_start()
         anchored_port_map = {}
         unanchored_port_map = {}
-        open_ports(anchored_port_map, unanchored_port_map)
 
-        if !@harbor.multi_core
+
+        if @harbor.multi_core
+          if !SysUtil.run_on_windows()
+            open_ports(anchored_port_map, unanchored_port_map)
+          end
+        else
+          open_ports(anchored_port_map, unanchored_port_map)
+
           # Thread mode
           GrandAgent.init(
             (1..@harbor.grand_agents).to_a,
