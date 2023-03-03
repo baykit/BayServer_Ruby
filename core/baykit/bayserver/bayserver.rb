@@ -74,6 +74,7 @@ module Baykit
         attr :ractor_local_map
         attr :software_name
         attr :rack_app
+        attr :derived_port_nos
         attr :monitor_port
       end
 
@@ -113,6 +114,8 @@ module Baykit
             log_level = arg[10 .. nil]
           elsif arg.start_with? "-agentid="
             agt_id = arg[9 .. nil].to_i
+          elsif arg.start_with? "-ports="
+            @derived_port_nos = arg[7 .. nil].split(",")
           elsif arg.start_with? "-monitor_port="
             @monitor_port = arg[14 .. nil].to_i
           end
@@ -332,12 +335,12 @@ module Baykit
       end
 
       def self.parent_start()
+        anchored_port_map = {}
+        unanchored_port_map = {}
+        open_ports(anchored_port_map, unanchored_port_map)
+
         if !@harbor.multi_core
           # Thread mode
-          anchored_port_map = {}
-          unanchored_port_map = {}
-          open_ports(anchored_port_map, unanchored_port_map)
-
           GrandAgent.init(
             (1..@harbor.grand_agents).to_a,
             anchored_port_map,
@@ -348,7 +351,7 @@ module Baykit
           invoke_runners()
         end
 
-        GrandAgentMonitor.init(@harbor.grand_agents)
+        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
         SignalAgent.init(@harbor.control_port)
         create_pid_file(Process.pid)
       end
@@ -359,7 +362,31 @@ module Baykit
 
         anchored_port_map = {}
         unanchored_port_map = {}
-        open_ports(anchored_port_map, unanchored_port_map)
+
+        if(SysUtil.run_on_windows())
+         open_ports(anchored_port_map, unanchored_port_map)
+        else
+          @derived_port_nos.each do |no|
+            # Rebuild server socket
+            skt = Socket.for_fd(no.to_i)
+            portDkr = nil
+
+            @ports.each do |p|
+              port = skt.local_address.ip_port
+              if p.port == port
+                portDkr = p
+                break
+              end
+            end
+
+            if portDkr == nil
+              BayLog.fatal("Cannot find port docker: %d", port)
+              exit(1)
+            end
+
+            anchored_port_map[skt] = portDkr
+          end
+        end
 
         skt= TCPSocket.new("localhost", @monitor_port)
 

@@ -11,12 +11,14 @@ module Baykit
         class << self
           attr :num_agents
           attr :cur_id
+          attr :anchored_port_map
           attr :monitors
           attr :finale
         end
 
         @num_agents = 0
         @cur_id = 0
+        @anchored_port_map = []
         @monitors = {}
         @finale = false
 
@@ -82,8 +84,9 @@ module Baykit
         # Class methods
         ########################################
 
-        def self.init(num_agents)
+        def self.init(num_agents, anchored_port_map)
           @num_agents = num_agents
+          @anchored_port_map = anchored_port_map
           @num_agents.times do
             add(true)
           end
@@ -102,11 +105,23 @@ module Baykit
             new_argv.insert(0, "ruby")
             new_argv << "-agentid=" + agt_id.to_s
 
+            ports = ""
+
+            no_close_io = {}  # Port list not to close on spawned
+            @anchored_port_map.each_key do |ch|
+              no_close_io[ch] = ch
+              if ports != ""
+                ports +=","
+              end
+              ports += ch.fileno.to_s
+            end
+            new_argv << "-ports=" + ports
+
             server = TCPServer.open("localhost", 0)
             #BayLog.info("port=%d", server.local_address.ip_port)
             new_argv << "-monitor_port=" + server.local_address.ip_port.to_s
 
-            child = spawn(ENV, new_argv.join(" "))
+            child = spawn(ENV, new_argv.join(" "), no_close_io)
             BayLog.debug("Process spawned cmd=%s pid=%d", new_argv, child)
 
             client_socket = server.accept()
