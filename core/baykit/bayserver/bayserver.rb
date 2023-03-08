@@ -307,7 +307,7 @@ module Baykit
               skt.bind(adr)
             rescue SystemCallError => e
               BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
-              return
+              raise e
             end
 
             skt.listen(0)
@@ -326,7 +326,7 @@ module Baykit
               skt.bind(adr)
             rescue SystemCallError => e
               BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
-              return
+              raise e
             end
             unanchored_port_map[skt] = dkr
 
