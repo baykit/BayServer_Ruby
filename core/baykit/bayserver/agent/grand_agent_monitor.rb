@@ -134,7 +134,12 @@ module Baykit
 
           else
 
-            pair = Socket.socketpair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+            if SysUtil::run_on_windows()
+              pair = Socket.socketpair(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+            else
+              pair = Socket.socketpair(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
+            end
+
             client_socket = pair[0]
             GrandAgent.add(agt_id, anchoroable)
 
