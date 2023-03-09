@@ -274,7 +274,7 @@ module Baykit
             skt = @ship.socket
             tur.req.remote_port = nil
             tur.req.remote_address = @req_command.remote_addr
-            tur.req.remote_host_func = lambda { @req_command.remote_host_func }
+            tur.req.remote_host_func = lambda { @req_command.remote_host }
 
             tur.req.server_address = skt.local_address.ip_address
             tur.req.server_port = @req_command.server_port
