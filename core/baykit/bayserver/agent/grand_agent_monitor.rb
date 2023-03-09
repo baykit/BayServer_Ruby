@@ -177,6 +177,39 @@ module Baykit
             end
           end
         end
+
+        def self.reload_cert_all()
+          @monitors.values.each { |mon| mon.reload_cert() }
+        end
+
+        def self.restart_all()
+          old_monitors = @monitors.dup()
+
+          #@agent_count.times {add()}
+
+          old_monitors.values.each { |mon| mon.shutdown() }
+        end
+
+        def self.shutdown_all()
+          @finale = true
+          @monitors.dup().values.each do |mon|
+            mon.shutdown()
+          end
+        end
+
+        def self.abort_all()
+          @finale = true
+          @monitors.dup().values.each do |mon|
+            mon.abort()
+          end
+          exit(1)
+        end
+
+        def self.print_usage_all()
+          @monitors.values.each do |mon|
+            mon.print_usage()
+          end
+        end
       end
     end
   end

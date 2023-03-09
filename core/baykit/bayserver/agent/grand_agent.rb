@@ -58,14 +58,12 @@ module Baykit
         class << self
           attr :agents
           attr :listeners
-          attr :monitors
           attr :agent_count
           attr :anchorable_port_map
           attr :unanchorable_port_map
           attr :max_ships
           attr :max_agent_id
           attr :multi_core
-          attr :finale
         end
 
         # Class variables
@@ -210,7 +208,8 @@ module Baykit
           if @accept_handler != nil
             @accept_handler.shutdown()
           end
-          abort_agent(nil, 0)
+          @aborted = true
+          wakeup()
         end
 
         def abort_agent(err = nil, status = 1)

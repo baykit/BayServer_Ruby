@@ -41,7 +41,7 @@ module Baykit
                 @aborted = true
               when GrandAgent::CMD_ABORT
                 IOUtil.write_int32(@communication_channel, GrandAgent::CMD_OK)
-                @agent.abort()
+                @agent.abort_agent()
                 return
               else
                 BayLog.error("Unknown command: %d", cmd)
