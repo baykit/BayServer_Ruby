@@ -357,8 +357,8 @@ module Baykit
           invoke_runners()
         end
 
-        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
         SignalAgent.init(@harbor.control_port)
+        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
         create_pid_file(Process.pid)
       end
 
