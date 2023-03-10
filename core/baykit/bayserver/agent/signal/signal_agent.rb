@@ -1,6 +1,7 @@
 require 'baykit/bayserver/mem_usage'
 require 'baykit/bayserver/bcf/package'
 
+require 'baykit/bayserver/agent/grand_agent_monitor'
 require 'baykit/bayserver/agent/signal/signal_proxy'
 require 'baykit/bayserver/util/sys_util'
 
@@ -12,6 +13,7 @@ module Baykit
           include Baykit::BayServer
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Agent
           include Baykit::BayServer::Agent::Signal
 
           COMMAND_RELOAD_CERT = "reloadcert"
@@ -97,15 +99,15 @@ module Baykit
             BayLog.debug("handle command: %s", cmd)
             case (cmd.downcase)
             when COMMAND_RELOAD_CERT
-              GrandAgent.reload_cert_all()
+              GrandAgentMonitor::reload_cert_all()
             when COMMAND_MEM_USAGE
-              GrandAgent.print_usage_all()
+              GrandAgentMonitor::print_usage_all()
             when COMMAND_RESTART_AGENTS
-              GrandAgent.restart_all()
+              GrandAgentMonitor::restart_all()
             when COMMAND_SHUTDOWN
-              GrandAgent.shutdown_all()
+              GrandAgentMonitor::shutdown_all()
             when COMMAND_ABORT
-              GrandAgent.abort_all()
+              GrandAgentMonitor::abort_all()
             else
               BayLog.error("Unknown command: %s", cmd)
             end

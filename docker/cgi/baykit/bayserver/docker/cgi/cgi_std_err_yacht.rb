@@ -59,7 +59,8 @@ module Baykit
           end
 
           def check_timeout(duration)
-            raise Sink.new()
+            BayLog.warn("%s invalid timeout check", self)
+            return false
           end
 
           ######################################################

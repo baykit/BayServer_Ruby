@@ -72,7 +72,11 @@ module Baykit
               else
                 # NOT treat EOF as Error
                 BayLog.debug("%s EOF is not an error: tur=%s", self, tur);
-                tur.res.end_content(Tour::TOUR_ID_NOCHECK)
+                begin
+                  tur.res.end_content(Tour::TOUR_ID_NOCHECK)
+                rescue IOError => e
+                  BayLog::debug_e(e, "%s end content error: tur=%s", self, tur);
+                end
               end
             end
 

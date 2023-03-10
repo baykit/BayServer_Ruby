@@ -253,14 +253,9 @@ module Baykit
             now = DateTime.now
             @ch_map.values.each do |ch_state|
               if ch_state.listener != nil
-                begin
-                  duration =  ((now - ch_state.last_access_time) * 86400).to_i
-                  if ch_state.listener.check_timeout(ch_state.channel, duration)
-                    BayLog.debug("%s timeout: skt=%s", @agent, ch_state.channel)
-                    close_list << ch_state
-                  end
-                rescue => e
-                  BayLog.error_e e
+                duration =  ((now - ch_state.last_access_time) * 86400).to_i
+                if ch_state.listener.check_timeout(ch_state.channel, duration)
+                  BayLog.debug("%s timeout: skt=%s", @agent, ch_state.channel)
                   close_list << ch_state
                 end
               end

@@ -4,8 +4,12 @@ module Baykit
       class IOUtil
         def IOUtil.read_int32(io)
           data = "    "
-          dt = io.read_nonblock(4, data)
-          if dt == nil
+          begin
+            dt = io.read_nonblock(4, data)
+            if dt == nil
+              return nil
+            end
+          rescue EOFError => e
             return nil
           end
           data = data.codepoints
