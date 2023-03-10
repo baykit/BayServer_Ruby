@@ -1,5 +1,15 @@
 # BayServer for Ruby
 
+# 2.1.1
+
+- Supports control commands (reload, relodCert, shutdown, abort)
+- Fixes some bugs
+
+# 2.1.0
+
+- Supports multi core mode for Windows
+- Fixes some bugs
+
 # 2.0.4
 
 - Fixes problem on handling admin-ajax.php of WordPress
