@@ -64,6 +64,7 @@ module Baykit
         attr :commandline_args
         attr :bserv_home
         attr :bserv_plan
+        attr :bserv_lib
         attr :my_host_name
         attr :my_host_addr
         attr :dockers
@@ -78,6 +79,18 @@ module Baykit
         attr :monitor_port
       end
 
+      # Initialize class variables
+      @plan_str = nil
+      @my_host_name = nil
+      @my_host_addr = nil
+      @dockers = []
+      @ports = []
+      @harbor = nil
+      @any_city = nil
+      @cities = Cities.new()
+      @ractor_local_map = {}
+      @rack_app = nil
+
       def self.get_version
         return Version::VERSION
       end
@@ -90,6 +103,7 @@ module Baykit
         mkpass = nil
         log_level = nil
         agt_id = -1
+        init = false
 
         args.each do |arg|
           if arg.casecmp? "-start"
@@ -104,6 +118,8 @@ module Baykit
             cmd = SignalAgent::COMMAND_MEM_USAGE
           elsif arg.casecmp? "-abort"
             cmd = SignalAgent::COMMAND_ABORT
+          elsif arg.casecmp? "-init"
+            init = true
           elsif arg.start_with? "-home="
             home = arg[6 .. nil]
           elsif arg.start_with? "-plan="
@@ -126,25 +142,29 @@ module Baykit
           exit 0
         end
 
-        BayServer.init(home, plan, log_level)
+        self.get_home(home)
+        self.get_lib()
 
-        if cmd == nil
-          BayServer.start(agt_id)
-        else
-          SignalSender.new().send_command(cmd)
-        end
-      end
-
-      def self.init(home, plan, log_level=nil)
-
-        # set log level
-        if !log_level
-          log_level = ENV[ENV_BSERV_LOGLEVEL]
-        end
         if StringUtil.set?(log_level)
           BayLog.set_log_level(log_level)
         end
 
+        if(init)
+          self.init()
+        else
+          self.get_plan(plan)
+
+          if cmd == nil
+            BayServer.start(agt_id)
+          else
+            SignalSender.new().send_command(cmd)
+          end
+        end
+
+      end
+
+      # Get BayServer Home
+      def self.get_home(home)
         if home != nil
           @bserv_home = home
         elsif StringUtil.set? ENV[ENV_BSERV_HOME]
@@ -152,20 +172,11 @@ module Baykit
         else
           @bserv_home = '.' if StringUtil.empty?(@bserv_home)
         end
-        BayLog.info "BayServer Home: #{@bserv_home}"
 
-        bserv_lib = ENV[ENV_BSERV_LIB]
-        if StringUtil.empty? bserv_lib
-          bserv_lib = @bserv_home + "../lib"
-        end
-        if File.directory? bserv_lib
-          Dir.foreach(bserv_lib) do |item|
-            if item != '.' && item != '..'
-              load_path = bserv_lib + "/" + item
-              $LOAD_PATH << load_path
-            end
-          end
-        end
+        BayLog.debug "BayServer Home: #{@bserv_home}"
+      end
+
+      def self.get_plan(plan)
 
         if plan != nil
           @bserv_plan = plan
@@ -174,21 +185,21 @@ module Baykit
         else
           @bserv_plan = @bserv_home + '/plan/bayserver.plan' if StringUtil.empty?(@bserv_plan)
         end
-        BayLog.info "BayServer Plan: #{@bserv_plan}"
+        BayLog.debug "BayServer Plan: #{@bserv_plan}"
 
-
-        @plan_str = nil
-        @my_host_name = nil
-        @my_host_addr = nil
-        @dockers = []
-        @ports = []
-        @harbor = nil
-        @any_city = nil
-        @cities = Cities.new()
-        @ractor_local_map = {}
-        @rack_app = nil
       end
 
+      def self.get_lib()
+        @bserv_lib = ENV[ENV_BSERV_LIB]
+        if !File.directory? @bserv_lib
+          raise BayException.new("Library directory is not a directory: %s", @bserv_lib)
+        end
+        BayLog.debug "BayServer Lib: #{@bserv_lib}"
+      end
+
+      def self.init()
+
+      end
 
 
       #
@@ -196,13 +207,13 @@ module Baykit
       #
       def self.start(agt_id)
         begin
-          BayMessage.init(@bserv_home + "/lib/conf/messages", Locale.new('ja', 'JP'))
+          BayMessage.init(@bserv_lib + "/conf/messages", Locale.new('ja', 'JP'))
 
           @dockers = BayDockers.new
-          @dockers.init(@bserv_home + "/lib/conf/dockers.bcf")
+          @dockers.init(@bserv_lib + "/conf/dockers.bcf")
 
-          Mimes.init(@bserv_home + "/lib/conf/mimes.bcf")
-          HttpStatus.init(@bserv_home + "/lib/conf/httpstatus.bcf")
+          Mimes.init(@bserv_lib + "/conf/mimes.bcf")
+          HttpStatus.init(@bserv_lib + "/conf/httpstatus.bcf")
 
           if @bserv_plan != nil
             load_plan(@bserv_plan)
