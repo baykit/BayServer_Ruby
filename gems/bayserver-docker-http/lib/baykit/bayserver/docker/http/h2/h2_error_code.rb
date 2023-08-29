@@ -39,7 +39,7 @@ module Baykit
                 return
               end
 
-              prefix = BayServer.bserv_home + "/lib/conf/h2_messages"
+              prefix = BayServer.bserv_lib + "/conf/h2_messages"
               @msg = H2ErrorCode.new()
               @msg.init(prefix, Locale.new('ja', 'JP'))
             end
