@@ -1,5 +1,7 @@
 @ECHO OFF
 set "RBCMD=C:\Ruby30-x64\bin\ruby.exe"
+set GEM_HOME=%~p0\..\gems
+set SCRIPT=%GEM_HOME%\bin\bayserver
 
 REM 
 REM  Bootstrap script
@@ -12,8 +14,10 @@ for %%f in (%*) do (
   )
 )
 
+
+
 if "%daemon%" == "1" (
-  start %RBCMD%  %~p0\bootstrap.rb %*
+  start %RBCMD% %SCRIPT% %*
 ) else (
-  %RBCMD%  %~p0\bootstrap.rb %*
+  %RBCMD% %SCRIPT% %*
 )
