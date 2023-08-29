@@ -56,6 +56,8 @@ kill ${pid}
 
 cd ${target_dir}
 bin/bayserver.sh -init
+sed -i -e '1s%.*%#!/usr/bin/ruby%' gems/bin/bayserver
+rm gems/bin/bayserver-e
 
 cd /tmp
 tar czf ${target_name}.tgz ${target_name}

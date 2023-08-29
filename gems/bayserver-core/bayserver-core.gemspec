@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'bayserver-core'
-  s.version     = '2.1.1'
+  s.version     = '2.2.0'
   s.date        = '2023-08-29'
   s.summary     = "BayServer core module"
   s.description = "BayServer core module"
