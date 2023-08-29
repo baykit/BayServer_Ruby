@@ -15,7 +15,7 @@ fi
 
 export GEM_HOME=${base}/../gems
 
-cmd=${base}/../gems/bin/bayserver
+cmd="ruby ${base}/../gems/bin/bayserver"
 if [ "$daemon" = 1 ]; then
    ${cmd} $* < /dev/null  > /dev/null 2>&1 &
 else
