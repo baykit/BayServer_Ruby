@@ -9,6 +9,10 @@ for arg in $args; do
   fi
 done
 
+if [ "$BSERV_HOME" == "" ]; then
+  export BSERV_HOME=${base}/..
+fi
+
 export GEM_HOME=${base}/../gems
 
 cmd=${base}/../gems/bin/bayserver
