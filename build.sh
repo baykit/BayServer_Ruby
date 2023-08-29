@@ -26,9 +26,6 @@ target_dir=/tmp/${target_name}
 rm -fr ${target_dir}
 mkdir ${target_dir}
 
-cp -r test/simple/www/root stage/www
-cp -r test/simple/www/cgi-demo stage/www
-cp -r test/simple/www/rack-demo stage/www
 cp -r stage/* ${target_dir}
 cp LICENSE.BAYKIT NEWS.md README.md ${target_dir}
 
