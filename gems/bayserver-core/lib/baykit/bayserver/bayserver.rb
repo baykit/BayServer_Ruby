@@ -198,7 +198,12 @@ module Baykit
       end
 
       def self.init()
-
+        init_dir = @bserv_lib + "/init"
+        BayLog.debug("init directory: %s", init_dir)
+        file_list = Dir.entries(init_dir) - ['.', '..']
+        file_list.each do |file|
+          FileUtils.cp_r(File.join(init_dir, file), @bserv_home)
+        end
       end
 
 

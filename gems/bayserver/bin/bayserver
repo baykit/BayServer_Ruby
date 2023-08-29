@@ -10,8 +10,6 @@ bserv_lib = ENV["BSERV_LIB"]
 if bserv_lib == nil
     bserv_lib = File.dirname(File.dirname(File.expand_path(__FILE__)))
     ENV["BSERV_LIB"] = bserv_lib
-    puts "BSERV_LIB"
-    puts ENV["BSERV_LIB"]
 end
 
 

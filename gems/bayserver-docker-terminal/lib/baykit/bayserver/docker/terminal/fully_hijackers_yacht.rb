@@ -56,7 +56,7 @@ module Baykit
           ######################################################
 
           # Override
-          def notify_read(buf)
+          def notify_read(buf, adr)
             @file_wrote_len += buf.length
 
             BayLog.debug "#{self} read hijack #{buf.length} bytes: total=#{@file_wrote_len}"

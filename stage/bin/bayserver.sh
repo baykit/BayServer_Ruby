@@ -9,8 +9,11 @@ for arg in $args; do
   fi
 done
 
+export GEM_HOME=${base}/../gems
+
+cmd=${base}/../gems/bin/bayserver
 if [ "$daemon" = 1 ]; then
-   ruby $base/bootstrap.rb $* < /dev/null  > /dev/null 2>&1 &
+   ${cmd} $* < /dev/null  > /dev/null 2>&1 &
 else
-   ruby $base/bootstrap.rb $*
+   ${cmd} $*
 fi

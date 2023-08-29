@@ -1,8 +1,6 @@
 #!/bin/bash
 version=`cat VERSION`
 
-
-
 version_file=gems/bayserver-core/lib/baykit/bayserver/version.rb
 temp_version_file=/tmp/version.rb
 sed "s/VERSION=.*/VERSION='${version}'/" ${version_file} > ${temp_version_file}
@@ -16,10 +14,12 @@ for d in *; do
   spec=$d.gemspec
   sed -i -e "s/s\.version.*/s.version     = '$version'/" $spec
   sed -i -e "s/s\.date.*/s.date        = '$today'/" $spec
+  sed -i -e "s/\(s\.add_dependency \"bayserver.*=\)\(.*\)/\1${version}\"/" $spec
   gem build $spec
   cd ..
 done
 popd
+
 
 target_name=BayServer_Ruby-${version}
 target_dir=/tmp/${target_name}
@@ -56,6 +56,9 @@ for name in `ls -r gems`; do
 done
 
 kill ${pid}
+
+cd ${target_dir}
+bin/bayserver.sh -init
 
 cd /tmp
 tar czf ${target_name}.tgz ${target_name}
