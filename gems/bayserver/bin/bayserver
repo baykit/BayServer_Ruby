@@ -1,0 +1,20 @@
+require "pathname"
+
+bserv_home = ENV["BSERV_HOME"]
+if bserv_home == nil
+    bserv_home = "."
+    ENV["BSERV_HOME"] = bserv_home
+end
+
+bserv_lib = ENV["BSERV_LIB"]
+if bserv_lib == nil
+    bserv_lib = File.dirname(File.dirname(File.expand_path(__FILE__)))
+    ENV["BSERV_LIB"] = bserv_lib
+end
+
+
+require 'baykit/bayserver/bayserver'
+
+new_argv = ARGV.dup
+new_argv.insert(0, __FILE__ )
+Baykit::BayServer::BayServer.main new_argv
