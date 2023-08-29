@@ -337,7 +337,7 @@ module Baykit
 
             tur.req.remote_port = @env[CgiUtil::REMOTE_PORT].to_i
             tur.req.remote_address = @env[CgiUtil::REMOTE_ADDR]
-            tur.req.remote_host = TourReq.DefaultRemoteHostResolver.new(tur)
+            tur.req.remote_host_func = lambda { @req_command.remote_host }
 
             tur.req.server_name = @env[CgiUtil::SERVER_NAME]
             tur.req.server_address = @env[CgiUtil::SERVER_ADDR]
