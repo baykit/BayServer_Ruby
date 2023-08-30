@@ -344,6 +344,13 @@ module Baykit
             ch_state.access
           end
 
+          def close_all()
+            @ch_map.keys().each do |ch|
+              st = find_channel_state(ch)
+              close_channel(ch, st)
+            end
+          end
+
 
           private
 
