@@ -1,7 +1,7 @@
 @ECHO OFF
 set "RBCMD=C:\Ruby30-x64\bin\ruby.exe"
 set GEM_HOME=%~p0\..\gems
-set SCRIPT=%GEM_HOME%\bin\bayserver
+set SCRIPT=%GEM_HOME%\bin\bayserver_rb
 
 REM 
 REM  Bootstrap script

@@ -44,7 +44,7 @@ done
 pushd .
 cd ${target_dir}
 echo "****** Local Install gem: bayserver ******"
-gem install -s http://localhost:9292 bayserver --install-dir=gems
+gem install -s http://localhost:9292 bayserver:${version} --install-dir=gems
 popd
 
 for name in `ls -r gems`; do
@@ -56,8 +56,8 @@ kill ${pid}
 
 cd ${target_dir}
 bin/bayserver.sh -init
-sed -i -e '1s%.*%#!/usr/bin/ruby%' gems/bin/bayserver
-rm gems/bin/bayserver-e
+sed -i -e '1s%.*%#!/usr/bin/ruby%' gems/bin/bayserver_rb
+rm gems/bin/bayserver_rb-e
 
 cd /tmp
 tar czf ${target_name}.tgz ${target_name}
