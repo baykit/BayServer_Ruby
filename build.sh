@@ -11,10 +11,9 @@ cd gems
 today=$(date +%Y-%m-%d)
 for d in *; do
   cd $d
+  cp ../../LICENSE.* ../../README.* .
   spec=$d.gemspec
-  sed -i -e "s/s\.version.*/s.version     = '$version'/" $spec
-  sed -i -e "s/s\.date.*/s.date        = '$today'/" $spec
-  sed -i -e "s/\(s\.add_dependency \"bayserver.*=\)\(.*\)/\1${version}\"/" $spec
+  sed -e "s/\\\${VERSION}/${version}/" -e "s/\\\${DATE}/${today}/" ${spec}.template > ${spec}
   gem build $spec
   cd ..
 done

@@ -1,0 +1,21 @@
+Gem::Specification.new do |s|
+  s.name        = 'bayserver'
+  s.version     = '${VERSION}'
+  s.date        = '${DATE}'
+  s.summary     = "BayServer"
+  s.description = "BayServer"
+  s.authors     = ["Michisuke-P"]
+  s.email       = 'michisukep@gmail.com'
+  s.homepage    = 'https://baykit.yokohama'
+  s.license     = 'MIT'
+  s.executables = ['bayserver_rb']
+  s.files       = Dir["LICENSE.BAYKIT", "README.md", "conf/**/*", "init/**/*"]
+  s.add_dependency "bayserver-core", "=${VERSION}"
+  s.add_dependency "bayserver-docker-ajp", "=${VERSION}"
+  s.add_dependency "bayserver-docker-cgi", "=${VERSION}"
+  s.add_dependency "bayserver-docker-fcgi", "=${VERSION}"
+  s.add_dependency "bayserver-docker-http", "=${VERSION}"
+  s.add_dependency "bayserver-docker-terminal", "=${VERSION}"
+  s.add_dependency "bayserver-docker-wordpress", "=${VERSION}"
+end
+
