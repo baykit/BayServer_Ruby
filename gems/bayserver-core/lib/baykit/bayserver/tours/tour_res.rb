@@ -225,7 +225,7 @@ module Baykit
           end
 
           begin
-            @tour.ship.send_end_tour(@tour.ship_id, chk_tour_id, @tour, &done_lis)
+            @tour.ship.send_end_tour(@tour.ship_id, @tour, &done_lis)
           rescue IOError => e
             done_lis.call()
             raise e

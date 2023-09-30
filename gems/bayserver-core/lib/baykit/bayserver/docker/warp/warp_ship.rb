@@ -83,8 +83,13 @@ module Baykit
 
           def end_warp_tour(tur)
             wdat = WarpData.get(tur)
-            BayLog.debug("%s end: started=%s ended=%s", tur, wdat.started, wdat.ended)
-            @tour_map.delete wdat.warp_id
+            BayLog.debug("%s end warp tour: started=%s ended=%s", tur, wdat.started, wdat.ended)
+
+            if(!@tour_map.include?(wdat.warp_id))
+              raise Sink.new("%s WarpId not in tourMap: %d", tur, wdat.warp_id);
+            else
+              @tour_map.delete wdat.warp_id
+            end
             @docker.keep_ship(self)
           end
 

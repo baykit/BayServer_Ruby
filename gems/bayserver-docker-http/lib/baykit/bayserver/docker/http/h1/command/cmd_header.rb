@@ -157,7 +157,10 @@ module Baykit
                 end
 
                 if state == STATE_READ_FIRST_LINE
-                  raise RuntimeError.new("Invalid HTTP header format")
+                  raise ProtocolException.new(
+                    BayMessage.get(
+                      :HTP_INVALID_HEADER_FORMAT,
+                      pkt.buf[line_start_pos, line_len]))
                 end
               end
 

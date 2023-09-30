@@ -10,6 +10,7 @@ module Baykit
 
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Tours
+          include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Util
 
           # class variables
@@ -165,7 +166,7 @@ module Baykit
             if tur.zombie? || tur.aborted?
               # Don't send peer any data
               BayLog::debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, tur, tur.state)
-              tur.change_state(check_id, TourState::ENDED)
+              tur.change_state(Tour::TOUR_ID_NOCHECK, TourState::ENDED)
               if callback != nil
                 callback.call()
               end
@@ -174,8 +175,8 @@ module Baykit
 
             max_len = @protocol_handler.max_res_packet_data_size();
             if len > max_len
-              send_res_content(Tour::TOUR_ID_NOCHECK, tur, bytes, ofs, max_len)
-              send_res_content(Tour::TOUR_ID_NOCHECK, tur, bytes, ofs + max_len, len - max_len, &callback)
+              send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs, max_len)
+              send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs + max_len, len - max_len, &callback)
             else
               begin
                 @protocol_handler.send_res_content(tur, bytes, ofs, len, &callback)
@@ -187,7 +188,7 @@ module Baykit
             end
           end
 
-          def send_end_tour(chk_ship_id, chk_tour_id, tur, &callback)
+          def send_end_tour(chk_ship_id, tur, &callback)
             @lock.synchronize do
               check_ship_id(chk_ship_id)
               BayLog.debug("%s sendEndTour: %s state=%s", self, tur, tur.state)
@@ -195,7 +196,7 @@ module Baykit
               if tur.zombie? || tur.aborted?
                 # Don't send peer any data. Do nothing
                 BayLog.debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, tur, tur.state)
-                tur.change_state(chk_tour_id, Tour::TourState::ENDED)
+                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
                 callback.call()
               else
                 if !tur.valid?
@@ -216,7 +217,7 @@ module Baykit
                   end
                 end
 
-                tur.change_state(chk_tour_id, Tour::TourState::ENDED)
+                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
 
                 @protocol_handler.send_end_tour(tur, keep_alive, &callback)
               end

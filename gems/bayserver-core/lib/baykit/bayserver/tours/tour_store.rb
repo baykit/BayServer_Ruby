@@ -65,6 +65,7 @@ module Baykit
               tur = @free_tours.delete_at(@free_tours.length - 1)
             else
               if !force && (@active_tour_map.length >= TourStore.max_count)
+                BayLog.warn("Max tour count reached")
                 return nil
               else
                 tur = Tour.new()

@@ -186,9 +186,6 @@ module Baykit
               end
 
               tur = @ship.get_tour(@cur_req_id)
-              @cur_tour = tur
-              @cur_tour_id = tur.id()
-              @cur_req_id += 1
 
               if tur == nil
                 BayLog.error(BayMessage.get(:INT_NO_MORE_TOURS))
@@ -197,6 +194,10 @@ module Baykit
                 @ship.agent.shutdown(false)
                 return NextSocketAction::CONTINUE
               end
+
+              @cur_tour = tur
+              @cur_tour_id = tur.id()
+              @cur_req_id += 1
 
               @ship.keeping = false
 
