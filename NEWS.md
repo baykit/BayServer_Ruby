@@ -1,6 +1,11 @@
 # BayServer for Ruby
 
+# 2.2.2
+
+- Fixes some bugs
+
 # 2.2.1
+
 - Implements unimplemented methods when aborting grand agent
 - Adds license and readme to each gem
 - Changes startup script from bayserver to bayserver_rb
