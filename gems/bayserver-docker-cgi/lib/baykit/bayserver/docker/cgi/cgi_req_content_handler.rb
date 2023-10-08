@@ -110,12 +110,12 @@ module Baykit
           end
 
           def process_finished()
+            BayLog.debug("%s CGI Process finished: pid=%s", @tour, @pid)
+
             pid, stat = Process.wait2(@pid)
+            print(stat)
 
             BayLog.debug("%s CGI Process finished: pid=%s code=%s", @tour, pid, stat.exitstatus)
-            if pid == nil
-              BayLog.error("Process not finished: %d", @pid)
-            end
 
             begin
               if stat.exitstatus != 0

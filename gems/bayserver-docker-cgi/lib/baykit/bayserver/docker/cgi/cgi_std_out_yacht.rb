@@ -19,6 +19,8 @@ module Baykit
 
           attr :remain
           attr :header_reading
+          attr :timeout_sec
+          attr :pid
 
           def initialize
             super
@@ -39,6 +41,8 @@ module Baykit
             @tour_id = 0
             @header_reading = true
             @remain = ""
+            @timeout_sec = 0
+            @pid = 0
           end
 
           ######################################################
@@ -121,17 +125,26 @@ module Baykit
           end
 
           def notify_eof()
-            BayLog.debug("%s CGI StdOut: EOF(^o^)", self)
+            BayLog.debug("%s stdout EOF(^o^)", @tour)
             return NextSocketAction::CLOSE
           end
 
           def notify_close()
-            BayLog.debug("%s CGI StdOut: notifyClose", self)
+            BayLog.debug("%s stdout notifyClose", @tour)
             @tour.req.content_handler.std_out_closed()
           end
 
-          def check_timeout(duration)
-            BayLog.warn("%s invalid timeout check", self)
+          def check_timeout(duration_sec)
+            BayLog.debug("%s Check StdOut timeout: dur=%d, timeout=%d", @tour, duration_sec, @timeout_sec);
+
+            if @timeout_sec <= 0
+              BayLog.debug("%s invalid timeout check", @tour)
+            elsif duration_sec > @timeout_sec
+              # Kill cgi process instead of handing timeout
+              BayLog.warn("%s Kill process!: %d", @tour, @pid)
+              Process.kill("KILL", @pid)
+              return true
+            end
             return false
           end
 
@@ -139,8 +152,10 @@ module Baykit
           # Custom methods
           ######################################################
 
-          def init(tur, valve)
+          def init(tur, valve, timeout_sec, pid)
             init_yacht()
+            @timeout_sec = timeout_sec
+            @pid = pid
             @tour = tur
             @tour_id = tur.tour_id
             tur.res.set_consume_listener do |len, resume|

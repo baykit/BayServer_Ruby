@@ -29,11 +29,12 @@ module Baykit
           include Baykit::BayServer::Taxi
 
           DEFAULT_PROC_READ_METHOD = Harbor::FILE_SEND_METHOD_TAXI
-          DEFAULT_TIMEOUT_SEC = 60
+          DEFAULT_TIMEOUT_SEC = 0
 
           attr :interpreter
           attr :script_base
           attr :doc_root
+          attr :timeout_sec
 
           # Method to read stdin/stderr
           attr :proc_read_method
@@ -93,12 +94,13 @@ module Baykit
               when "taxi"
                 @proc_read_method = Harbor::FILE_SEND_METHOD_TAXI
 
-              when "timeout"
-                @timeout_sec = int(kv.value)
-
               else
                 raise ConfigException.new(kv.file_name, kv.line_no, BayMessage.get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
               end
+
+            when "timeout"
+              @timeout_sec = kv.value.to_i
+
             else
               return super
             end
@@ -159,12 +161,12 @@ module Baykit
             case(@proc_read_method)
             when Harbor::FILE_SEND_METHOD_SELECT
               out_tp = PlainTransporter.new(false, bufsize)
-              out_yat.init(tur, out_tp)
+              out_yat.init(tur, out_tp, @timeout_sec, handler.pid)
               out_tp.init(tur.ship.agent.non_blocking_handler, handler.std_out[0], out_yat)
               out_tp.open_valve()
 
               err_tp = PlainTransporter.new(false, bufsize)
-              err_yat.init(tur)
+              err_yat.init(tur, @timeout_sec)
               err_tp.init(tur.ship.agent.non_blocking_handler, handler.std_err[0], err_yat)
               err_tp.open_valve()
 
@@ -181,25 +183,25 @@ module Baykit
               end
 
               out_tp = SpinReadTransporter.new(bufsize)
-              out_yat.init(tur, out_tp)
+              out_yat.init(tur, out_tp, @timeout_sec, handler.pid)
               out_tp.init(tur.ship.agent.spin_handler, out_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
               out_tp.open_valve()
 
               err_tp = SpinReadTransporter.new(bufsize)
-              err_yat.init(tur)
+              err_yat.init(tur, @timeout_sec)
               err_tp.init(tur.ship.agent.spin_handler, err_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
               err_tp.open_valve()
 
             when Harbor::FILE_SEND_METHOD_TAXI
               out_txi = ReadFileTaxi.new(bufsize)
-              out_yat.init(tur, out_txi)
+              out_yat.init(tur, out_txi, @timeout_sec, handler.pid)
               out_txi.init(handler.std_out[0], out_yat)
               if !TaxiRunner.post(out_txi)
                 raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")
               end
 
               err_txi = ReadFileTaxi.new(bufsize)
-              err_yat.init(tur)
+              err_yat.init(tur, @timeout_sec)
               err_txi.init(handler.std_err[0], err_yat)
               if !TaxiRunner.post(err_txi)
                 raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")

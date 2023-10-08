@@ -14,6 +14,7 @@ module Baykit
 
           attr :tour
           attr :tour_id
+          attr :timeout_sec
 
           def initialize
             super
@@ -31,6 +32,7 @@ module Baykit
           def reset()
             @tour = nil
             @tour_id = 0
+            @timeout_sec = 0
           end
 
           ######################################################
@@ -49,28 +51,35 @@ module Baykit
           end
 
           def notify_eof()
-            BayLog.debug("%s CGI StdErr: EOF\\(^o^)/", self)
+            BayLog.debug("%s stderr EOF\\(^o^)/", @tour)
             return NextSocketAction::CLOSE
           end
 
           def notify_close()
-            BayLog.debug("%s CGI StdErr: notifyClose", self)
+            BayLog.debug("%s stderr notifyClose", @tour)
             @tour.req.content_handler.std_err_closed()
           end
 
-          def check_timeout(duration)
-            BayLog.warn("%s invalid timeout check", self)
-            return false
+          def check_timeout(duration_sec)
+            BayLog.debug("%s stderr Check timeout: dur=%d, timeout=%d", @tour, duration_sec, @timeout_sec);
+            if @timeout_sec <= 0
+              BayLog.debug("%s invalid timeout check", @tour)
+              return false
+            else
+              return duration_sec > @timeout_sec
+            end
+
           end
 
           ######################################################
           # Custom methods
           ######################################################
 
-          def init(tur)
+          def init(tur, timeout_sec)
             init_yacht()
             @tour = tur
             @tour_id = tur.tour_id
+            @timeout_sec = timeout_sec
           end
         end
       end
