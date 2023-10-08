@@ -255,7 +255,7 @@ module Baykit
               if ch_state.listener != nil
                 duration =  ((now - ch_state.last_access_time) * 86400).to_i
                 if ch_state.listener.check_timeout(ch_state.channel, duration)
-                  BayLog.debug("%s timeout: skt=%s", @agent, ch_state.channel)
+                  BayLog.debug("%s timeout: ch=%s", @agent, ch_state.channel)
                   close_list << ch_state
                 end
               end
@@ -379,9 +379,12 @@ module Baykit
           def close_channel(ch, ch_state)
             BayLog.debug("%s Close chState=%s", @agent, ch_state)
 
+            ch.close()
+
             if ch_state == nil
               ch_state = find_channel_state(ch)
             end
+
             if ch_state.accepted and @agent.accept_handler
               agent.accept_handler.on_closed
             end
@@ -398,7 +401,6 @@ module Baykit
               BayLog.warn_e(e)
             end
 
-            ch.close()
           end
 
           def add_channel_state(ch, ch_state)
