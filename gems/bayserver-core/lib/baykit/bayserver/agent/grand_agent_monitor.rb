@@ -74,6 +74,7 @@ module Baykit
         def send(cmd)
           BayLog.debug("%s send command %s ch=%s", self, cmd, @communication_channel)
           IOUtil.write_int32(@communication_channel, cmd)
+          sleep(0.5)
         end
 
         def close()

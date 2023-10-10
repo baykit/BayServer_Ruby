@@ -1,4 +1,5 @@
 require 'socket'
+require 'objspace'
 
 require 'baykit/bayserver/sink'
 require 'baykit/bayserver/agent/accept_handler'
@@ -248,8 +249,15 @@ module Baykit
 
         def print_usage()
           # print memory usage
-          BayLog.info("Agent#%d MemUsage", @agent_id);
-          MemUsage.get(@agent_id).print_usage(1);
+          BayLog.info("%s MemUsage", self)
+          BayLog.info("  Ruby version: %s", RUBY_VERSION)
+          memsize = ObjectSpace.memsize_of_all
+          # formatted by comma
+          msize_comma = memsize.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse.then do |str|
+            str[0] == ',' ? str[1..-1] : str
+          end
+          BayLog.info("  Total object size: %s bytes", msize_comma)
+          MemUsage.get(@agent_id).print_usage(1)
         end
 
         def wakeup
