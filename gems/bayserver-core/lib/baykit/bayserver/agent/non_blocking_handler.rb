@@ -11,6 +11,7 @@ module Baykit
         #   Sockets or file descriptors are kinds of channel
         #
         class NonBlockingHandler
+          include Baykit::BayServer::Agent::TimerHandler # implements
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Util
 
@@ -78,12 +79,26 @@ module Baykit
             @ch_count = 0
             @operations = []
             @operations_lock = Monitor.new()
+
+            @agent.add_timer_handler(self)
           end
 
 
           def to_s()
             return @agent.to_s()
           end
+
+          ######################################################
+          # Implements TimerHandler
+          ######################################################
+
+          def on_timer()
+            self.close_timeout_sockets()
+          end
+
+          ######################################################
+          # Custom methods
+          ######################################################
 
           def handle_channel(ch, op)
 
@@ -106,8 +121,15 @@ module Baykit
                 next_action = ch_state.listener.on_connectable(ch)
                 if next_action == nil
                   raise Sink.new("unknown next action")
-                elsif next_action == NextSocketAction::CONTINUE
-                  ask_to_read(ch)
+                elsif next_action == NextSocketAction::READ
+                  # "Write-OP Off"
+                  op = @agent.selector.get_op(ch)
+                  op = op & ~Selector::OP_WRITE
+                  if op == 0
+                    @agent.selector.unregister(ch)
+                  else
+                    @agent.selector.modify(ch, op)
+                  end
                 end
 
               else
@@ -253,9 +275,14 @@ module Baykit
             now = DateTime.now
             @ch_map.values.each do |ch_state|
               if ch_state.listener != nil
-                duration =  ((now - ch_state.last_access_time) * 86400).to_i
-                if ch_state.listener.check_timeout(ch_state.channel, duration)
-                  BayLog.debug("%s timeout: ch=%s", @agent, ch_state.channel)
+                begin
+                  duration =  ((now - ch_state.last_access_time) * 86400).to_i
+                  if ch_state.listener.check_timeout(ch_state.channel, duration)
+                    BayLog.debug("%s timeout: ch=%s", @agent, ch_state.channel)
+                    close_list << ch_state
+                  end
+                rescue IOError => e
+                  BayLog.error_e(e)
                   close_list << ch_state
                 end
               end
@@ -283,7 +310,7 @@ module Baykit
 
           def ask_to_connect(ch, addr)
             ch_state = find_channel_state(ch)
-            BayLog.debug("%s askToConnect addr=%s skt=%s chState=%s", @agent, addr, ch, ch_state)
+            BayLog.debug("%s askToConnect addr=%s skt=%s chState=%s", @agent, addr.ip_address, ch, ch_state)
 
             begin
               ch.connect_nonblock(addr)
@@ -292,7 +319,7 @@ module Baykit
             end
 
             ch_state.connecting = true
-            add_operation(ch, Selector::OP_READ, true)
+            add_operation(ch, Selector::OP_WRITE, true)
           end
 
           def ask_to_read(ch)

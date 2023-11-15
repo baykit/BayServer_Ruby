@@ -23,12 +23,14 @@ module Baykit
         attr :buf_size
         attr :running
         attr :lock
+        attr :agent_id
 
-        def initialize(buf_size)
+        def initialize(agt_id, buf_size)
           super()
           @buf_size = buf_size
           @buf = StringUtil.alloc(buf_size)
           @lock = Monitor.new()
+          @agent_id = agt_id
         end
 
         def to_s()
@@ -88,7 +90,7 @@ module Baykit
             return
           end
           @running = true
-          TaxiRunner.post(self)
+          TaxiRunner.post(@agent_id, self)
         end
 
         def close()

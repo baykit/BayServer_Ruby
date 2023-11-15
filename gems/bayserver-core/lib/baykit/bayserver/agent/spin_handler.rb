@@ -1,8 +1,11 @@
+require 'baykit/bayserver/agent/timer_handler'
 
 module Baykit
   module BayServer
     module Agent
       class SpinHandler
+
+        include Baykit::BayServer::Agent::TimerHandler # implements
 
         module SpinListener
           #
@@ -35,12 +38,25 @@ module Baykit
           @lock = Mutex.new
           @agent = agt
           @spin_count = 0
+          @agent.add_timer_handler(self)
         end
 
         def to_s()
           return @agent.to_s()
         end
 
+        ######################################################
+        # Implements TimerHandler
+        ######################################################
+
+        def on_timer()
+          stop_timeout_spins()
+        end
+
+        ######################################################
+        # Custom methods
+        ######################################################
+        #
         def process_data()
           if @listeners.empty?
             return false

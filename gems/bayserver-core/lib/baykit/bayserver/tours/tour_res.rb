@@ -47,11 +47,13 @@ module Baykit
         attr :bytes_consumed
         attr :bytes_limit
         attr :buffer_size
+        attr :tour_returned
 
         def initialize(tur)
           @headers = Headers.new()
           @tour = tur
           @buffer_size = BayServer.harbor.tour_buffer_size
+          @tour_returned = false
         end
 
         def init()
@@ -82,6 +84,7 @@ module Baykit
           @bytes_posted = 0
           @bytes_consumed = 0
           @bytes_limit = 0
+          @tour_returned = false
         end
 
         ######################################################
@@ -121,8 +124,16 @@ module Baykit
             end
           end
 
-          @tour.ship.send_headers(@tour.ship_id, @tour)
-          @header_sent = true
+          begin
+            @tour.ship.send_headers(@tour.ship_id, @tour)
+          rescue IOError => e
+            BayLog.debug_e(e, "%s abort: %s", @tour, e)
+            @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+            raise e
+          ensure
+            @header_sent = true
+          end
+
         end
 
         def send_redirect(chk_tour_id, status, location)
@@ -132,9 +143,15 @@ module Baykit
             BayLog.error("Try to redirect after response header is sent (Ignore)")
           else
             set_consume_listener(&ContentConsumeListener::DEV_NULL)
-            @tour.ship.send_redirect(@tour.ship_id, @tour, status, location)
-            @header_sent = true
-            end_content(chk_tour_id)
+            begin
+              @tour.ship.send_redirect(@tour.ship_id, @tour, status, location)
+            rescue IOError => e
+              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+              raise e
+            ensure
+              @header_sent = true
+              end_content(chk_tour_id)
+            end
           end
 
         end
@@ -176,14 +193,21 @@ module Baykit
             raise ProtocolException.new("Post data exceed content-length: " + @bytes_posted + "/" + @bytes_limit)
           end
 
-          if @can_compress
-            get_compressor().compress(buf, ofs, len, &done_lis)
+          if @tour.zombie? || @tour.aborted?
+            # Don't send peer any data
+            BayLog::debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, @tour, @tour.state)
+            done_lis.call()
           else
-            begin
-              @tour.ship.send_res_content(@tour.ship_id, @tour, buf, ofs, len, &done_lis)
-            rescue IOError => e
-              done_lis.call()
-              raise e
+            if @can_compress
+              get_compressor().compress(buf, ofs, len, &done_lis)
+            else
+              begin
+                @tour.ship.send_res_content(@tour.ship_id, @tour, buf, ofs, len, &done_lis)
+              rescue IOError => e
+                done_lis.call()
+                @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+                raise e
+              end
             end
           end
 
@@ -208,6 +232,10 @@ module Baykit
           @tour.check_tour_id(chk_tour_id)
 
           BayLog.debug("%s end ResContent", self)
+          if @tour.ended?
+            BayLog.debug("%s Tour is already ended (Ignore).", self)
+            return
+          end
 
           if !@tour.zombie? && @tour.city != nil
             @tour.city.log(@tour)
@@ -221,14 +249,31 @@ module Baykit
 
           # Done listener
           done_lis = Proc.new() do
+            @tour.check_tour_id(chk_tour_id)
             @tour.ship.return_tour(@tour)
+            @tour_returned = true
           end
 
           begin
-            @tour.ship.send_end_tour(@tour.ship_id, @tour, &done_lis)
-          rescue IOError => e
-            done_lis.call()
-            raise e
+            if @tour.zombie? || @tour.aborted?
+              # Don't send peer any data. Do nothing
+              BayLog.debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, @tour, @tour.state)
+              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
+              done_lis.call()
+            else
+              begin
+                @tour.ship.send_end_tour(@tour.ship_id, @tour, &done_lis)
+              rescue IOError => e
+                BayLog.debug("%s Error on sending end tour", self)
+                done_lis.call()
+                raise e
+              end
+            end
+          ensure
+            BayLog.debug("%s Tour is returned: %s", self, @tour_returned)
+            if !@tour_returned
+              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
+            end
           end
         end
 
@@ -288,8 +333,19 @@ module Baykit
             end
           else
             set_consume_listener(&ContentConsumeListener::DEV_NULL)
-            @tour.ship.send_error(@tour.ship_id, @tour, status, msg, err)
-            @header_sent = true
+
+            if @tour.zombie? || @tour.aborted?
+              # Don't send peer any data. Do nothing
+              BayLog.debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, @tour, @tour.state)
+            else
+              begin
+                @tour.ship.send_error(@tour.ship_id, @tour, status, msg, err)
+              rescue IOError => e
+                BayLog.debug("%s Error on sending end tour", self)
+                @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+              end
+              @header_sent = true
+            end
           end
 
           end_content(chk_tour_id)
@@ -306,7 +362,7 @@ module Baykit
 
           if File.directory?(file)
             raise HttpException.new HttpStatus::FORBIDDEN, file
-          elsif !File.exists?(file)
+          elsif !File.exist?(file)
             raise HttpException.new HttpStatus::NOT_FOUND, file
           end
 
@@ -357,11 +413,11 @@ module Baykit
                 tp.open_valve()
 
               when Harbor::FILE_SEND_METHOD_TAXI
-                txi = ReadFileTaxi.new(bufsize)
+                txi = ReadFileTaxi.new(@tour.ship.agent.agent_id, bufsize)
                 @yacht.init(@tour, file, txi)
                 txi.init(File.open(file, "rb"), @yacht)
-                if !TaxiRunner.post(txi)
-                  raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!");
+                if !TaxiRunner.post(@tour.ship.agent.agent_id, txi)
+                  raise HttpException.new(HttpStatus::SERVICE_UNAVAILABLE, "Taxi is busy!");
                 end
 
               else
@@ -382,9 +438,18 @@ module Baykit
 
         def get_compressor()
           if @compressor == nil
-            @compressor = GzipCompressor.new(lambda do |new_buf, new_ofs, new_len, &lis|
-              @tour.ship.send_res_content(@tour.ship_id, @tour, new_buf, new_ofs, new_len, &lis)
-            end)
+            sip_id = @tour.ship.ship_id
+            tur_id = @tour.tour_id
+            gz_callback = lambda do |new_buf, new_ofs, new_len, &lis|
+              begin
+                @tour.ship.send_res_content(sip_id, @tour, new_buf, new_ofs, new_len, &lis)
+              rescue IOError => e
+                @tour.change_state(tur_id, Tour::TourState::ABORTED)
+                raise e
+              end
+            end
+
+            @compressor = GzipCompressor.new(gz_callback)
           end
 
           return @compressor

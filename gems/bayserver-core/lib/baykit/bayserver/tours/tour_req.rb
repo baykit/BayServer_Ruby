@@ -125,34 +125,33 @@ module Baykit
         def post_content(check_id, data, start, len)
           @tour.check_tour_id(check_id)
 
+          data_passed = false
           if !@tour.running?
             BayLog.debug("%s tour is not running.", @tour)
-            return true
-          end
 
-          if @content_handler == nil
+          elsif @content_handler == nil
             BayLog.warn("%s content read, but no content handler", tour)
-            return true
-          end
 
-          if @consume_listener == nil
+          elsif @consume_listener == nil
             raise Sink.new("Request consume listener is null")
-          end
 
-          if @bytes_posted + len > @bytes_limit
+          elsif @bytes_posted + len > @bytes_limit
             raise ProtocolException.new("Read data exceed content-length: %d/%d", @bytes_posted + len, @bytes_limit)
-          end
 
-          # If has error, only read content. (Do not call content handler)
-          if @tour.error == nil
+          elsif  @tour.error != nil
+            # If has error, only read content. (Do not call content handler)
+            BayLog.debug("%s tour has error.", @tour)
+
+          else
             @content_handler.on_read_content(@tour, data, start, len)
+            data_passed = true
           end
-          @bytes_posted += len
 
+          @bytes_posted += len
           BayLog.debug("%s read content: len=%d posted=%d limit=%d consumed=%d",
                        @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
 
-          if @tour.error == nil
+          if !data_passed
             return true
           end
 

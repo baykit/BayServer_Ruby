@@ -23,9 +23,9 @@ module Baykit
           def run
             while true
               tsk = @que.deq
-              #BayLog.debug("%s Start task on: %s", tsk, @name)
+              BayLog.debug("%s Start task on: %s", tsk, @name)
               tsk.run
-              #BayLog.debug("%s End task on: %s", tsk, @name)
+              BayLog.debug("%s End task on: %s", tsk, @name)
             end
           end
 

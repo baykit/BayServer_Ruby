@@ -28,11 +28,14 @@ module Baykit
           attr :std_err
           attr :std_out_closed
           attr :std_err_closed
+          attr :last_access
 
           def initialize(cgi_docker, tur)
             @cgi_docker = cgi_docker
             @tour = tur
             @tour_id = tur.tour_id
+            @std_out_closed = true
+            @std_err_closed = true
           end
 
           ######################################################
@@ -45,10 +48,12 @@ module Baykit
             wrote_len = @std_in[1].write(buf[start, len])
             BayLog.debug("%s CGI:onReadReqContent: wrote=%d", tur, wrote_len)
             tur.req.consumed(Tour::TOUR_ID_NOCHECK, len)
+            access()
           end
 
           def on_end_content(tur)
             BayLog.trace("%s CGI:endReqContent", tur)
+            access()
           end
 
           def on_abort(tur)
@@ -92,7 +97,7 @@ module Baykit
 
             @std_out_closed = false
             @std_err_closed = false
-
+            access()
           end
 
           def std_out_closed()
@@ -107,6 +112,20 @@ module Baykit
             if @std_out_closed && @std_err_closed
               process_finished()
             end
+          end
+
+          def access()
+            @last_access = Time.now.to_i
+          end
+
+          def timed_out()
+            if @cgi_docker.timeout_sec <= 0
+              return false
+            end
+
+            duration_sec = Time.now.to_i - @last_access
+            BayLog.debug("%s Check CGI timeout: dur=%d, timeout=%d", @tour, duration_sec, @cgi_docker.timeout_sec)
+            return duration_sec > @cgi_docker.timeout_sec
           end
 
           def process_finished()

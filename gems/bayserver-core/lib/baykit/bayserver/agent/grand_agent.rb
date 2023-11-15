@@ -24,15 +24,6 @@ module Baykit
         include Baykit::BayServer::Agent::Signal
         include Baykit::BayServer::Util
 
-        module GrandAgentLifecycleListener
-          #
-          # interface
-          #
-          #             void add(int agentId);
-          #             void remove(int agentId);
-          #
-        end
-
         SELECT_TIMEOUT_SEC = 10
 
         CMD_OK = 0
@@ -55,6 +46,7 @@ module Baykit
         attr :unanchorable_transporters
         attr :aborted
         attr :command_receiver
+        attr :timer_handlers
 
         class << self
           attr :agents
@@ -84,6 +76,7 @@ module Baykit
           @agent_id = agent_id
           @anchorable = anchorable
 
+          @timer_handlers = []
           if @anchorable
             @accept_handler = AcceptHandler.new(self, GrandAgent.anchorable_port_map)
           else
@@ -103,7 +96,7 @@ module Baykit
 
 
         def to_s()
-          return "Agt#" + @agent_id.to_s
+          return "agt#" + @agent_id.to_s
         end
 
 
@@ -186,8 +179,9 @@ module Baykit
 
                 if not processed
                   # timeout check
-                  @non_blocking_handler.close_timeout_sockets()
-                  @spin_handler.stop_timeout_spins()
+                  @timer_handlers.each do |h|
+                    h.on_timer()
+                  end
                 end
 
               rescue => e
@@ -205,7 +199,6 @@ module Baykit
         end
 
         def shutdown()
-          BayLog.debug("%s shutdown", self)
           if @accept_handler != nil
             @accept_handler.shutdown()
           end
@@ -214,6 +207,11 @@ module Baykit
         end
 
         def abort_agent(err = nil, status = 1)
+          BayLog.info("%s abort aborted=%s", self, @aborted)
+          if @aborted
+            return
+          end
+
           if err
             BayLog.fatal("%s abort", self)
             BayLog.fatal_e(err)
@@ -226,13 +224,13 @@ module Baykit
 
           GrandAgent.agents.delete(@agent_id)
 
+          @aborted = true
           if BayServer.harbor.multi_core
             exit(1)
           else
             clean()
           end
 
-          @aborted = true
         end
 
         def reload_cert()
@@ -267,6 +265,14 @@ module Baykit
 
         def run_command_receiver(com_channel)
           @command_receiver = CommandReceiver.new(self, com_channel)
+        end
+
+        def add_timer_handler(handler)
+          @timer_handlers << handler
+        end
+
+        def remove_timer_handler(handler)
+          @timer_handlers.delete(handler)
         end
 
         private

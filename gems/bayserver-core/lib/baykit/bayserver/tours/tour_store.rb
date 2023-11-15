@@ -1,4 +1,5 @@
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/tours/tour'
 require 'baykit/bayserver/util/string_util'
 
@@ -15,7 +16,7 @@ module Baykit
 
 
         class AgentListener
-          include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener  # implements
+          include Baykit::BayServer::Agent::LifecycleListener  # implements
 
           def add(agt)
             TourStore.stores[agt.agent_id] = TourStore.new();

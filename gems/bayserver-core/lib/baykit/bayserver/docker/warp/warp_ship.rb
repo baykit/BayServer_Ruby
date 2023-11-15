@@ -18,7 +18,7 @@ module Baykit
           attr_accessor :connected
           attr :socket_timeout_sec
           attr :lock
-
+          attr :cmd_buf
 
           def initialize()
             super
@@ -27,10 +27,15 @@ module Baykit
             @tour_map = {}
             @lock = Mutex.new()
             @connected = false
+            @cmd_buf = []
           end
 
           def to_s()
             return "warp##{@ship_id}/#{@object_id}[#{protocol}]"
+          end
+
+          def inspect
+            to_s
           end
 
           ######################################################
@@ -43,6 +48,8 @@ module Baykit
               BayLog.error("BUG: Some tours is active: %s", @tour_map)
             end
             @connected = false
+            @tour_map = {}
+            @cmd_buf = []
           end
 
 
@@ -129,6 +136,8 @@ module Baykit
                   rescue Exception => e
                     BayLog.error_e(e)
                   end
+                else
+                  tur.res.end_content(Tour::TOUR_ID_NOCHECK)
                 end
               end
               @tour_map.clear
@@ -161,8 +170,28 @@ module Baykit
             return timeout
           end
 
-          def inspect
-            to_s
+          def post(cmd, listener=nil)
+            if !@connected
+              @cmd_buf << [cmd, listener]
+            else
+              if cmd == nil
+                listener.call()
+              else
+                @protocol_handler.command_packer.post(self, cmd, &listener)
+              end
+            end
+          end
+          def flush()
+              @cmd_buf.each do | cmd_and_lis |
+                cmd = cmd_and_lis[0]
+                lis = cmd_and_lis[1]
+                if cmd == nil
+                  lis.call()
+                else
+                  @protocol_handler.command_packer.post(self, cmd, &lis)
+                end
+              end
+              @cmd_buf = []
           end
         end
       end

@@ -68,6 +68,7 @@ module Baykit
             begin
               a = Addrinfo.tcp(host, port)
               s = Socket.new(a.ipv4? ? Socket::AF_INET : Socket::AF_INET6, Socket::SOCK_STREAM)
+              s.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, [60, 0].pack("l_2"))
               s.connect(a)
               s.write(cmd + "\n")
               s.flush();

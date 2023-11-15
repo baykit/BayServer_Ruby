@@ -111,16 +111,21 @@ module Baykit
               end
 
 
-              @command_packer.post(@ship, cmd)
+              @ship.post(cmd)
             end
 
             def post_warp_contents(tur, buf, start, len, &callback)
               cmd = CmdContent.new(buf, start, len)
-              @command_packer.post(@ship, cmd, &callback)
+              @ship.post(cmd, callback)
             end
 
             def post_warp_end(tur)
+              cmd = CmdEndContent.new()
+              callback = lambda do
+                @ship.agent.non_blocking_handler.ask_to_read(@ship.socket)
+              end
 
+              @ship.post(cmd, callback)
             end
 
             def verify_protocol(proto)

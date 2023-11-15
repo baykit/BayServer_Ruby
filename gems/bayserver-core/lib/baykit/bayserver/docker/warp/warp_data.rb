@@ -38,6 +38,12 @@ module Baykit
               end
 
               tur_id = tur.id()
+
+              if !@started
+                # The buffer will become corrupted due to reuse.
+                buf = buf.dup()
+              end
+
               @warp_ship.warp_handler.post_warp_contents(
                 tur,
                 buf,
@@ -51,6 +57,7 @@ module Baykit
 
           def on_end_content(tur)
             BayLog.debug("%s End req content tur=%s", @warp_ship, tur)
+            @warp_ship.check_ship_id(@warp_ship_id)
             @warp_ship.warp_handler.post_warp_end(tur)
           end
 
@@ -66,6 +73,7 @@ module Baykit
             if !@started
               @warp_ship.protocol_handler.command_packer.flush(@warp_ship)
               BayLog.debug("%s Start Warp tour", self)
+              @warp_ship.flush()
               @started = true
             end
           end

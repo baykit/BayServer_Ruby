@@ -84,7 +84,10 @@ module Baykit
           end
 
           def post_warp_end(tur)
-            send_stdin(tur, nil, 0, 0)
+            callback = lambda do
+              @ship.agent.non_blocking_handler.ask_to_read(@ship.socket)
+            end
+            send_stdin(tur, nil, 0, 0, &callback)
           end
 
           def verify_protocol(proto)
@@ -255,14 +258,14 @@ module Baykit
 
           def send_stdin(tur, data, ofs, len, &callback)
             cmd = CmdStdIn.new(WarpData.get(tur).warp_id, data, ofs, len)
-            @command_packer.post(@ship, cmd, &callback)
+            @ship.post(cmd, callback)
           end
 
           def send_begin_req(tur)
             cmd = CmdBeginRequest.new(WarpData.get(tur).warp_id)
             cmd.role = CmdBeginRequest::FCGI_RESPONDER
             cmd.keep_conn = true
-            @command_packer.post(@ship, cmd)
+            @ship.post(cmd)
           end
 
           def send_params(tur)
@@ -311,10 +314,10 @@ module Baykit
               end
             end
 
-            @command_packer.post(@ship, cmd)
+            @ship.post(cmd)
 
             cmd_params_end = CmdParams.new(WarpData.get(tur).warp_id)
-            @command_packer.post(@ship, cmd_params_end)
+            @ship.post(cmd_params_end)
           end
 
         end

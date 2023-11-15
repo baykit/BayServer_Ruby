@@ -1,4 +1,5 @@
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/agent/transporter/plain_transporter'
 require 'baykit/bayserver/agent/transporter/spin_write_transporter'
 require 'baykit/bayserver/docker/built_in/write_file_taxi'
@@ -20,7 +21,7 @@ module Baykit
             include Baykit::BayServer::Bcf
 
             class AgentListener
-              include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener  # implements
+              include Baykit::BayServer::Agent::LifecycleListener  # implements
               include Baykit::BayServer::Agent::Transporter
 
               attr :log_docker
@@ -45,7 +46,7 @@ module Baykit
 
                 when LOG_WRITE_METHOD_TAXI
                   tp = WriteFileTaxi.new()
-                  tp.init(File.open(file_name, "a"), boat)
+                  tp.init(agt.agent_id, File.open(file_name, "a"), boat)
 
                 end
 

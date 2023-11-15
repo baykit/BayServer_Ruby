@@ -161,12 +161,12 @@ module Baykit
             case(@proc_read_method)
             when Harbor::FILE_SEND_METHOD_SELECT
               out_tp = PlainTransporter.new(false, bufsize)
-              out_yat.init(tur, out_tp, @timeout_sec, handler.pid)
+              out_yat.init(tur, out_tp, handler)
               out_tp.init(tur.ship.agent.non_blocking_handler, handler.std_out[0], out_yat)
               out_tp.open_valve()
 
               err_tp = PlainTransporter.new(false, bufsize)
-              err_yat.init(tur, @timeout_sec)
+              err_yat.init(tur, handler)
               err_tp.init(tur.ship.agent.non_blocking_handler, handler.std_err[0], err_yat)
               err_tp.open_valve()
 
@@ -183,27 +183,27 @@ module Baykit
               end
 
               out_tp = SpinReadTransporter.new(bufsize)
-              out_yat.init(tur, out_tp, @timeout_sec, handler.pid)
+              out_yat.init(tur, out_tp, handler)
               out_tp.init(tur.ship.agent.spin_handler, out_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
               out_tp.open_valve()
 
               err_tp = SpinReadTransporter.new(bufsize)
-              err_yat.init(tur, @timeout_sec)
+              err_yat.init(tur, handler)
               err_tp.init(tur.ship.agent.spin_handler, err_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
               err_tp.open_valve()
 
             when Harbor::FILE_SEND_METHOD_TAXI
-              out_txi = ReadFileTaxi.new(bufsize)
-              out_yat.init(tur, out_txi, @timeout_sec, handler.pid)
+              out_txi = ReadFileTaxi.new(tur.ship.agent.agent_id, bufsize)
+              out_yat.init(tur, out_txi, handler)
               out_txi.init(handler.std_out[0], out_yat)
-              if !TaxiRunner.post(out_txi)
+              if !TaxiRunner.post(tur.ship.agent.agent_id, out_txi)
                 raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")
               end
 
-              err_txi = ReadFileTaxi.new(bufsize)
+              err_txi = ReadFileTaxi.new(tur.ship.agent.agent_id, bufsize)
               err_yat.init(tur, @timeout_sec)
               err_txi.init(handler.std_err[0], err_yat)
-              if !TaxiRunner.post(err_txi)
+              if !TaxiRunner.post(tur.ship.agent.agent_id, err_txi)
                 raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")
               end
 

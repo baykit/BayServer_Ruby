@@ -1,5 +1,6 @@
 require 'baykit/bayserver/bayserver'
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/protocol/protocol_handler_store'
 require 'baykit/bayserver/protocol/packet_store'
 require 'baykit/bayserver/tours/tour_store'
@@ -20,7 +21,7 @@ module Baykit
       include Baykit::BayServer::Util
 
       class AgentListener
-        include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener
+        include Baykit::BayServer::Agent::LifecycleListener
 
         def add(agt)
           MemUsage.mem_usages[agt.agent_id] = MemUsage.new(agt.agent_id);

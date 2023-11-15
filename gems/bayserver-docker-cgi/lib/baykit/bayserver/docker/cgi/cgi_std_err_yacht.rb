@@ -14,7 +14,7 @@ module Baykit
 
           attr :tour
           attr :tour_id
-          attr :timeout_sec
+          attr :handler
 
           def initialize
             super
@@ -61,25 +61,19 @@ module Baykit
           end
 
           def check_timeout(duration_sec)
-            BayLog.debug("%s stderr Check timeout: dur=%d, timeout=%d", @tour, duration_sec, @timeout_sec);
-            if @timeout_sec <= 0
-              BayLog.debug("%s invalid timeout check", @tour)
-              return false
-            else
-              return duration_sec > @timeout_sec
-            end
-
+            BayLog.debug("%s stderr Check timeout: dur=%d, timeout=%d", @tour, duration_sec, @timeout_sec)
+            return @handler.timed_out()
           end
 
           ######################################################
           # Custom methods
           ######################################################
 
-          def init(tur, timeout_sec)
+          def init(tur, handler)
             init_yacht()
             @tour = tur
             @tour_id = tur.tour_id
-            @timeout_sec = timeout_sec
+            @handler = handler
           end
         end
       end

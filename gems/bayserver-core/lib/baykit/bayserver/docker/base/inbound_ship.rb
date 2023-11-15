@@ -65,13 +65,13 @@ module Baykit
           # Other methods
           ######################################################
 
-          def get_tour(tur_key)
+          def get_tour(tur_key, force=false, rent=true)
             tur = nil
             store_key = InboundShip.uniq_key(@ship_id, tur_key)
             @lock.synchronize do
               tur = @tour_store.get(store_key)
-              if tur == nil
-                tur = @tour_store.rent(store_key, false)
+              if tur == nil && rent
+                tur = @tour_store.rent(store_key, force)
                 if tur == nil
                   return nil
                 end
@@ -135,13 +135,7 @@ module Baykit
               @port_docker.additional_headers.each do |nv|
                 tur.res.headers.add(nv[0], nv[1])
               end
-              begin
-                @protocol_handler.send_res_headers(tur)
-              rescue IOError => e
-                BayLog.debug_e(e, "%s abort: %s", tur, e)
-                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
-                raise e
-              end
+              @protocol_handler.send_res_headers(tur)
             end
           end
 
@@ -163,28 +157,12 @@ module Baykit
 
             check_ship_id(check_id)
 
-            if tur.zombie? || tur.aborted?
-              # Don't send peer any data
-              BayLog::debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, tur, tur.state)
-              tur.change_state(Tour::TOUR_ID_NOCHECK, TourState::ENDED)
-              if callback != nil
-                callback.call()
-              end
-              return
-            end
-
             max_len = @protocol_handler.max_res_packet_data_size();
             if len > max_len
               send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs, max_len)
               send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs + max_len, len - max_len, &callback)
             else
-              begin
-                @protocol_handler.send_res_content(tur, bytes, ofs, len, &callback)
-              rescue IOError => e
-                BayLog.debug_e(e, "%s abort: %s", tur, e)
-                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
-                raise e
-              end
+              @protocol_handler.send_res_content(tur, bytes, ofs, len, &callback)
             end
           end
 
@@ -193,34 +171,25 @@ module Baykit
               check_ship_id(chk_ship_id)
               BayLog.debug("%s sendEndTour: %s state=%s", self, tur, tur.state)
 
-              if tur.zombie? || tur.aborted?
-                # Don't send peer any data. Do nothing
-                BayLog.debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, tur, tur.state)
-                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
-                callback.call()
-              else
-                if !tur.valid?
-                  raise Sink.new("Tour is not valid")
-                end
-                keep_alive = false
-                if tur.req.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
-                  keep_alive = true
-                  if keep_alive
-                    res_conn = tur.res.headers.get_connection()
-                    keep_alive = (res_conn == Headers::CONNECTION_KEEP_ALIVE) ||
-                      (res_conn == Headers::CONNECTION_UNKOWN)
-                  end
-                  if keep_alive
-                    if tur.res.headers.content_length() < 0
-                      keep_alive = false
-                    end
-                  end
-                end
-
-                tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
-
-                @protocol_handler.send_end_tour(tur, keep_alive, &callback)
+              if !tur.valid?
+                raise Sink.new("Tour is not valid")
               end
+              keep_alive = false
+              if tur.req.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
+                keep_alive = true
+                if keep_alive
+                  res_conn = tur.res.headers.get_connection()
+                  keep_alive = (res_conn == Headers::CONNECTION_KEEP_ALIVE) ||
+                    (res_conn == Headers::CONNECTION_UNKOWN)
+                end
+                if keep_alive
+                  if tur.res.headers.content_length() < 0
+                    keep_alive = false
+                  end
+                end
+              end
+
+              @protocol_handler.send_end_tour(tur, keep_alive, &callback)
             end
           end
 

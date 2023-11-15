@@ -19,6 +19,7 @@ module Baykit
           attr :data_listener
           attr :write_queue
           attr :lock
+          attr :agent_id
 
           def initialize()
             super
@@ -26,7 +27,8 @@ module Baykit
             @lock = Mutex.new()
           end
 
-          def init(out, data_listener)
+          def init(agt_id, out, data_listener)
+            @agent_id = agt_id
             @outfile = out
             @data_listener = data_listener
             @ch_valid = true
@@ -92,7 +94,7 @@ module Baykit
           end
 
           def next_run()
-            TaxiRunner.post(self)
+            TaxiRunner.post(@agent_id, self)
           end
         end
       end

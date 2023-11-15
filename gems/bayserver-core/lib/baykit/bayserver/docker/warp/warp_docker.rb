@@ -1,6 +1,7 @@
 require 'uri'
 
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/docker/warp/warp_data'
 require 'baykit/bayserver/docker/warp/warp_data_listener'
@@ -19,7 +20,7 @@ module Baykit
           include Baykit::BayServer::Docker::Warp
 
           class AgentListener
-            include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener
+            include Baykit::BayServer::Agent::LifecycleListener
 
             attr :warp_docker
 

@@ -1,4 +1,5 @@
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/util/object_store'
 require 'baykit/bayserver/util/string_util'
 
@@ -10,7 +11,7 @@ module Baykit
         include Baykit::BayServer::Util
 
         class AgentListener
-          include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener # implements
+          include Baykit::BayServer::Agent::LifecycleListener # implements
 
           def add(agt)
             ProtocolHandlerStore.proto_map.values().each {|ifo| ifo.add_agent(agt) }

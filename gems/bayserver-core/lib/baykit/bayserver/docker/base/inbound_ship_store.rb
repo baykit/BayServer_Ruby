@@ -1,4 +1,5 @@
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/lifecycle_listener'
 
 require 'baykit/bayserver/docker/base/inbound_ship'
 require 'baykit/bayserver/docker/base/inbound_ship_store'
@@ -16,7 +17,7 @@ module Baykit
           include Baykit::BayServer::Agent
 
           class AgentListener
-            include Baykit::BayServer::Agent::GrandAgent::GrandAgentLifecycleListener # implements
+            include Baykit::BayServer::Agent::LifecycleListener # implements
 
             def add(agt)
               InboundShipStore.stores[agt.agent_id] = InboundShipStore.new();
