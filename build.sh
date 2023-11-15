@@ -14,6 +14,7 @@ for d in *; do
   cp ../../LICENSE.* ../../README.* .
   spec=$d.gemspec
   sed -e "s/\\\${VERSION}/${version}/" -e "s/\\\${DATE}/${today}/" ${spec}.template > ${spec}
+  gem clean
   gem build $spec
   cd ..
 done
