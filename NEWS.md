@@ -1,5 +1,10 @@
 # BayServer for Ruby
 
+# 2.3.1
+
+- [Core] Addresses potential issues arising from I/O errors.
+- [Core] Fixes the issue encountered when aborting GrandAgent.
+
 # 2.3.0
 
 - [CGI] Supports "timeout" parameter. (The timed-out CGI processes are killed)
