@@ -125,96 +125,89 @@ module Baykit
           busy = true
           begin
             while not @aborted
-              begin
-                count = -1
 
-                if @accept_handler
-                  test_busy = @accept_handler.ch_count >= @max_inbound_ships
-                  if test_busy != busy
-                    busy = test_busy
-                    if busy
-                      @accept_handler.on_busy()
-                    else
-                      @accept_handler.on_free()
-                    end
-                  end
-                end
+              count = -1
 
-                if !busy && @selector.count() == 2
-                  # agent finished
-                  BayLog.debug("%s Selector has no key", self)
-                  break
-                end
-
-                if !@spin_handler.empty?
-                  timeout = 0
-                else
-                  timeout = @select_timeout_sec
-                end
-
-                #@BayServer.debug("Selecting... read=" + read_list.to_s)
-                selected_map = @selector.select(timeout)
-                #BayLog.debug("%s selected: %s", self, selected_map)
-
-                processed = @non_blocking_handler.register_channel_ops() > 0
-
-                if selected_map.length == 0
-                  # No channel is selected
-                  processed |= @spin_handler.process_data()
-                end
-
-                selected_map.keys().each do |ch|
-                  if ch == @select_wakeup_pipe[0]
-                    # Waked up by ask_to_*
-                    on_waked_up(ch)
-                  elsif ch == @command_receiver.communication_channel
-                    @command_receiver.on_pipe_readable()
-                  elsif @accept_handler && @accept_handler.server_socket?(ch)
-                    @accept_handler.on_acceptable(ch)
+              if @accept_handler
+                test_busy = @accept_handler.ch_count >= @max_inbound_ships
+                if test_busy != busy
+                  busy = test_busy
+                  if busy
+                    @accept_handler.on_busy()
                   else
-                    @non_blocking_handler.handle_channel(ch, selected_map[ch])
-                  end
-                  processed = true
-                end
-
-                if not processed
-                  # timeout check
-                  @timer_handlers.each do |h|
-                    h.on_timer()
+                    @accept_handler.on_free()
                   end
                 end
-
-              rescue => e
-                raise e
               end
+
+              if !busy && @selector.count() == 2
+                # agent finished
+                BayLog.debug("%s Selector has no key", self)
+                break
+              end
+
+              if !@spin_handler.empty?
+                timeout = 0
+              else
+                timeout = @select_timeout_sec
+              end
+
+              if @aborted
+                BayLog.info("%s aborted by another thread", self)
+                break
+              end
+              #@BayServer.debug("Selecting... read=" + read_list.to_s)
+              selected_map = @selector.select(timeout)
+              #BayLog.debug("%s selected: %s", self, selected_map)
+
+              processed = @non_blocking_handler.register_channel_ops() > 0
+
+              if @aborted
+                BayLog.info("%s aborted by another thread", self)
+                break
+              end
+
+              if selected_map.length == 0
+                # No channel is selected
+                processed |= @spin_handler.process_data()
+              end
+
+              selected_map.keys().each do |ch|
+                if ch == @select_wakeup_pipe[0]
+                  # Waked up by ask_to_*
+                  on_waked_up(ch)
+                elsif ch == @command_receiver.communication_channel
+                  @command_receiver.on_pipe_readable()
+                elsif @accept_handler && @accept_handler.server_socket?(ch)
+                  @accept_handler.on_acceptable(ch)
+                else
+                  @non_blocking_handler.handle_channel(ch, selected_map[ch])
+                end
+                processed = true
+              end
+
+              if not processed
+                # timeout check
+                @timer_handlers.each do |h|
+                  h.on_timer()
+                end
+              end
+
             end # while
 
           rescue => e
-            BayLog.error_e(e)
-            raise e
+            BayLog.fatal(e)
           ensure
             BayLog.info("%s end", self)
-            abort_agent(nil, 0)
+            shutdown()
           end
         end
 
         def shutdown()
+          BayLog.info("%s shutdown", self)
+
           if @accept_handler != nil
             @accept_handler.shutdown()
-          end
-          @aborted = true
-          wakeup()
-        end
-
-        def abort_agent(err = nil, status = 1)
-          BayLog.info("%s abort aborted=%s", self, @aborted)
-          if @aborted
-            return
-          end
-
-          if err
-            BayLog.fatal("%s abort", self)
-            BayLog.fatal_e(err)
           end
 
           @command_receiver.end()
@@ -223,14 +216,20 @@ module Baykit
           end
 
           GrandAgent.agents.delete(@agent_id)
+          clean()
 
-          @aborted = true
           if BayServer.harbor.multi_core
             exit(1)
-          else
-            clean()
           end
+        end
 
+        def abort_agent()
+          BayLog.info("%s abort", self)
+        end
+
+        def req_shutdown()
+          @aborted = true
+          wakeup()
         end
 
         def reload_cert()

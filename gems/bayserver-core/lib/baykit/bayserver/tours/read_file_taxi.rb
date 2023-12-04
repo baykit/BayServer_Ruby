@@ -24,6 +24,7 @@ module Baykit
         attr :running
         attr :lock
         attr :agent_id
+        attr :start_time
 
         def initialize(agt_id, buf_size)
           super()
@@ -58,28 +59,36 @@ module Baykit
         ######################################################
 
         def depart()
-          @lock.synchronize do
-            begin
-              @buf.clear()
-              @infile.read(@buf_size, @buf)
+          @start_time = Time.now.to_i
+          begin
+            @buf.clear()
+            @infile.read(@buf_size, @buf)
 
-              if @buf.length == 0
-                @data_listener.notify_eof()
-                close()
-                return
-              end
-
-              act = @data_listener.notify_read(@buf, nil)
-
-              @running = false
-              if act == NextSocketAction::CONTINUE
-                next_run()
-              end
-
-            rescue Exception => e
-              BayLog.error_e(e)
+            if @buf.length == 0
               close()
+              return
             end
+
+            act = @data_listener.notify_read(@buf, nil)
+
+            @running = false
+            if act == NextSocketAction::CONTINUE
+              next_run()
+            end
+
+          rescue IOError => e
+            BayLog.debug_e(e)
+            close()
+          rescue Exception => e
+            close()
+            raise e
+          end
+        end
+
+        def on_timer()
+          duration_sec = Time.now.to_i - @start_time
+          if (@data_listener.check_timeout(duration_sec))
+            close()
           end
         end
 
@@ -94,9 +103,21 @@ module Baykit
         end
 
         def close()
-          @ch_valid = false
-          @infile.close()
-          @data_listener.notify_close()
+          @lock.synchronize do
+            if !@ch_valid
+              return
+            end
+
+            @ch_valid = false
+            @data_listener.notify_eof()
+
+            begin
+              @infile.close()
+            rescue IOError => e
+            end
+
+            @data_listener.notify_close()
+          end
         end
       end
     end

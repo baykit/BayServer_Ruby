@@ -208,26 +208,27 @@ module Baykit
         end
 
         def abort()
-          if !@tour.preparing?
-            BayLog.debug("%s cannot abort non-preparing tour", @tour)
+          BayLog.debug("%s abort", @tour)
+          if @tour.preparing?
+            @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+            return true
+
+          elsif @tour.running?
+            aborted = true
+            if @content_handler != nil
+              aborted = @content_handler.on_abort(@tour)
+            end
+
+            if aborted
+              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+            end
+
+            return aborted
+          else
+            BayLog.debug("%s tour is not preparing or not running", @tour)
             return false
           end
 
-          BayLog.debug("%s abort", @tour)
-          if @tour.aborted?
-            raise Sink.new("tour has already aborted")
-          end
-
-          aborted = true
-          if @tour.running? && @content_handler != nil
-            aborted = @content_handler.on_abort(@tour)
-          end
-
-          if aborted
-            @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
-          end
-
-          return aborted
         end
 
         def set_content_handler(hnd)

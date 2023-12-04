@@ -123,17 +123,9 @@ module Baykit
           else
             begin
               city.enter(self)
-            rescue Sink => e
-              change_state(TOUR_ID_NOCHECK, TourState::ABORTED)
-              raise e
             rescue HttpException => e
-              BayLog.error_e(e)
               change_state(TOUR_ID_NOCHECK, TourState::ABORTED)
               raise e
-            rescue => e
-              BayLog.error_e(e)
-              change_state(TOUR_ID_NOCHECK, TourState::ABORTED)
-              raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, e.message)
             end
           end
         end

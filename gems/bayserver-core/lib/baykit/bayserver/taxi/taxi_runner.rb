@@ -63,15 +63,30 @@ module Baykit
 
         def terminate()
           @agent.remove_timer_handler(self)
+          @exe.shutdown
         end
 
         def submit(txi)
-          @lock.synchronize do
-            @running_taxis << txi
-          end
-          @exe.submit(txi)
-          @lock.synchronize do
-            @running_taxis.delete(txi)
+          @exe.submit() do
+            if @agent.aborted
+              BayLog.error("Agent is aborted")
+              return
+            end
+
+            @lock.synchronize do
+              @running_taxis << txi
+            end
+
+            begin
+              txi.run()
+            rescue => e
+              BayLog.fatal_e(e)
+              @agent.req_shutdown
+            ensure
+              @lock.synchronize do
+                @running_taxis.delete(txi)
+              end
+            end
           end
         end
 

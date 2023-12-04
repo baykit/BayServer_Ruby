@@ -123,7 +123,6 @@ module Baykit
               tur = @ship.get_tour(AjpInboundHandler::DUMMY_KEY, true)
               tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::SERVICE_UNAVAILABLE, "No available tours")
               tur.res.end_content(Tour::TOUR_ID_NOCHECK)
-              @ship.agent.shutdown(false)
               return NextSocketAction::CONTINUE
             end
 

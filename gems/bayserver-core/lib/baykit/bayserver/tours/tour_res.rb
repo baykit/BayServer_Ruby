@@ -47,13 +47,11 @@ module Baykit
         attr :bytes_consumed
         attr :bytes_limit
         attr :buffer_size
-        attr :tour_returned
 
         def initialize(tur)
           @headers = Headers.new()
           @tour = tur
           @buffer_size = BayServer.harbor.tour_buffer_size
-          @tour_returned = false
         end
 
         def init()
@@ -187,6 +185,7 @@ module Baykit
             raise Sink.new("Response consume listener is null")
           end
 
+          @bytes_posted += len
           BayLog.debug("%s posted res content len=%d posted=%d limit=%d consumed=%d",
           @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
           if @bytes_limit > 0 && @bytes_limit < self.bytes_posted
@@ -211,10 +210,6 @@ module Baykit
             end
           end
 
-          @bytes_posted += len
-
-          BayLog.debug("%s post res content: len=%d posted=%d limit=%d consumed=%d",
-                       @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
 
           old_available = @available
           if !buffer_available()
@@ -248,17 +243,17 @@ module Baykit
 
 
           # Done listener
+          tour_returned = false
           done_lis = Proc.new() do
             @tour.check_tour_id(chk_tour_id)
             @tour.ship.return_tour(@tour)
-            @tour_returned = true
+            tour_returned = true
           end
 
           begin
             if @tour.zombie? || @tour.aborted?
               # Don't send peer any data. Do nothing
               BayLog.debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, @tour, @tour.state)
-              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
               done_lis.call()
             else
               begin
@@ -270,8 +265,10 @@ module Baykit
               end
             end
           ensure
-            BayLog.debug("%s Tour is returned: %s", self, @tour_returned)
-            if !@tour_returned
+            # If tour is returned, we cannot change its state because
+            # it will become uninitialized.
+            BayLog.debug("%s tur#%d is returned: %s", self, chk_tour_id, tour_returned)
+            if !tour_returned
               @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ENDED)
             end
           end
@@ -326,8 +323,8 @@ module Baykit
           end
 
           if @header_sent
-            BayLog.warn("Try to send error after response header is sent (Ignore)")
-            BayLog.warn("%s: status=%d, message=%s", self, status, msg)
+            BayLog.debug("Try to send error after response header is sent (Ignore)")
+            BayLog.debug("%s: status=%d, message=%s", self, status, msg)
             if err != nil
               BayLog.error_e(err);
             end
@@ -341,7 +338,7 @@ module Baykit
               begin
                 @tour.ship.send_error(@tour.ship_id, @tour, status, msg, err)
               rescue IOError => e
-                BayLog.debug("%s Error on sending end tour", self)
+                BayLog.debug("%s Error on sending error", self)
                 @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
               end
               @header_sent = true

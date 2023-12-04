@@ -20,17 +20,25 @@ module Baykit
             @name = name
           end
 
+          def to_s
+            @name
+          end
+
           def run
             while true
-              tsk = @que.deq
-              BayLog.debug("%s Start task on: %s", tsk, @name)
-              tsk.run
-              BayLog.debug("%s End task on: %s", tsk, @name)
+              block = @que.deq
+              if block == nil
+                break
+              end
+              BayLog.debug("Start task on: %s", @name)
+              block.call
+              BayLog.debug("End task on: %s", @name)
             end
           end
 
-          def to_s
-            @name
+          def shutdown
+            @que.pop until @que.empty?
+            @que.enq(nil)
           end
         end
 
@@ -40,12 +48,14 @@ module Baykit
         attr :count
         attr :max_queue_len
         attr :name
+        attr :executors
 
         def initialize(name, count)
           @que = Thread::Queue.new
           @count = count
           @max_queue_len = MAX_LEN_PER_EXECUTOR * count
           @name = name
+          @executors = []
 
           count.times do |i|
             started = false
@@ -56,6 +66,7 @@ module Baykit
               Thread.current.name = th_name
               e = Executor.new @que, id, th_name
               e.run
+              @executors << e
             end
             while !started
               sleep(0.01)
@@ -63,17 +74,23 @@ module Baykit
           end
         end
 
-        def to_s()
+        def to_s
           return "ExecutorService[#{@name}]"
         end
 
         # post task
-        def submit(tsk)
-          BayLog.debug("%s Submit: task=%s (qlen=%d/%d)", self, tsk, @que.length, @max_queue_len)
+        def submit(&block)
+          BayLog.debug("%s Submit: (qlen=%d/%d)", self, @que.length, @max_queue_len)
           if @que.length > @max_queue_len
             raise IOError("Task queue is full (>_<)")
           end
-          @que.enq(tsk)
+          @que.enq(block)
+        end
+
+        def shutdown
+          @executors.each do |exe|
+            exe.shutdown
+          end
         end
       end
     end

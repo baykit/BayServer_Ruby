@@ -37,7 +37,7 @@ module Baykit
               when GrandAgent::CMD_MEM_USAGE
                 @agent.print_usage()
               when GrandAgent::CMD_SHUTDOWN
-                @agent.shutdown()
+                @agent.req_shutdown()
                 @aborted = true
               when GrandAgent::CMD_ABORT
                 IOUtil.write_int32(@communication_channel, GrandAgent::CMD_OK)

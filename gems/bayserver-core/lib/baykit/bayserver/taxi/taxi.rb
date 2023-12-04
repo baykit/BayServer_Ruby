@@ -8,6 +8,7 @@ module Baykit
         # abstract method
         #
         # depart()
+        # on_timer()
         #
 
         class << self

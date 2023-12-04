@@ -83,6 +83,10 @@ module Baykit
             end
           end
 
+          def on_timer()
+
+          end
+
           def post(data, adr, tag)
             @lock.synchronize do
               empty = @write_queue.empty?

@@ -191,7 +191,6 @@ module Baykit
                 BayLog.error(BayMessage.get(:INT_NO_MORE_TOURS))
                 tur = @ship.get_tour(self.cur_req_id, true)
                 tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::SERVICE_UNAVAILABLE, "No available tours")
-                @ship.agent.shutdown(false)
                 return NextSocketAction::CONTINUE
               end
 

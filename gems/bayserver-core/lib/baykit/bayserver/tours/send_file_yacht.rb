@@ -57,7 +57,11 @@ module Baykit
 
         def notify_eof()
           BayLog.trace("%s EOF(^o^) %s", self, @file_name)
-          @tour.res.end_content(@tour_id)
+          begin
+            @tour.res.end_content(@tour_id)
+          rescue IOError => e
+            BayLog.debug_e(e)
+          end
           return NextSocketAction::CLOSE
         end
 
