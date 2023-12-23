@@ -77,6 +77,8 @@ module Baykit
                 end
                 tur.init(tur_key, self)
                 @active_tours.append(tur)
+              else
+                tur.ship.check_ship_id(@ship_id)
               end
             end
             return tur

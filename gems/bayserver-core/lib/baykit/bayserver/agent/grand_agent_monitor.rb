@@ -25,11 +25,13 @@ module Baykit
         attr :agent_id
         attr :anchorable
         attr :communication_channel
+        attr :child_pid
 
-        def initialize(agt_id, anchorable, com_channel)
+        def initialize(agt_id, anchorable, com_channel, child_pid)
           @agent_id = agt_id
           @anchorable = anchorable
           @communication_channel = com_channel
+          @child_pid = child_pid
         end
 
         def to_s()
@@ -42,7 +44,7 @@ module Baykit
             if res == nil || res == GrandAgent::CMD_CLOSE
               BayLog.debug("%s read Close", self)
               close()
-              GrandAgentMonitor.agent_aborted(@agent_id, @anchorable)
+              agent_aborted()
             else
               BayLog.debug("%s read OK: %d", self, res)
             end
@@ -79,6 +81,33 @@ module Baykit
 
         def close()
           @communication_channel.close()
+        end
+
+        def agent_aborted()
+          BayLog.info(BayMessage.get(:MSG_GRAND_AGENT_SHUTDOWN, @agent_id))
+
+          if @child_pid != nil
+            begin
+              Process.kill("TERM", @child_pid)
+            rescue => e
+              BayLog.debug_e(e, "Error on killing process")
+            end
+            Process.wait(@child_pid)
+          end
+          GrandAgentMonitor.monitors.delete(@agent_id)
+
+          if not GrandAgentMonitor.finale
+            if GrandAgentMonitor.monitors.length < GrandAgentMonitor.num_agents
+              begin
+                if !BayServer.harbor.multi_core
+                  GrandAgent.add(-1, @anchorable)
+                end
+                GrandAgentMonitor.add(@anchorable)
+              rescue => e
+                BayLog.error_e(e)
+              end
+            end
+          end
         end
 
         ########################################
@@ -151,32 +180,16 @@ module Baykit
               agt.run()
             end
 
+            child = nil
+
           end
 
           @monitors[agt_id] =
             GrandAgentMonitor.new(
               agt_id,
               anchoroable,
-              client_socket)
-        end
-
-        def self.agent_aborted(agt_id, anchorable)
-          BayLog.info(BayMessage.get(:MSG_GRAND_AGENT_SHUTDOWN, agt_id))
-
-          @monitors.delete(agt_id)
-
-          if not @finale
-            if @monitors.length < @num_agents
-              begin
-                if !BayServer.harbor.multi_core
-                  GrandAgent.add(-1, anchorable)
-                end
-                add(anchorable)
-              rescue => e
-                BayLog.error_e(e)
-              end
-            end
-          end
+              client_socket,
+              child)
         end
 
         def self.reload_cert_all()

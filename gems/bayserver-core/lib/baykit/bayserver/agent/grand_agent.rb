@@ -196,7 +196,7 @@ module Baykit
             end # while
 
           rescue => e
-            BayLog.fatal(e)
+            BayLog.fatal_e(e)
           ensure
             BayLog.info("%s end", self)
             shutdown()
@@ -211,13 +211,15 @@ module Baykit
           end
 
           @command_receiver.end()
+          @non_blocking_handler.close_all()
+
           GrandAgent.listeners.each do |lis|
             lis.remove(self)
           end
 
           GrandAgent.agents.delete(@agent_id)
-          clean()
 
+          @agent_id = -1
           if BayServer.harbor.multi_core
             exit(1)
           end
@@ -225,6 +227,10 @@ module Baykit
 
         def abort_agent()
           BayLog.info("%s abort", self)
+
+          if BayServer.harbor.multi_core
+            exit(1)
+          end
         end
 
         def req_shutdown()
@@ -278,11 +284,6 @@ module Baykit
         def on_waked_up(pipe_fd)
           #BayLog.debug("%s waked up", self)
           val = IOUtil.read_int32(pipe_fd)
-        end
-
-        def clean()
-          @non_blocking_handler.close_all()
-          @agent_id = -1
         end
 
         ######################################################
