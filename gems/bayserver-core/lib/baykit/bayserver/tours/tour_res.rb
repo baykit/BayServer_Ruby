@@ -338,7 +338,7 @@ module Baykit
               begin
                 @tour.ship.send_error(@tour.ship_id, @tour, status, msg, err)
               rescue IOError => e
-                BayLog.debug("%s Error on sending error", self)
+                BayLog.debug_e(e, "%s Error on sending error", self)
                 @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
               end
               @header_sent = true

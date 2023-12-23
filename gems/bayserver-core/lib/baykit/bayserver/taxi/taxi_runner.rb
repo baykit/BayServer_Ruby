@@ -20,6 +20,7 @@ module Baykit
           end
 
           def remove(agt)
+            BayLog.debug("%s Remove tax runner", agt)
             TaxiRunner.runners[agt.agent_id - 1].terminate()
             TaxiRunner.runners[agt.agent_id - 1] = nil
           end

@@ -203,7 +203,7 @@ module Baykit
           end
 
           def return_protocol_handler(agt, proto_hnd)
-            BayLog.debug("%s Return protocol handler: ", proto_hnd)
+            BayLog.debug("%s Return protocol handler", proto_hnd)
             PortBase.get_protocol_handler_store(proto_hnd.protocol, agt).Return(proto_hnd)
           end
 
