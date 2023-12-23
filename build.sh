@@ -44,7 +44,7 @@ done
 pushd .
 cd ${target_dir}
 echo "****** Local Install gem: bayserver ******"
-gem install -s http://localhost:9292 bayserver:${version} --install-dir=gems
+gem install --clear-sources -s http://localhost:9292 bayserver:${version} --install-dir=gems
 popd
 
 for name in `ls -r gems`; do
