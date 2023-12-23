@@ -201,7 +201,7 @@ module Baykit
               end
 
               err_txi = ReadFileTaxi.new(tur.ship.agent.agent_id, bufsize)
-              err_yat.init(tur, @timeout_sec)
+              err_yat.init(tur, handler)
               err_txi.init(handler.std_err[0], err_yat)
               if !TaxiRunner.post(tur.ship.agent.agent_id, err_txi)
                 raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")

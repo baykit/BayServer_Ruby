@@ -32,7 +32,7 @@ module Baykit
           def reset()
             @tour = nil
             @tour_id = 0
-            @timeout_sec = 0
+            @handler = nil
           end
 
           ######################################################
@@ -61,7 +61,7 @@ module Baykit
           end
 
           def check_timeout(duration_sec)
-            BayLog.debug("%s stderr Check timeout: dur=%d, timeout=%d", @tour, duration_sec, @timeout_sec)
+            BayLog.debug("%s stderr Check timeout: dur=%d", @tour, duration_sec)
             return @handler.timed_out()
           end
 
