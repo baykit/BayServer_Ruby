@@ -6,12 +6,13 @@ module Baykit
       module Permission
         include Docker # implements
 
-        #
-        # interface
-        #
-        #     void checkAdmitted(SocketChannel ch) throws HttpException;
-        #     void checkAdmitted(Tour tour) throws HttpException;
-        # 
+        def socket_admitterd(rd)
+          raise NotImplementedError.new
+        end
+
+        def tour_admitted(tour)
+          raise NotImplementedError.new
+        end
       end
     end
   end

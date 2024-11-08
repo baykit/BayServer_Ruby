@@ -1,0 +1,29 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module Command
+          class CmdSendHeaders
+            self.@well_known_header_map: Hash[String, Integer]
+            @headers: Hash[String, Array[String]]
+            @desc: String
+            attr_accessor status: Integer
+
+
+            def self.get_well_known_header_name: (String code) -> String
+            def initialize: -> void
+            def to_s: -> String
+            def unpack: (AjpPacket pkt) -> void
+            def pack: (AjpPacket pkt) -> void
+            def handle: (AjpCommandHandler handler) -> Integer
+            def get_header: (String name) -> String
+            def add_header: (String name, String value) -> void
+          end
+        end
+      end
+    end
+  end
+end

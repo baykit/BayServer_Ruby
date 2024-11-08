@@ -2,8 +2,8 @@ require 'openssl'
 
 require 'baykit/bayserver/agent/transporter/package'
 require 'baykit/bayserver/docker/base/port_base'
+require 'baykit/bayserver/docker/base/warp_base'
 require 'baykit/bayserver/protocol/packet_store'
-require 'baykit/bayserver/docker/warp/package'
 require 'baykit/bayserver/docker/http/h1/package'
 require 'baykit/bayserver/docker/http/h2/package'
 
@@ -12,7 +12,7 @@ module Baykit
   module BayServer
     module Docker
       module Http
-        class HtpWarpDocker < Baykit::BayServer::Docker::Warp::WarpDocker
+        class HtpWarpDocker < Baykit::BayServer::Docker::Base::WarpBase
           include Baykit::BayServer::Docker::Http::HtpDocker # implements
 
           include OpenSSL
@@ -89,12 +89,25 @@ module Baykit
             return H1_PROTO_NAME
           end
 
-          def new_transporter(agt, skt)
+          def new_transporter(agt, rd, sip)
             if @secure
-              return SecureTransporter.new(@ssl_ctx, false, IOUtil.get_sock_recv_buf_size(skt), @trace_ssl)
+              tp =  SecureTransporter.new(
+                agt.net_multiplexer,
+                sip,
+                false,
+                false, IOUtil.get_sock_recv_buf_size(rd.io),
+                @trace_ssl,
+                @ssl_ctx)
             else
-              return PlainTransporter.new(false, IOUtil.get_sock_recv_buf_size(skt))
+              tp = PlainTransporter.new(
+                agt.net_multiplexer,
+                sip,
+                false,
+                IOUtil.get_sock_recv_buf_size(rd.io),
+                false)
             end
+            tp.init
+            return tp
           end
 
 

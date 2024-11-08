@@ -1,0 +1,21 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class FileContentHandler
+          @path: String
+          @abortable: bool
+
+          def initialize: (String path) -> void
+          def on_read_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
+          def on_end_req_content: (Tours::Tour tur) -> void
+          def on_abort_req: (Tours::Tour tur) -> bool
+          def send_file_async: (Tours::Tour tur, String file, String charset) -> void
+        end
+      end
+    end
+  end
+end

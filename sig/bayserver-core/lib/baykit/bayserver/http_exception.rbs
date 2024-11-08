@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    class HttpException
+      @status: Integer
+
+      attr_accessor location: String
+      def initialize: (Integer status, ?String fmt, *untyped args) -> void
+      def message: -> String
+      def self.moved_temp: (String location) -> HttpException
+    end
+  end
+end

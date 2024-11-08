@@ -3,7 +3,7 @@ require 'ipaddr'
 require 'baykit/bayserver/http_exception'
 require 'baykit/bayserver/bcf/package'
 require 'baykit/bayserver/docker/permission'
-require 'baykit/bayserver/util/groups'
+require 'baykit/bayserver/common/groups'
 require 'baykit/bayserver/util/headers'
 require 'baykit/bayserver/util/http_status'
 require 'baykit/bayserver/util/host_matcher'
@@ -20,6 +20,7 @@ module Baykit
           include Baykit::BayServer
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           class CheckItem
             attr :matcher
@@ -30,8 +31,8 @@ module Baykit
               @admit = admit
             end
 
-            def socket_admitted(skt)
-              matcher.match_socket(skt) == @admit
+            def socket_admitted(rd)
+              matcher.match_socket(rd) == @admit
             end
 
             def tour_admitted(tur)
@@ -41,12 +42,12 @@ module Baykit
 
           module PermissionMatcher # interface
 
-            def match_socket(skt)
-              raise NotImplementedError()
+            def match_socket(rd)
+              raise NotImplementedError.new
             end
 
             def match_tour(tur)
-              raise NotImplementedError()
+              raise NotImplementedError.new
             end
           end
 
@@ -61,8 +62,8 @@ module Baykit
               @mch = HostMatcher.new(hostPtn)
             end
 
-            def match_socket(skt)
-              return @mch.match(skt.remote_address.getnameinfo[0])
+            def match_socket(rd)
+              return @mch.match(rd.io.remote_address.getnameinfo[0])
             end
 
             def match_tour(tur)
@@ -80,8 +81,8 @@ module Baykit
               @mch = IpMatcher.new(ip_desc)
             end
 
-            def match_socket(skt)
-              return @mch.match(@mch.get_ip_addr(skt.remote_address.ip_address))
+            def match_socket(rd)
+              return @mch.match(rd.io.remote_address.ip_address)
             end
 
             def match_tour(tur)

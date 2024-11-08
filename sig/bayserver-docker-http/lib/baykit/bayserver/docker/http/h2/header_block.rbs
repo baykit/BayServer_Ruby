@@ -1,0 +1,30 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderBlock
+            INDEX: Integer
+            OVERLOAD_KNOWN_HEADER: Integer
+            NEW_HEADER: Integer
+            KNOWN_HEADER: Integer
+            UNKNOWN_HEADER: Integer
+            UPDATE_DYNAMIC_TABLE_SIZE: Integer
+
+            attr_accessor op: Integer
+            attr_accessor index: untyped
+            attr_accessor name: untyped
+            attr_accessor value: untyped
+            attr_accessor size: untyped
+            def self.pack: (untyped blk, untyped acc) -> nil
+            def self.unpack: (untyped acc) -> HeaderBlock
+            def to_s: -> String
+          end
+        end
+      end
+    end
+  end
+end

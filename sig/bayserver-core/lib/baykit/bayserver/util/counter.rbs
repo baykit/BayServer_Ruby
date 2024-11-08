@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Counter
+        @counter: Integer
+        @mutex: Thread::Mutex
+
+        def initialize: (?Integer init) -> void
+        def next: -> Integer
+      end
+    end
+  end
+end

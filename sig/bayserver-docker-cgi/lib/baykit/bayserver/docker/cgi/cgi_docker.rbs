@@ -1,0 +1,27 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Cgi
+        class CgiDocker
+          DEFAULT_TIMEOUT_SEC: Integer
+          include Cgi
+          include Docker
+          @interpreter: String
+          @script_base: String
+          @doc_root: String
+          @timeout_sec: Integer
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, Docker parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def arrive: (Tours::Tour tur) -> void
+          def create_command: (Hash[String, String] env) -> String
+          def eof_checker: -> bool
+        end
+      end
+    end
+  end
+end

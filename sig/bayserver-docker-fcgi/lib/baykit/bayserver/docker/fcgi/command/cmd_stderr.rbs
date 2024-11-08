@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class CmdStdErr
+            def initialize: (Integer req_id) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

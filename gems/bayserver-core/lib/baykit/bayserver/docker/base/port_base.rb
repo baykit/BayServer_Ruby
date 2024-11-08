@@ -1,13 +1,13 @@
 require 'baykit/bayserver/protocol/protocol_handler_store'
 require 'baykit/bayserver/bcf/package'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/util/object_store'
 require 'baykit/bayserver/util/object_factory'
 
 require 'baykit/bayserver/docker/port'
 require 'baykit/bayserver/docker/base/docker_base'
-require 'baykit/bayserver/docker/base/inbound_data_listener'
-require 'baykit/bayserver/docker/base/inbound_ship_store'
+require 'baykit/bayserver/common/inbound_ship_store'
 
 module Baykit
   module BayServer
@@ -18,12 +18,14 @@ module Baykit
 
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Agent
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Docker
           include Baykit::BayServer::Docker::Base
           include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Protocol
+          include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           attr :permission_list
           attr :host
@@ -48,18 +50,18 @@ module Baykit
           end
 
           def to_s()
-            return super + "[" + @port + "]"
+            return super + "[#{@port}]"
           end
 
           ######################################################
           # Abstract methods
           ######################################################
           def support_anchored()
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def support_unanchored()
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           ######################################################
@@ -178,46 +180,76 @@ module Baykit
             return @secure_docker != nil
           end
 
-          def check_admitted(skt)
-            @permission_list.each do |perm_dkr|
-              perm_dkr.socket_admitted(skt)
-            end
-          end
 
           def find_city(name)
             return @cities.find_city(name)
           end
 
-          def new_transporter(agt, skt)
-            sip = PortBase.get_ship_store(agt).rent()
+          def on_connected(agt_id, rd)
+
+            check_admitted(rd)
+
+            sip = PortBase.get_ship_store(agt_id).rent()
+            agt = GrandAgent.get(agt_id)
+
             if secure()
-              tp = @secure_docker.create_transporter(IOUtil.get_sock_recv_buf_size(skt))
+              tp = @secure_docker.new_transporter(
+                agt_id,
+                sip,
+                IOUtil.get_sock_recv_buf_size(rd.io))
+
+              ssl_socket = tp.new_ssl_socket(rd.io)
+              rd = IORudder.new(ssl_socket)
+              if agt.net_multiplexer.is_non_blocking
+                rd.set_non_blocking
+              end
+
             else
-              tp = PlainTransporter.new(true, IOUtil.get_sock_recv_buf_size(skt))
+              size = IOUtil.get_sock_recv_buf_size(rd.io)
+
+              tp = PlainTransporter.new(
+                agt.net_multiplexer,
+                sip,
+                true,
+                size,
+                false)
             end
 
-            proto_hnd = PortBase.get_protocol_handler_store(protocol(), agt).rent()
-            sip.init_inbound(skt, agt, tp, self, proto_hnd)
-            tp.init(agt.non_blocking_handler, skt, InboundDataListener.new(sip))
-            return tp
+            proto_hnd = PortBase.get_protocol_handler_store(protocol(), agt_id).rent()
+            sip.init_inbound(rd, agt_id, tp, self, proto_hnd)
+
+            st = RudderState.new(rd, tp)
+            agt.net_multiplexer.add_rudder_state(rd, st)
+            agt.net_multiplexer.req_read(rd)
           end
 
-          def return_protocol_handler(agt, proto_hnd)
+          def return_protocol_handler(agt_id, proto_hnd)
             BayLog.debug("%s Return protocol handler", proto_hnd)
-            PortBase.get_protocol_handler_store(proto_hnd.protocol, agt).Return(proto_hnd)
+            PortBase.get_protocol_handler_store(proto_hnd.protocol, agt_id).Return(proto_hnd)
           end
 
           def return_ship(sip)
             BayLog.debug("%s end (return ship)", sip)
-            PortBase.get_ship_store(sip.agent).Return(sip)
+            PortBase.get_ship_store(sip.agent_id).Return(sip)
           end
 
-          def PortBase.get_ship_store(agt)
-            return InboundShipStore.get_store(agt.agent_id)
+          ######################################################
+          # Private methods
+          ######################################################
+          private
+
+          def check_admitted(rd)
+            @permission_list.each do |perm_dkr|
+              perm_dkr.socket_admitted(rd)
+            end
           end
 
-          def PortBase.get_protocol_handler_store(proto, agt)
-            return ProtocolHandlerStore.get_store(proto, true, agt.agent_id)
+          def PortBase.get_ship_store(agt_id)
+            return InboundShipStore.get_store(agt_id)
+          end
+
+          def PortBase.get_protocol_handler_store(proto, agt_id)
+            return ProtocolHandlerStore.get_store(proto, true, agt_id)
           end
 
         end

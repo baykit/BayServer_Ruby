@@ -16,7 +16,7 @@ module Baykit
           if StringUtil.set?(lang)
             begin
               language = lang[0, 2]
-              country = lang[4, 2]
+              country = lang[3, 2]
               return Locale.new(language, country)
             rescue => e
               BayLog.error_e(e)

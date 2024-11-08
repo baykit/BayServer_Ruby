@@ -1,0 +1,39 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class RudderState
+          @rudder: Rudders::Rudder
+          @transporter: Transporter
+          @timeout_sec: Integer
+          @read_buf: String
+          @buf_size: Integer
+          @write_queue: Array[WriteUnit]
+          @write_queue_lock: Thread::Mutex
+          @reading_lock: Thread::Mutex
+          @writing_lock: Thread::Mutex
+          @last_access_time: Integer
+
+          attr_accessor multiplexer: Common::Multiplexer
+          attr_accessor closing: bool
+          attr_accessor handshaking: bool
+          attr_accessor reading: bool
+          attr_accessor writing: bool
+          attr_accessor bytes_read: Integer
+          attr_accessor bytes_wrote: Integer
+          attr_accessor closed: bool
+          attr_accessor finale: bool
+          attr_accessor accepting: bool
+          attr_accessor connecting: bool
+          def initialize: (Rudders::Rudder rd, ?nil tp, ?Integer timeout_sec) -> void
+          def access: -> void
+          def end: -> void
+          def to_s: -> String
+        end
+      end
+    end
+  end
+end

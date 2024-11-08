@@ -1,0 +1,23 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2Command
+            include H2
+            include Http
+            @flags: Integer
+
+            attr_accessor stream_id: Integer
+            def initialize: (Integer `type`, Integer stream_id, ?Integer flags) -> void
+            def unpack: (H2Packet pkt) -> void
+            def pack: (H2Packet pkt) -> void
+          end
+        end
+      end
+    end
+  end
+end

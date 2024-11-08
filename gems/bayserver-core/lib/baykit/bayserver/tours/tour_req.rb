@@ -51,7 +51,6 @@ module Baykit
         attr :bytes_consumed
         attr :bytes_limit
 
-        attr :consume_listener
         attr :available
         attr :ended
 
@@ -98,7 +97,6 @@ module Baykit
           @charset = nil
           @available = false
           @content_handler = nil
-          @consume_listener = nil
           @ended = false
 
         end
@@ -107,22 +105,21 @@ module Baykit
         # other methods
         ######################################################
 
-        def remote_host()
+        def remote_host
           return @remote_host_func.call()
         end
 
-        def set_consume_listener(limit, &listener)
+        def set_limit(limit)
           if limit < 0
             raise Sink.new("invalid limit")
           end
           @bytes_limit = limit
-          @consume_listener = listener
           @bytes_posted = 0
           @bytes_consumed = 0
           @available = true
         end
 
-        def post_content(check_id, data, start, len)
+        def post_req_content(check_id, data, start, len, &callback)
           @tour.check_tour_id(check_id)
 
           data_passed = false
@@ -132,9 +129,6 @@ module Baykit
           elsif @content_handler == nil
             BayLog.warn("%s content read, but no content handler", tour)
 
-          elsif @consume_listener == nil
-            raise Sink.new("Request consume listener is null")
-
           elsif @bytes_posted + len > @bytes_limit
             raise ProtocolException.new("Read data exceed content-length: %d/%d", @bytes_posted + len, @bytes_limit)
 
@@ -143,7 +137,7 @@ module Baykit
             BayLog.debug("%s tour has error.", @tour)
 
           else
-            @content_handler.on_read_content(@tour, data, start, len)
+            @content_handler.on_read_req_content(@tour, data, start, len, &callback)
             data_passed = true
           end
 
@@ -167,7 +161,7 @@ module Baykit
           return @available
         end
 
-        def end_content(check_id)
+        def end_req_content(check_id)
           @tour.check_tour_id(check_id)
           if @ended
             raise Sink.new("#{@tour} Request content is already ended")
@@ -178,17 +172,13 @@ module Baykit
           end
 
           if @content_handler != nil
-            @content_handler.on_end_content(@tour)
+            @content_handler.on_end_req_content(@tour)
           end
           @ended = true
         end
 
-        def consumed(chk_id, length)
+        def consumed(chk_id, length, &callback)
           @tour.check_tour_id(chk_id)
-          BayLog.debug("%s content_consumed: len=%d posted=%d", @tour, length, @bytes_posted)
-          if @consume_listener == nil
-            raise Sink.new("Request consume listener is null")
-          end
 
           @bytes_consumed += length
           BayLog.debug("%s reqConsumed: len=%d posted=%d limit=%d consumed=%d",
@@ -204,24 +194,24 @@ module Baykit
             BayLog.debug("%s request available (^o^): posted=%d consumed=%d", self,  @bytes_posted, @bytes_consumed);
             resume = true
           end
-          @consume_listener.call(length, resume)
+          callback.call(length, resume)
         end
 
-        def abort()
+        def abort
           BayLog.debug("%s abort", @tour)
           if @tour.preparing?
-            @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+            #@tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
             return true
 
           elsif @tour.running?
             aborted = true
             if @content_handler != nil
-              aborted = @content_handler.on_abort(@tour)
+              aborted = @content_handler.on_abort_req(@tour)
             end
 
-            if aborted
-              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
-            end
+            #if aborted
+            #  @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+            #end
 
             return aborted
           else

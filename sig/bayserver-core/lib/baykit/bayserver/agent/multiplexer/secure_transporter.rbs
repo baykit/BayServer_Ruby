@@ -1,0 +1,23 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class SecureTransporter
+          include OpenSSL
+          @sslctx: OpenSSL::SSL::SSLContext
+          @ship: Ships::Ship
+          @server_mode: bool
+
+          def initialize: (Common::Multiplexer mpx, Ships::Ship sip, bool server_mode, Integer bufsize, bool trace_ssl, OpenSSL::SSL::SSLContext sslctx) -> void
+          def to_s: -> String
+          def secure: -> bool
+          def on_read: (Rudders::Rudder rd, String buf, Integer len) -> Integer
+          def new_ssl_socket: (IO skt) -> OpenSSL::SSL::SSLSocket
+        end
+      end
+    end
+  end
+end

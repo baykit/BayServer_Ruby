@@ -1,6 +1,6 @@
 require 'baykit/bayserver/agent/next_socket_action'
 require 'baykit/bayserver/agent/transporter/data_listener'
-require 'baykit/bayserver/watercraft/ship'
+require 'baykit/bayserver/ships/ship'
 require 'baykit/bayserver/tours/package'
 
 module Baykit

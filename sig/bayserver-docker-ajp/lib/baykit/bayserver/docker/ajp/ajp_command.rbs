@@ -1,0 +1,20 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpCommand
+          @type: Integer
+
+          attr_accessor to_server: untyped
+          def initialize: (Integer `type`, untyped to_server) -> void
+          def unpack: (AjpPacket pkt) -> void
+          def pack: (AjpPacket pkt) -> untyped
+          def pack_header: (AjpPacket pkt) -> untyped
+        end
+      end
+    end
+  end
+end

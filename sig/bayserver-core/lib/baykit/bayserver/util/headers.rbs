@@ -1,0 +1,62 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Headers
+        HEADER_SEPARATOR: String
+        CONTENT_TYPE: String
+        CONTENT_LENGTH: String
+        CONTENT_ENCODING: String
+        HDR_TRANSFER_ENCODING: String
+        CONNECTION: String
+        AUTHORIZATION: String
+        WWW_AUTHENTICATE: String
+        STATUS: String
+        LOCATION: String
+        HOST: String
+        COOKIE: String
+        USER_AGENT: String
+        ACCEPT: String
+        ACCEPT_LANGUAGE: String
+        ACCEPT_ENCODING: String
+        UPGRADE_INSECURE_REQUESTS: String
+        SERVER: String
+        X_FORWARDED_HOST: String
+        X_FORWARDED_FOR: String
+        X_FORWARDED_PROTO: String
+        X_FORWARDED_PORT: String
+        CONNECTION_CLOSE: Integer
+        CONNECTION_KEEP_ALIVE: Integer
+        CONNECTION_UPGRADE: Integer
+        CONNECTION_UNKOWN: Integer
+        include Util
+        @headers: Hash[String, Array[String]]
+        @status: Integer
+
+        def initialize: -> void
+        def to_s: -> String
+        def clear: -> void
+        def copy_to: (Headers dst) -> void
+        def status=: (Integer new_val) -> void
+        def get: (String name) -> String
+        def get_int: (String name) -> Integer
+        def set: (String name, String value) -> void
+        def set_int: (String name, Integer value) -> void
+        def add: (String name, String value) -> void
+        def add_int: (String name, Integer value) -> void
+        def names: -> Array[String]
+        def values: (String name) -> Array[String]
+        def count: -> Integer
+        def contains: (String name) -> bool
+        def remove: (String name) -> void
+        def content_type: -> String
+        def set_content_type: (String `type`) -> void
+        def content_length: -> Integer
+        def set_content_length: (Integer len) -> voi
+        def get_connection: -> Integer
+      end
+    end
+  end
+end

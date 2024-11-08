@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1ProtocolHandler
+            include H1
+            @keeping: bool
+
+            def initialize: (H1Handler h1_handler, Protocol::PacketUnPacker pkt_unpacker, Protocol::PacketPacker pkt_packer,
+                Protocol::CommandUnPacker cmd_unpacker, Protocol::CommandPacker cmd_packer, bool svr_mode) -> void
+            def reset: -> void
+            def max_req_packet_data_size: -> Integer
+            def max_res_packet_data_size: -> Integer
+            def protocol: -> String
+          end
+        end
+      end
+    end
+  end
+end

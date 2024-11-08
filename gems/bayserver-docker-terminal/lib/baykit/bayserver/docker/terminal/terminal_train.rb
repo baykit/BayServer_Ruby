@@ -1,4 +1,4 @@
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/train/train'
 require 'baykit/bayserver/train/train_runner'
 require 'baykit/bayserver/tours/tour'
@@ -75,7 +75,7 @@ module Baykit
               end
 
 
-              if BayServer.harbor.trace_header?
+              if BayServer.harbor.trace_header
                 @env.keys.each do |key|
                   value = @env[key]
                   BayLog.info("%s Terminal: env:%s=%s", @tour, key, value)

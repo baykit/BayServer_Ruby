@@ -1,0 +1,63 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2Packet
+            MAX_PAYLOAD_LEN: Integer
+            DEFAULT_PAYLOAD_MAXLEN: Integer
+            FRAME_HEADER_LEN: Integer
+            NO_ERROR: Integer
+            PROTOCOL_ERROR: Integer
+            INTERNAL_ERROR: Integer
+            FLOW_CONTROL_ERROR: Integer
+            SETTINGS_TIMEOUT: Integer
+            STREAM_CLOSED: Integer
+            FRAME_SIZE_ERROR: Integer
+            REFUSED_STREAM: Integer
+            CANCEL: Integer
+            COMPRESSION_ERROR: Integer
+            CONNECT_ERROR: Integer
+            ENHANCE_YOUR_CALM: Integer
+            INADEQUATE_SECURITY: Integer
+            HTTP_1_1_REQUIRED: Integer
+            include H2
+            @header_len: Integer
+            @type: Integer
+
+            attr_accessor flags: Integer
+            attr_accessor stream_id: Integer
+            def initialize: (Integer `type`) -> void
+            def reset: -> void
+            def pack_header: -> void
+            def new_h2_header_accessor: -> H2HeaderAccessor
+            def new_h2_data_accessor: -> H2DataAccessor
+            def self.extract_int31: (Integer val) -> Integer
+            def self.extract_flag: (Integer val) -> Integer
+            def self.consolidate_flag_and_int32: (Integer flag, Integer val) -> Integer
+            def self.make_stream_dependency32: (Integer excluded, Integer dep) -> Integer
+            def to_s: -> String
+
+            class H2HeaderAccessor
+              def initialize: (H2Packet pkt, Integer start, nil max_len) -> void
+              def put_int24: (Integer len) -> void
+            end
+
+            class H2DataAccessor
+              def initialize: (H2Packet pkt, Integer start, Integer max_len) -> void
+              def get_hpack_int: (Integer prefix, Array[Integer] head) -> Integer
+              def get_hpack_int_rest: -> Integer
+              def get_hpack_string: -> String
+              def put_hpack_int: (Integer val, Integer prefix, Integer head) -> void
+              def put_hpack_int_rest: (Integer val) -> void
+              def put_hpack_string: (String value, bool is_haffman) -> void
+            end
+          end
+        end
+      end
+    end
+  end
+end

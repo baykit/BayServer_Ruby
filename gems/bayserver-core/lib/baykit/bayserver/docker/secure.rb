@@ -6,15 +6,17 @@ module Baykit
       module Secure
         include Docker   # implements
 
-        #
-        # interface
-        #
-        #     void setAppProtocols(String[] protocols);
-        #
-        #     void reloadCert() throws Exception;
-        #
-        #     public Transporter createTransporter();
-        #
+        def set_app_protocols(protocols)
+          raise NotImplementedError.new
+        end
+
+        def reload_cert
+          raise NotImplementedError.new
+        end
+
+        def new_transporter(agt_id, sip)
+          raise NotImplementedError
+        end
       end
     end
   end

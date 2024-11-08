@@ -1,0 +1,39 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class Groups
+        @all_groups: Hash[String, Group]
+        @all_members: Hash[String, Member]
+
+        def initialize: -> void
+        def init: (Bcf::BcfElement bcf) -> void
+        def get_group: (String name) -> Group
+
+        private
+        def init_groups: (untyped elm) -> untyped
+        def init_members: (untyped elm) -> untyped
+
+        class Member
+          @name: String
+          @digest: String
+
+          def initialize: (String name, String digest) -> void
+          def validate: (String password) -> bool
+        end
+
+        class Group
+          @name: String
+          @groups: Groups
+          @members: Array[String]
+
+          def initialize: (Groups groups, String name) -> void
+          def add: (String mem) -> void
+          def validate: (String mem_name, String pass) -> bool
+        end
+      end
+    end
+  end
+end

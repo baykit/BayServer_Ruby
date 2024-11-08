@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgPacket
+          PREAMBLE_SIZE: Integer
+          VERSION: Integer
+          MAXLEN: Integer
+          FCGI_NULL_REQUEST_ID: Integer
+          @version: Integer
+          @type: Integer
+
+          attr_accessor req_id: Integer
+          def initialize: (Integer `type`) -> void
+          def reset: -> void
+          def to_s: -> String
+        end
+      end
+    end
+  end
+end

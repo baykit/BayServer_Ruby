@@ -46,7 +46,7 @@ module Baykit
             end
 
             def finished()
-              return @cmd_handler.finished()
+              return @cmd_handler.req_finished()
             end
           end
         end

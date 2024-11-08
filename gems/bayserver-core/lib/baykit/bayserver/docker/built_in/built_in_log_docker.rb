@@ -1,7 +1,8 @@
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/lifecycle_listener'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
-require 'baykit/bayserver/agent/transporter/spin_write_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/rudder_state'
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/docker/built_in/write_file_taxi'
 require 'baykit/bayserver/docker/log'
 require 'baykit/bayserver/docker/built_in/log_items'
@@ -14,15 +15,18 @@ module Baykit
         module BuiltIn
           class BuiltInLogDocker < Baykit::BayServer::Docker::Base::DockerBase
             include Baykit::BayServer::Docker::Log # implements
-            include Baykit::BayServer::Agent::Transporter
-            include Baykit::BayServer::Agent
-            include Baykit::BayServer::Util
 
+            include Baykit::BayServer::Docker
+            include Baykit::BayServer::Util
             include Baykit::BayServer::Bcf
+            include Baykit::BayServer::Agent
 
             class AgentListener
+              include Baykit::BayServer::Agent::Multiplexer
               include Baykit::BayServer::Agent::LifecycleListener  # implements
               include Baykit::BayServer::Agent::Transporter
+              include Baykit::BayServer::Agent
+              include Baykit::BayServer::Rudders
 
               attr :log_docker
 
@@ -30,47 +34,52 @@ module Baykit
                 @log_docker = dkr
               end
 
-              def add(agt)
-                file_name = "#{@log_docker.file_prefix}_#{agt.agent_id}.#{@log_docker.file_ext}";
-
-                boat = LogBoat.new()
-
-                case @log_docker.log_write_method
-                when LOG_WRITE_METHOD_SELECT
-                  tp = PlainTransporter.new(false, 0, true)  # write only
-                  tp.init(agt.non_blocking_handler, File.open(file_name, "a"), boat)
-
-                when LOG_WRITE_METHOD_SPIN
-                  tp = SpinWriteTransporter.new()
-                  tp.init(agt.spin_handler, File.open(file_name, "a"), boat)
-
-                when LOG_WRITE_METHOD_TAXI
-                  tp = WriteFileTaxi.new()
-                  tp.init(agt.agent_id, File.open(file_name, "a"), boat)
-
+              def add(agt_id)
+                file_name = "#{@log_docker.file_prefix}_#{agt_id}.#{@log_docker.file_ext}"
+                size = 0
+                if ::File.exist?(file_name)
+                  size = ::File.size(file_name)
                 end
+                agt = GrandAgent.get(agt_id)
 
                 begin
-                  boat.init(file_name, tp)
-                rescue IOError => e
-                  BayLog.fatal(BayMessage.get(:INT_CANNOT_OPEN_LOG_FILE, file_name));
+                  f = File.open(file_name, "a")
+                rescue => e
+                  BayLog.fatal(BayMessage.get(:INT_CANNOT_OPEN_LOG_FILE, file_name))
                   BayLog.fatal_e(e);
                 end
 
-                @log_docker.loggers[agt.agent_id] = boat
+                rd = IORudder.new(f)
+
+                case BayServer::harbor.log_multiplexer
+                when Harbor::MULTIPLEXER_TYPE_TAXI
+                  mpx = agt.taxi_multiplexer
+
+                when Harbor::MULTIPLEXER_TYPE_SPIN
+                  mpx = agt.spin_multiplexer
+
+                when Harbor::MULTIPLEXER_TYPE_SPIDER
+                  mpx = agt.spider_multiplexer
+
+                end
+
+                st = RudderState.new(rd)
+                st.bytes_wrote = size
+                mpx.add_rudder_state(rd, st)
+
+                @log_docker.multiplexers[agt_id] = mpx
+                @log_docker.rudders[agt_id] = rd
               end
 
 
-              def remove(agt)
-                @log_docker.loggers.delete(agt.agent_id);
+              def remove(agt_id)
+                rd = @log_docker.rudders[agt_id]
+                @log_docker.multiplexers[agt_id].req_close(rd)
+                @log_docker.multiplexers[agt_id] = nil
+                @log_docker.rudders[agt_id] = nil
               end
             end
 
-
-            LOG_WRITE_METHOD_SELECT = 1
-            LOG_WRITE_METHOD_SPIN = 2
-            LOG_WRITE_METHOD_TAXI = 3
-            DEFAULT_LOG_WRITE_METHOD = LOG_WRITE_METHOD_TAXI
 
             class << self
               # Mapping table for format
@@ -91,14 +100,17 @@ module Baykit
             # Log items
             attr :log_items
 
-            # Log write method
-            attr :log_write_method
+            attr :rudders
+
+            # Multiplexer to write to file
+            attr :multiplexers
 
             def initialize
               @loggers = {}
               @format = nil
               @log_items = []
-              @log_write_method = DEFAULT_LOG_WRITE_METHOD
+              @rudders = {}
+              @multiplexers = {}
             end
 
             def init(elm, parent)
@@ -130,17 +142,6 @@ module Baykit
               # Parse format
               compile(@format, @log_items, elm.file_name, elm.line_no)
 
-              # Check log write method
-              if @log_write_method == LOG_WRITE_METHOD_SELECT and !SysUtil.support_select_file()
-                BayLog.warn(BayMessage.get(:CFG_LOG_WRITE_METHOD_SELECT_NOT_SUPPORTED))
-                @log_write_method = LOG_WRITE_METHOD_TAXI
-              end
-
-              if @log_write_method == LOG_WRITE_METHOD_SPIN and !SysUtil.support_nonblock_file_write()
-                BayLog.warn(BayMessage.get(:CFG_LOG_WRITE_METHOD_SPIN_NOT_SUPPORTED))
-                @log_write_method = LOG_WRITE_METHOD_TAXI
-              end
-
               GrandAgent.add_lifecycle_listener(AgentListener.new(self));
             end
 
@@ -148,17 +149,7 @@ module Baykit
               case kv.key.downcase
               when "format"
                 @format = kv.value
-              when "logwritemethod"
-                case kv.value.downcase()
-                when "select"
-                  @log_write_method = LOG_WRITE_METHOD_SELECT
-                when "spin"
-                  @log_write_method = LOG_WRITE_METHOD_SPIN
-                when "taxi"
-                  @log_write_method = LOG_WRITE_METHOD_TAXI
-                else
-                  raise ConfigException.new(kv.file_name, kv.line_no, BayMessage.get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
-                end
+
               else
                 return false
               end
@@ -178,16 +169,17 @@ module Baykit
 
               # If threre are message to write, write it
               if sb.length > 0
-                get_logger(tour.ship.agent).log(sb)
+                @multiplexers[tour.ship.agent_id].req_write(
+                  @rudders[tour.ship.agent_id],
+                  sb,
+                  nil,
+                  "log",
+                  nil
+                )
               end
             end
 
             private
-
-            def get_logger(agt)
-              return @loggers[agt.agent_id]
-            end
-
 
 
             #

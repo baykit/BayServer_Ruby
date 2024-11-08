@@ -16,6 +16,7 @@ module Baykit
       # class instance variables
       class << self
         attr :log_level
+        attr :full_path
       end
       @log_level = LOG_LEVEL_INFO
       @full_path = SysUtil.run_on_rubymine()

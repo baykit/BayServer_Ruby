@@ -1,0 +1,32 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Cgi
+        class CgiStdOutShip
+          @file_wrote_len: Integer
+          @tour: Tours::Tour
+          @tour_id: Integer
+          @header_reading: bool
+          @remain: String
+          @handler: CgiReqContentHandler
+          @agent_id: Integer
+          @ship_id: Integer
+          @object_id: Integer
+
+          def initialize: -> void
+          def init_std_out: (Rudders::Rudder rd, Integer agent_id, Tours::Tour tur, Agent::Multiplexer::Transporter tp, CgiReqContentHandler handler) -> void
+          def to_s: -> String
+          def reset: -> void
+          def notify_read: (String buf) -> Integer
+          def notify_error: (Exception e) -> void
+          def notify_eof: -> Integer
+          def notify_close: -> void
+          def check_timeout: (Integer duration_sec) -> bool
+        end
+      end
+    end
+  end
+end

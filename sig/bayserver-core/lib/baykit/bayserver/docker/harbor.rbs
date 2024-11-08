@@ -1,0 +1,46 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Harbor
+        MULTIPLEXER_TYPE_SPIDER: Integer
+        MULTIPLEXER_TYPE_SPIN: Integer
+        MULTIPLEXER_TYPE_PIGEON: Integer
+        MULTIPLEXER_TYPE_JOB: Integer
+        MULTIPLEXER_TYPE_TAXI: Integer
+        MULTIPLEXER_TYPE_TRAIN: Integer
+        RECIPIENT_TYPE_SPIDER: Integer
+        RECIPIENT_TYPE_PIPE: Integer
+        include Docker
+
+        def charset: -> String
+        def locale: -> Locale
+        def grand_agents: -> Integer
+        def train_runners: -> Integer
+        def taxi_runners: -> Integer
+        def max_ships: -> Integer
+        def trouble: -> Trouble
+        def socket_timeout_sec: -> Integer
+        def keep_timeout_sec: -> Integer
+        def trace_header: -> bool
+        def tour_buffer_size: -> Integer
+        def redirect_file: -> bool
+        def control_port: -> Integer
+        def gzip_comp: -> bool
+        def net_multiplexer: -> Integer
+        def file_multiplexer: -> Integer
+        def log_multiplexer: -> Integer
+        def cgi_multiplexer: -> Integer
+        def recipient: -> Integer
+        def pid_file: -> Integer
+        def multi_core: -> bool
+        def self.get_multiplexer_type_name: (Integer `type`) -> String?
+        def self.get_multiplexer_type: (String `type`) -> Integer
+        def get_recipient_type_name: (Integer `type`) -> String?
+        def get_recipient_type: (String `type`) -> Integer
+      end
+    end
+  end
+end

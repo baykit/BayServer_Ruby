@@ -20,17 +20,10 @@ module Baykit
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Docker::Fcgi::Command
 
-          def initialize(pkt_store, svr_mode)
-            @command_unpacker = FcgCommandUnPacker.new(self)
-            @packet_unpacker = FcgPacketUnPacker.new(pkt_store, @command_unpacker)
-            @packet_packer = PacketPacker.new()
-            @command_packer = CommandPacker.new(@packet_packer, pkt_store)
-            @server_mode = svr_mode
+          def initialize(fcg_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, svr_mode)
+            super(pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, fcg_handler, svr_mode)
           end
 
-          def inspect()
-            return "PH[#{@ship}]"
-          end
 
           ######################################################
           # Implements ProtocolHandler

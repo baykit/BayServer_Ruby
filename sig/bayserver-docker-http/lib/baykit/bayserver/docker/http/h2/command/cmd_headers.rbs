@@ -1,0 +1,31 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module Command
+            class CmdHeaders
+              include H2
+              @pad_length: Integer
+              @stream_dependency: Integer
+              @weight: Integer
+              @header_blocks: Array[HeaderBlock]
+
+              attr_accessor excluded: bool
+              def initialize: (Integer stream_id, ?Integer flags) -> void
+              def unpack: (H2Packet pkt) -> void
+              def pack: (H2Packet pkt) -> void
+              def handle: (H2CommandHandler cmd_handler) -> Integer
+              def read_header_block: (H2Packet::H2DataAccessor acc, Integer len) -> void
+              def write_header_block: (H2Packet::H2DataAccessor acc) -> void
+              def add_header_block: (HeaderBlock blk) -> void
+            end
+          end
+        end
+      end
+    end
+  end
+end

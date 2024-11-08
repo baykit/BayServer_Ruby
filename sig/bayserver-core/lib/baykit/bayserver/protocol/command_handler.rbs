@@ -1,0 +1,11 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      module CommandHandler
+      end
+    end
+  end
+end

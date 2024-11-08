@@ -3,19 +3,33 @@ require 'baykit/bayserver/docker/docker'
 module Baykit
   module BayServer
     module Docker
-      module City
-        include Baykit::BayServer::Docker::Docker
+      module City # interface
+        include Baykit::BayServer::Docker::Docker # implements
 
-        #
-        # interface
-        #
-        #     String name();
-        #     List<Club> clubs();
-        #     List<Town> towns();
-        #     void enter(Tour tour) throws HttpException;
-        #     Trouble getTrouble();
-        #     void log(Tour tour);
-        #
+        def name
+          raise NotImplementedError.new
+        end
+
+        def clubs
+          raise NotImplementedError.new
+        end
+
+        def towns
+          raise NotImplementedError.new
+        end
+
+        def enter(tur)
+          raise NotImplementedError.new
+        end
+
+        def get_trouble
+          raise NotImplementedError.new
+        end
+
+        def log(tur)
+          raise NotImplementedError.new
+        end
+
       end
     end
   end

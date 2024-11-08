@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          module Command
+            class CmdContent
+              @buf: String
+              @start: Integer
+              @len: Integer
+
+              def initialize: (?String buf, ?Integer start, ?Integer len) -> void
+              def unpack: (H1Packet pkt) -> void
+              def pack: (H1Packet pkt) -> void
+              def handle: (H1CommandHandler cmd_handler) -> Integer
+            end
+          end
+        end
+      end
+    end
+  end
+end

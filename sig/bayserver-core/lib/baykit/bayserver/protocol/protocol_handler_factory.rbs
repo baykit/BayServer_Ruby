@@ -1,0 +1,12 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      module ProtocolHandlerFactory
+        def create_procol_handler: (PacketStore pkt_store) -> ProtocolHandler
+      end
+    end
+  end
+end

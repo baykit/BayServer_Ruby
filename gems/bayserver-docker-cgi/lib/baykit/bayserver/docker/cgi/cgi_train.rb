@@ -64,7 +64,7 @@ module Baykit
               # Handle StdOut
               HttpUtil.parse_message_headers(@std_out[0], @tour.res.headers)
 
-              if BayServer.harbor.trace_header?
+              if BayServer.harbor.trace_header
                 @tour.res.headers.names.each do |name|
                   @tour.res.headers.values(name).each do |value|
                     BayLog.info("%s CGI: resHeader: %s=%s", @tour, name, value)

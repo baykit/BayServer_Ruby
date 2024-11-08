@@ -1,0 +1,26 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module Command
+            class CmdData
+              include H2
+              @data: String
+              @start: Integer
+              @length: Integer
+
+              def initialize: (Integer stream_id, Integer flags, ?String data, ?Integer start, ?Integer len) -> void
+              def unpack: (H2Packet pkt) -> void
+              def pack: (H2Packet pkt) -> void
+              def handle: (H2CommandHandler cmd_handler) -> Integer
+            end
+          end
+        end
+      end
+    end
+  end
+end

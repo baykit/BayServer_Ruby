@@ -15,15 +15,15 @@ module Baykit
         class AgentListener
           include Baykit::BayServer::Agent::LifecycleListener # implements
 
-          def add(agt)
+          def add(agt_id)
             PacketStore.proto_map.values().each do |ifo|
-             ifo.add_agent(agt.agent_id);
+             ifo.add_agent(agt_id);
             end
           end
 
-          def remove(agt)
+          def remove(agt_id)
             PacketStore.proto_map.values().each do |ifo|
-              ifo.remove_agent(agt.agent_id);
+              ifo.remove_agent(agt_id);
             end
           end
         end

@@ -15,14 +15,14 @@ module Baykit
         class AgentListener
           include Baykit::BayServer::Agent::LifecycleListener # implements
 
-          def add(agt)
-            TaxiRunner.runners[agt.agent_id - 1] = TaxiRunner.new(agt)
+          def add(agt_id)
+            TaxiRunner.runners[agt_id - 1] = TaxiRunner.new(agt_id)
           end
 
-          def remove(agt)
-            BayLog.debug("%s Remove tax runner", agt)
-            TaxiRunner.runners[agt.agent_id - 1].terminate()
-            TaxiRunner.runners[agt.agent_id - 1] = nil
+          def remove(agt_id)
+            BayLog.debug("agt#%d Remove tax runner", agt_id)
+            TaxiRunner.runners[agt_id - 1].terminate()
+            TaxiRunner.runners[agt_id - 1] = nil
           end
         end
 
@@ -38,12 +38,12 @@ module Baykit
         attr :running_taxis
         attr :lock
 
-        def initialize(agt)
-          @agent = agt
+        def initialize(agt_id)
+          @agent = GrandAgent.get(agt_id)
           @exe = ExecutorService.new("TaxiRunner", TaxiRunner.max_taxis)
           @agent.add_timer_handler(self)
           @running_taxis = []
-          @lock = Monitor.new()
+          @lock = ::Monitor.new()
         end
 
         ######################################################

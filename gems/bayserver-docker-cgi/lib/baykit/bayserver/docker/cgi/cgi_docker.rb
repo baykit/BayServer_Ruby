@@ -1,13 +1,13 @@
 require 'baykit/bayserver/bcf/package'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/agent/transporter/spin_read_transporter'
 require 'baykit/bayserver/tours/tour'
 require 'baykit/bayserver/tours/read_file_taxi'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/docker/harbor'
 require 'baykit/bayserver/docker/cgi/cgi_req_content_handler'
-require 'baykit/bayserver/docker/cgi/cgi_std_out_yacht'
-require 'baykit/bayserver/docker/cgi/cgi_std_err_yacht'
+require 'baykit/bayserver/docker/cgi/cgi_std_out_ship'
+require 'baykit/bayserver/docker/cgi/cgi_std_err_ship'
 require 'baykit/bayserver/docker/cgi/cgi_message'
 require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/util/http_status'
@@ -22,13 +22,13 @@ module Baykit
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
           include Baykit::BayServer::Agent
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Docker
           include Baykit::BayServer::Docker::Cgi
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Taxi
+          include Baykit::BayServer::Rudders
 
-          DEFAULT_PROC_READ_METHOD = Harbor::FILE_SEND_METHOD_TAXI
           DEFAULT_TIMEOUT_SEC = 0
 
           attr :interpreter
@@ -44,7 +44,6 @@ module Baykit
             @interpreter = nil
             @script_base = nil
             @doc_root = nil
-            @proc_read_method = CgiDocker::DEFAULT_PROC_READ_METHOD
             @timeout_sec = CgiDocker::DEFAULT_TIMEOUT_SEC
           end
 
@@ -54,16 +53,6 @@ module Baykit
 
           def init(elm, parent)
             super
-
-            if @proc_read_method == Harbor::FILE_SEND_METHOD_SELECT and !SysUtil.support_select_pipe()
-              BayLog.warn(BayMessage.get(:CGI_PROC_READ_METHOD_SELECT_NOT_SUPPORTED))
-              @proc_read_method = Harbor::FILE_SEND_METHOD_TAXI
-            end
-
-            if @proc_read_method == Harbor::FILE_SEND_METHOD_SPIN and !SysUtil.support_nonblock_pipe_read()
-              BayLog.warn(BayMessage.get(:CGI_PROC_READ_METHOD_SPIN_NOT_SUPPORTED))
-              @proc_read_method = Harbor::FILE_SEND_METHOD_TAXI
-            end
           end
 
 
@@ -81,22 +70,6 @@ module Baykit
 
             when "docroot"
               @doc_root = kv.value
-
-            when "processreadmethod"
-              case kv.value.downcase()
-
-              when "select"
-                @proc_read_method = Harbor::FILE_SEND_METHOD_SELECT
-
-              when "spin"
-                @proc_read_method = Harbor::FILE_SEND_METHOD_SPIN
-
-              when "taxi"
-                @proc_read_method = Harbor::FILE_SEND_METHOD_TAXI
-
-              else
-                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage.get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
-              end
 
             when "timeout"
               @timeout_sec = kv.value.to_i
@@ -137,7 +110,7 @@ module Baykit
             end
 
             env = CgiUtil.get_env_hash(tur.town.name, root, base, tur)
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               env.keys.each do |name|
                 value = env[name]
                 BayLog.info("%s cgi: env: %s=%s", tur, name, value)
@@ -155,22 +128,18 @@ module Baykit
             handler.start_tour(env)
             fname = "cgi#"
 
-            out_yat = CgiStdOutYacht.new()
-            err_yat = CgiStdErrYacht.new()
+            out_rd = handler.std_out_rd
+            err_rd = handler.std_err_rd
 
-            case(@proc_read_method)
-            when Harbor::FILE_SEND_METHOD_SELECT
-              out_tp = PlainTransporter.new(false, bufsize)
-              out_yat.init(tur, out_tp, handler)
-              out_tp.init(tur.ship.agent.non_blocking_handler, handler.std_out[0], out_yat)
-              out_tp.open_valve()
+            agt = GrandAgent.get(tur.ship.agent_id)
 
-              err_tp = PlainTransporter.new(false, bufsize)
-              err_yat.init(tur, handler)
-              err_tp.init(tur.ship.agent.non_blocking_handler, handler.std_err[0], err_yat)
-              err_tp.open_valve()
+            case(BayServer.harbor.cgi_multiplexer)
+            when Harbor::MULTIPLEXER_TYPE_SPIDER
+              mpx = agt.spider_multiplexer
+              out_rd.set_non_blocking
+              err_rd.set_non_blocking
 
-            when Harbor::FILE_SEND_METHOD_SPIN
+            when Harbor::MULTIPLEXER_TYPE_SPIN
 
               def eof_checker()
                 begin
@@ -181,34 +150,49 @@ module Baykit
                   return true
                 end
               end
+              mpx = agt.spin_multiplexer
+              out_rd.set_non_blocking
+              err_rd.set_non_blocking
 
-              out_tp = SpinReadTransporter.new(bufsize)
-              out_yat.init(tur, out_tp, handler)
-              out_tp.init(tur.ship.agent.spin_handler, out_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
-              out_tp.open_valve()
+            when Harbor::MULTIPLEXER_TYPE_TAXI
+              mpx = agt.taxi_multiplexer
 
-              err_tp = SpinReadTransporter.new(bufsize)
-              err_yat.init(tur, handler)
-              err_tp.init(tur.ship.agent.spin_handler, err_yat, handler.std_out[0], -1, @timeout_sec, eof_checker)
-              err_tp.open_valve()
-
-            when Harbor::FILE_SEND_METHOD_TAXI
-              out_txi = ReadFileTaxi.new(tur.ship.agent.agent_id, bufsize)
-              out_yat.init(tur, out_txi, handler)
-              out_txi.init(handler.std_out[0], out_yat)
-              if !TaxiRunner.post(tur.ship.agent.agent_id, out_txi)
-                raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")
-              end
-
-              err_txi = ReadFileTaxi.new(tur.ship.agent.agent_id, bufsize)
-              err_yat.init(tur, handler)
-              err_txi.init(handler.std_err[0], err_yat)
-              if !TaxiRunner.post(tur.ship.agent.agent_id, err_txi)
-                raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "Taxi is busy!")
-              end
+            when Harbor::MULTIPLEXER_TYPE_JOB
+              mpx = agt.job_multiplexer
 
             else
               raise Sink.new();
+            end
+
+            if mpx != nil
+              handler.multiplexer = mpx
+              out_ship = CgiStdOutShip.new
+              out_tp = PlainTransporter.new(agt.net_multiplexer, out_ship, false, bufsize, false)
+
+              out_ship.init_std_out(out_rd, tur.ship.agent_id, tur, out_tp, handler)
+
+              mpx.add_rudder_state(
+                out_rd,
+                RudderState.new(out_rd, out_tp)
+              )
+
+              ship_id = tur.ship.ship_id
+              tur.res.set_consume_listener do |len, resume|
+                if resume
+                  out_ship.resume_read(ship_id)
+                end
+              end
+
+              err_ship = CgiStdErrShip.new
+              err_tp = PlainTransporter.new(agt.net_multiplexer, err_ship, false, bufsize, false)
+              err_ship.init_std_err(err_rd, tur.ship.agent_id, handler)
+              mpx.add_rudder_state(
+                err_rd,
+                RudderState.new(err_rd, err_tp)
+              )
+
+              mpx.req_read(out_rd)
+              mpx.req_read(err_rd)
             end
           end
 

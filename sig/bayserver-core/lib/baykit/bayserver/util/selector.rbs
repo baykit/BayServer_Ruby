@@ -1,0 +1,29 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Selector
+        OP_READ: Integer
+        OP_WRITE: Integer
+        @rudders: Hash[Rudders::Rudder, Integer]
+        @lock: Thread::Mutex
+
+        def initialize: -> void
+        def register: (IO ch, Integer op) -> void
+        def unregister: (IO ch) -> void
+        def modify: (IO ch, Integer op) -> void
+        def get_op: (IO ch) -> Integer
+        def select: (?(Integer | nil) timeout_sec) -> Hash[IO, Integer]
+        def count: -> Integer
+
+        private
+        def register_read: (IO ch, Hash[Rudders::Rudder, Integer] rd_list) -> void
+        def register_write: (IO ch, Hash[Rudders::Rudder, Integer] rd_list) -> void
+        def unregister_read: (IO ch, Hash[Rudders::Rudder, Integer] rd_list) -> void
+        def unregister_write: (IO ch, Hash[Rudders::Rudder, Integer] rd_list) -> void
+      end
+    end
+  end
+end

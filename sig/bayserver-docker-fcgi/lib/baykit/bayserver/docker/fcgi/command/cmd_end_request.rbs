@@ -1,0 +1,26 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class CmdEndRequest
+            FCGI_REQUEST_COMPLETE: Integer
+            FCGI_CANT_MPX_CONN: Integer
+            FCGI_OVERLOADED: Integer
+            FCGI_UNKNOWN_ROLE: Integer
+            @app_status: Integer
+            @protocol_status: Integer
+
+            def initialize: (Integer req_id) -> void
+            def unpack: (FcgPacket pkt) -> void
+            def pack: (FcgPacket pkt) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

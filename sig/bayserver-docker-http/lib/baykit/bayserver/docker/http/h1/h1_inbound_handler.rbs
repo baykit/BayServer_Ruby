@@ -1,0 +1,49 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1InboundHandler
+            STATE_READ_HEADER: Integer
+            STATE_READ_CONTENT: Integer
+            STATE_FINISHED: Integer
+            FIXED_REQ_ID: Integer
+            @header_read: bool
+            @state: Integer
+            @cur_tour: Tours::Tour
+            @http_protocol: String
+            @cur_req_id: Integer
+            @protocol_handler: H1ProtocolHandler
+            @cur_tour_id: Integer
+
+            def initialize: -> void
+            def init: (H1ProtocolHandler proto_handler) -> void
+            def reset: -> void
+            def send_res_headers: (Tours::Tour tur) -> void
+            def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
+            def send_end_tour: (Tours::Tour tur, bool keep_alive) -> void
+            def send_req_protocol_error: (Exception err) -> bool
+            def handle_header: (Command::CmdHeader cmd) -> Integer
+            def handle_content: (Command::CmdContent cmd) -> Integer
+            def handle_end_content: (Command::CmdEndContent cmd) -> Integer
+            def req_finished: -> bool
+
+            private
+            def ship: -> Common::InboundShip
+            def change_state: (Integer new_state) -> Integer
+            def reset_state: -> void
+            def end_req_content: (Integer chk_tur_id, Tours::Tour tur) -> void
+            def start_tour: (Tours::Tour tur) -> void
+
+            class InboundProtocolHandlerFactory
+              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> untyped
+            end
+          end
+        end
+      end
+    end
+  end
+end

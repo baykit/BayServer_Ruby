@@ -1,0 +1,51 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class TourReq
+        @headers: Util::Headers
+        @tour: Tour
+        @key: Integer
+        @bytes_posted: Integer
+        @bytes_consumed: Integer
+        @bytes_limit: Integer
+        @available: bool
+        @content_handler: ReqContentHandler
+        @consume_listener: untyped
+        @ended: bool
+
+        attr_accessor uri: String
+        attr_accessor protocol: String
+        attr_accessor method: String
+        attr_accessor rewritten_uri: String
+        attr_accessor query_string: String
+        attr_accessor path_info: String
+        attr_accessor script_name: String
+        attr_accessor req_host: String
+        attr_accessor req_port: Integer
+        attr_accessor remote_user: String
+        attr_accessor remote_pass: String
+        attr_accessor remote_address: String
+        attr_accessor remote_port: Integer
+        attr_accessor remote_host_func: untyped
+        attr_accessor server_address: String
+        attr_accessor server_port: Integer
+        attr_accessor server_name: String
+        attr_accessor charset: String
+        def initialize: (Tour tur) -> void
+        def init: (Integer key) -> void
+        def reset: -> void
+        def remote_host: -> String
+        def set_limit: (Integer limit) -> void
+        def post_req_content: (Integer check_id, String data, Integer start, Integer len) -> bool
+        def end_req_content: (Integer check_id) -> void
+        def consumed: (Integer chk_id, Integer length) -> void
+        def abort: -> bool
+        def set_content_handler: (untyped hnd) -> void
+        def buffer_available: -> bool
+      end
+    end
+  end
+end

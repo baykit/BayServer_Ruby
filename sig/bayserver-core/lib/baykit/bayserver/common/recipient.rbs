@@ -1,0 +1,13 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      module Recipient
+        def receive: (bool wait) -> void
+        def wakeup: -> void
+      end
+    end
+  end
+end

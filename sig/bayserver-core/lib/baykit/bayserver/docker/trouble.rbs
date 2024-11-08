@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Trouble
+        TROUBLE_METHOD_GUIDE: Integer
+        TROUBLE_METHOD_TEXT: Integer
+        TROUBLE_METHOD_REROUTE: Integer
+        include Docker
+
+        def find: (Integer status) -> untyped
+
+        class Command
+          @method: Integer
+          @target: String
+
+          def initialize: (Integer method, String target) -> void
+        end
+      end
+    end
+  end
+end

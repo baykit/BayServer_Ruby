@@ -4,8 +4,8 @@ require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/protocol/protocol_handler_store'
 require 'baykit/bayserver/protocol/packet_store'
 require 'baykit/bayserver/tours/tour_store'
-require 'baykit/bayserver/docker/base/inbound_ship_store'
-require 'baykit/bayserver/docker/warp/warp_docker'
+require 'baykit/bayserver/common/inbound_ship_store'
+require 'baykit/bayserver/docker/base/warp_base'
 
 require 'baykit/bayserver/util/string_util'
 
@@ -16,19 +16,19 @@ module Baykit
       include Baykit::BayServer::Agent
       include Baykit::BayServer::Protocol
       include Baykit::BayServer::Tours
-      include Baykit::BayServer::Docker::Warp
+      include Baykit::BayServer::Common
       include Baykit::BayServer::Docker::Base
       include Baykit::BayServer::Util
 
       class AgentListener
         include Baykit::BayServer::Agent::LifecycleListener
 
-        def add(agt)
-          MemUsage.mem_usages[agt.agent_id] = MemUsage.new(agt.agent_id);
+        def add(agt_id)
+          MemUsage.mem_usages[agt_id] = MemUsage.new(agt_id);
         end
 
-        def remove(agt)
-          MemUsage.mem_usages.delete(agt.agent_id)
+        def remove(agt_id)
+          MemUsage.mem_usages.delete(agt_id)
         end
       end
 
@@ -73,14 +73,14 @@ module Baykit
         end
 
         city.clubs().each do |club|
-          if club.kind_of?(WarpDocker)
+          if club.kind_of?(WarpBase)
             BayLog.info("%sClub(%s%s) Usage:", StringUtil.indent(indent), club, pname);
             club.get_ship_store(@agent_id).print_usage(indent+1)
           end
         end
         city.towns().each do |town|
           town.clubs().each do |club|
-            if club.kind_of?(WarpDocker)
+            if club.kind_of?(WarpBase)
               BayLog.info("%sClub(%s%s) Usage:", StringUtil.indent(indent), club, pname);
               club.get_ship_store(@agent_id).print_usage(indent+1)
             end

@@ -22,7 +22,6 @@ module Baykit
 
               def initialize(stream_id, flags=nil)
                 super(H2Type::WINDOW_UPDATE, stream_id, flags)
-                @items = []
               end
 
               def unpack(pkt)

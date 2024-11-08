@@ -1,0 +1,27 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class CmdBeginRequest
+            FCGI_KEEP_CONN: Integer
+            FCGI_RESPONDER: Integer
+            FCGI_AUTHORIZER: Integer
+            FCGI_FILTER: Integer
+            include Fcgi
+
+            attr_accessor role: Integer
+            attr_accessor keep_conn: bool
+            def initialize: (Integer req_id) -> void
+            def unpack: (FcgPacket pkt) -> void
+            def pack: (FcgPacket pkt) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,47 +1,65 @@
 require 'baykit/bayserver/protocol/protocol_exception'
-require 'baykit/bayserver/docker/base/inbound_handler'
+require 'baykit/bayserver/common/inbound_handler'
 require 'baykit/bayserver/tours/req_content_handler'
 require 'baykit/bayserver/util/cgi_util'
 
 require 'baykit/bayserver/docker/fcgi/fcg_protocol_handler'
+require 'baykit/bayserver/docker/fcgi/fcg_handler'
 
 module Baykit
   module BayServer
     module Docker
       module Fcgi
-        class FcgInboundHandler < Baykit::BayServer::Docker::Fcgi::FcgProtocolHandler
+        class FcgInboundHandler
 
           class InboundProtocolHandlerFactory
             include Baykit::BayServer::Protocol::ProtocolHandlerFactory  # implements
 
+            include Baykit::BayServer::Protocol
+
             def create_protocol_handler(pkt_store)
-              return FcgInboundHandler.new(pkt_store)
+              ib_handler = FcgInboundHandler.new
+              cmd_unpacker = FcgCommandUnPacker.new(ib_handler)
+              pkt_unpacker = FcgPacketUnPacker.new(pkt_store, cmd_unpacker)
+              pkt_packer = PacketPacker.new()
+              cmd_packer = CommandPacker.new(pkt_packer, pkt_store)
+
+              proto_handler = FcgProtocolHandler.new(ib_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, true)
+              ib_handler.init(proto_handler)
+              return proto_handler
             end
           end
 
-          include Baykit::BayServer::Docker::Base::InboundHandler # implements
+          include Baykit::BayServer::Common::InboundHandler # implements
+          include FcgHandler # implements
+
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Docker::Fcgi::Command
 
           STATE_BEGIN_REQUEST = 1
           STATE_READ_PARAMS = 2
           STATE_READ_STDIN = 3
 
           attr :state
+          attr :protocol_handler
           attr :cont_len
 
           attr :env
           attr :req_id
           attr :req_keep_alive
 
-          def initialize(pkt_store)
-            super(pkt_store, true)
+          def initialize
             @env = {}
-            reset_state()
+            reset()
           end
 
+          def init(proto_handler)
+            @protocol_handler = proto_handler
+          end
+          
           def to_s()
             return ClassUtil.get_local_name(self.class)
           end
@@ -50,23 +68,22 @@ module Baykit
           # implements Reusable
           ######################################################
           def reset
-            super
             @env.clear()
             reset_state()
           end
 
           ######################################################
-          # implements InboundHandler
+          # implements TourHandler
           ######################################################
 
           def send_res_headers(tur)
-            BayLog.debug("%s PH:sendHeaders: tur=%s", @ship, tur)
+            BayLog.debug("%s PH:sendHeaders: tur=%s", ship, tur)
 
             scode = tur.res.headers.status
             status = "#{scode} #{HttpStatus.description(scode)}"
             tur.res.headers.set(Headers::STATUS, status)
 
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               BayLog.info("%s resStatus:%d", tur, tur.res.headers.status)
               tur.res.headers.names().each do |name|
                 tur.res.headers.values(name) do |value|
@@ -79,32 +96,32 @@ module Baykit
             HttpUtil.send_mime_headers(tur.res.headers, buf)
             HttpUtil.send_new_line(buf)
             cmd = CmdStdOut.new(tur.req.key, buf.buf, 0, buf.length)
-            @command_packer.post(@ship, cmd)
+            @protocol_handler.post(cmd)
           end
 
           def send_res_content(tur, bytes, ofs, len, &callback)
             cmd = CmdStdOut.new(tur.req.key, bytes, ofs, len);
-            @command_packer.post(@ship, cmd, &callback)
+            @protocol_handler.post(cmd, &callback)
           end
 
           def send_end_tour(tur, keep_alive, &callback)
-            BayLog.debug("%s PH:endTour: tur=%s keep=%s", @ship, tur, keep_alive)
+            BayLog.debug("%s PH:endTour: tur=%s keep=%s", ship, tur, keep_alive)
 
             # Send empty stdout command
             cmd = CmdStdOut.new(tur.req.key)
-            @command_packer.post(@ship, cmd)
+            @protocol_handler.post(cmd)
 
             # Send end request command
             cmd = CmdEndRequest.new(tur.req.key)
 
             ensure_func = lambda do
               if !keep_alive
-                @command_packer.end(@ship)
+                ship.post_close
               end
             end
 
             begin
-              @command_packer.post(@ship, cmd) do
+              @protocol_handler.post(cmd) do
                 BayLog.debug("%s call back in sendEndTour: tur=%s keep=%s", self, tur, keep_alive)
                 ensure_func.call()
                 callback.call()
@@ -116,8 +133,8 @@ module Baykit
             end
           end
 
-          def send_req_protocol_error(err)
-            tur = @ship.get_error_tour()
+          def on_protocol_error(err)
+            tur = ship.get_error_tour()
             tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::BAD_REQUEST, err.message, err)
             true
           end
@@ -155,7 +172,7 @@ module Baykit
           end
 
           def handle_params(cmd)
-            BayLog.debug("%s handle_params req_id=%d", @ship, cmd.req_id)
+            BayLog.debug("%s handle_params req_id=%d", ship, cmd.req_id)
 
             if state != STATE_READ_PARAMS
               raise ProtocolException.new("Invalid FCGI command: %d state=%d", cmd.type, @state)
@@ -163,8 +180,8 @@ module Baykit
 
             check_req_id(cmd.req_id)
 
-            BayLog.debug("%s handle_param get_tour req_id=%d", @ship, cmd.req_id)
-            tur = @ship.get_tour(cmd.req_id)
+            BayLog.debug("%s handle_param get_tour req_id=%d", ship, cmd.req_id)
+            tur = ship.get_tour(cmd.req_id)
 
             if cmd.params.empty?
               # Header completed
@@ -182,28 +199,23 @@ module Baykit
               req_cont_len = tur.req.headers.content_length()
 
               BayLog.debug("%s read header method=%s protocol=%s uri=%s contlen=%d",
-                           @ship, tur.req.method, tur.req.protocol, tur.req.uri, @cont_len)
+                           ship, tur.req.method, tur.req.protocol, tur.req.uri, @cont_len)
 
-              if BayServer.harbor.trace_header?
+              if BayServer.harbor.trace_header
                 cmd.params.each do |nv|
                   BayLog.info("%s  reqHeader: %s=%s", tur, nv[0], nv[1])
                 end
               end
 
               if req_cont_len > 0
-                tur.req.set_consume_listener(req_cont_len) do |len, resume|
-                  sid = @ship.ship_id
-                  if resume
-                    @ship.resume(sid)
-                  end
-                end
+                tur.req.set_limit(req_cont_len)
               end
 
               change_state(STATE_READ_STDIN)
               begin
                 start_tour(tur)
               rescue HttpException => e
-                BayLog.debug("%s Http error occurred: %s", @ship, e)
+                BayLog.debug("%s Http error occurred: %s", ship, e)
 
                 if req_cont_len <= 0
                   # no post data
@@ -220,14 +232,14 @@ module Baykit
               end
 
             else
-              if BayServer.harbor.trace_header?
+              if BayServer.harbor.trace_header
                 BayLog.info("%s Read FcgiParam", tur)
               end
 
               cmd.params.each do |nv|
                 name = nv[0]
                 value = nv[1]
-                if BayServer.harbor.trace_header?
+                if BayServer.harbor.trace_header
                   BayLog.info("%s  param: %s=%s", tur, name, value);
                 end
                 @env[name] = value
@@ -257,41 +269,48 @@ module Baykit
           end
 
           def handle_stdin(cmd)
-            BayLog.debug("%s handle_stdin req_id=%d len=%d", @ship, cmd.req_id, cmd.length)
+            BayLog.debug("%s handle_stdin req_id=%d len=%d", ship, cmd.req_id, cmd.length)
 
             if @state != STATE_READ_STDIN
               raise ProtocolException.new("Invalid FCGI command: %d state=%d", cmd.type, @state)
             end
 
-            check_req_id(cmd.req_id)
+            begin
+              check_req_id(cmd.req_id)
 
-            tur = @ship.get_tour(cmd.req_id)
-            if cmd.length == 0
-              #  request content completed
-              if tur.error != nil
-                # Error has occurred on header completed
-                tur.res.set_consume_listener do |len, resume|
+              tur = ship.get_tour(cmd.req_id)
+              if cmd.length == 0
+                #  request content completed
+                if tur.error != nil
+                  # Error has occurred on header completed
+                  BayLog.debug("%s Delay send error", tur)
+                  raise tur.error
+                else
+                  begin
+                    end_req_content(Tour::TOUR_ID_NOCHECK, tur)
+                    return NextSocketAction::CONTINUE
+                  end
                 end
-                tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, tur.error)
-                reset_state()
-                return NextSocketAction::WRITE
               else
-                begin
-                  end_req_content(Tour::TOUR_ID_NOCHECK, tur)
+                sid = ship.ship_id
+                success = tur.req.post_req_content(Tour::TOUR_ID_NOCHECK, cmd.data, cmd.start, cmd.length) do |len, resume|
+                  if resume
+                    ship.resume(sid)
+                  end
+                end
+
+                if !success
+                  return NextSocketAction::SUSPEND
+                else
                   return NextSocketAction::CONTINUE
-                rescue HttpException => e
-                  tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, e)
-                  return NextSocketAction::WRITE
                 end
               end
-            else
-              success = tur.req.post_content(Tour::TOUR_ID_NOCHECK, cmd.data, cmd.start, cmd.length)
 
-              if !success
-                return NextSocketAction::SUSPEND
-              else
-                return NextSocketAction::CONTINUE
-              end
+            rescue HttpException => e
+              tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, tur.error)
+              tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, e)
+              reset_state()
+              return NextSocketAction::WRITE
             end
           end
 
@@ -300,6 +319,11 @@ module Baykit
           end
 
           private
+
+          def ship
+            return @protocol_handler.ship
+          end
+
           def check_req_id(received_id)
             if received_id == FcgPacket::FCGI_NULL_REQUEST_ID
               raise ProtocolException.new("Invalid request id: %d", received_id)
@@ -310,7 +334,7 @@ module Baykit
             end
 
             if @req_id != received_id
-              BayLog.error("%s invalid request id: received=%d reqId=%d", @ship, received_id, req_id)
+              BayLog.error("%s invalid request id: received=%d reqId=%d", sip, received_id, req_id)
               raise ProtocolException.new("Invalid request id: %d", received_id)
             end
           end
@@ -326,7 +350,7 @@ module Baykit
           end
 
           def end_req_content(check_id, tur)
-            tur.req.end_content(check_id)
+            tur.req.end_req_content(check_id)
             reset_state()
           end
 
@@ -336,7 +360,7 @@ module Baykit
 
             tur.req.remote_port = @env[CgiUtil::REMOTE_PORT].to_i
             tur.req.remote_address = @env[CgiUtil::REMOTE_ADDR]
-            tur.req.remote_host_func = lambda { @req_command.remote_host }
+            tur.req.remote_host_func = lambda { tur.req.remote_address }
 
             tur.req.server_name = @env[CgiUtil::SERVER_NAME]
             tur.req.server_address = @env[CgiUtil::SERVER_ADDR]

@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          module H1CommandHandler
+            def handle_header: (untyped cmd) -> untyped
+            def handle_content: (untyped cmd) -> untyped
+            def handle_end_content: (untyped cmd) -> untyped
+            def finished: -> untyped
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,32 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      class CommandReceiver
+        include BayServer
+        @agent: GrandAgent
+        @aborted: bool
+        @agent_id: Integer
+        @rudder: Rudders::Rudder
+        @closed: bool
+
+        def init: (Integer agt_id, Rudders::Rudder rd, Multiplexer::Transporter tp) -> void
+        def to_s: -> String
+        def notify_handshake_done: (String proto) -> Integer
+        def notify_connect: -> Integer
+        def notify_read: (String buf) -> Integer
+        def notify_eof: -> Integer
+        def notify_error: (Exception e) -> void
+        def notify_protocol_error: (untyped e) -> void
+        def notify_close: -> void
+        def check_timeout: (Integer duration_sec) -> bool
+        def on_read_command: (Integer cmd) -> void
+        def end: () -> void
+        def send_command_to_monitor: (GrandAgent agt, Integer cmd, bool sync) -> nil
+        def close: () -> void
+      end
+    end
+  end
+end

@@ -1,0 +1,14 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module AjpHandler
+          def on_protocol_error: (Exception e) -> void
+        end
+      end
+    end
+  end
+end

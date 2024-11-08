@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Permission
+        include Docker
+
+        def socket_admitterd: (Rudders::Rudder rd) -> void
+        def tour_admitted: (Tours::Tour tour) -> void
+      end
+    end
+  end
+end

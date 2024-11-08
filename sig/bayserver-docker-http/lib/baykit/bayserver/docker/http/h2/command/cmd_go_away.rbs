@@ -1,0 +1,26 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module Command
+            class CmdGoAway
+              include H2
+
+              attr_accessor last_stream_id: Integer
+              attr_accessor error_code: Integer
+              attr_accessor debug_data: String
+              def initialize: (Integer stream_id, ?Integer flags) -> void
+              def unpack: (H2Packet pkt) -> void
+              def pack: (H2Packet pkt) -> void
+              def handle: (H2CommandHandler cmd_handler) -> Integer
+            end
+          end
+        end
+      end
+    end
+  end
+end

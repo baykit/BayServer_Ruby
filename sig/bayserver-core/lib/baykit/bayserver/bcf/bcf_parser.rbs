@@ -1,0 +1,32 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Bcf
+      class BcfParser
+        @indent_map: Array[Integer]
+        @file_name: String
+        @line_no: Integer
+        @input: untyped
+        @prev_line_info: LineInfo?
+
+        def initialize: -> void
+        def parse: (String file) -> BcfDocument
+        def push_indent: (Integer sp_count) -> void
+        def pop_indent: -> void
+        def get_indent: (Integer sp_count) -> Integer
+        def parse_same_level: (Array[BcfObject] cur_list, Integer indent) -> LineInfo
+        def parse_line: (Integer line_no, String line) -> LineInfo
+        def parse_key_val: (String line, Integer line_no) -> BcfKeyVal
+
+        class LineInfo
+          @line_obj: BcfObject
+          @indent: Integer
+
+          def initialize: (BcfObject line_obj, Integer indent) -> void
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,43 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class WarpShip
+        @docker: Docker::Warp
+        @socket_timeout_sec: Integer
+        @tour_map: Hash[Integer, [Integer, Tours::Tour]]
+        @lock: Thread::Mutex
+        @cmd_buf: Array[[Protocol::Command, untyped]]
+        @protocol_handler: Protocol::ProtocolHandler
+
+        attr_accessor connected: bool
+        def initialize: -> void
+        def init_warp: (Rudders::Rudder rd, Integer agt_id, Agent::Multiplexer::Transporter tp, Docker::Warp dkr, Protocol::ProtocolHandler proto_hnd) -> void
+        def to_s: -> String
+        def inspect: -> String
+        def reset: -> void
+        def notify_handshake_done: (String proto) -> Integer
+        def notify_connect: -> Integer
+        def notify_read: (String buf) -> Integer
+        def notify_eof: -> Integer
+        def notify_error: (Exception e) -> void
+        def notify_protocol_error: (Exception e) -> bool
+        def notify_close: -> void
+        def check_timeout: (Integer duration_sec) -> bool
+        def warp_handler: -> WarpHandler
+        def start_warp_tour: (Tours::Tour tur) -> void
+        def end_warp_tour: (Tours::Tour tur) -> void
+        def notify_service_unavailable: (String msg) -> void
+        def get_tour: (Integer warp_id, ?bool must) -> Tours::Tour
+        def notify_error_to_owner_tour: (Integer status, String msg) -> void
+        def end_ship: -> void
+        def abort: (Integer check_id) -> void
+        def is_timeout: (Integer duration) -> bool
+        def post: (Protocol::Command cmd, ?untyped listener) -> void
+        def flush: -> void
+      end
+    end
+  end
+end

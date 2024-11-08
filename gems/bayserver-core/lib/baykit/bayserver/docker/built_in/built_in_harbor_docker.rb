@@ -4,7 +4,7 @@ require 'baykit/bayserver/docker/base/docker_base'
 require 'baykit/bayserver/constants'
 require 'baykit/bayserver/config_exception'
 
-require 'baykit/bayserver/util/groups'
+require 'baykit/bayserver/common/groups'
 require 'baykit/bayserver/util/sys_util'
 
 
@@ -19,6 +19,7 @@ module Baykit
           include Baykit::BayServer
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
           include Baykit::BayServer::Constants
 
           DEFAULT_MAX_SHIPS = 256
@@ -33,7 +34,11 @@ module Baykit
           DEFAULT_CONTROL_PORT = -1
           DEFAULT_MULTI_CORE = true
           DEFAULT_GZIP_COMP = false
-          DEFAULT_FILE_SEND_METHOD = FILE_SEND_METHOD_TAXI
+          DEFAULT_NET_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
+          DEFAULT_FILE_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
+          DEFAULT_LOG_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
+          DEFAULT_CGI_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
+          DEFAULT_RECIPIENT = RECIPIENT_TYPE_SPIDER
           DEFAULT_PID_FILE = "bayserver.pid"
 
           # Default charset
@@ -84,8 +89,20 @@ module Baykit
           # Multi core flag
           attr :multi_core
 
-          # Method to send file
-          attr :file_send_method
+          # Multiplexer type of network I/O
+          attr :net_multiplexer
+
+          # Multiplexer type of file read
+          attr :file_multiplexer
+
+          # Multiplexer type of log output
+          attr :log_multiplexer
+
+          # Multiplexer type of CGI input
+          attr :cgi_multiplexer
+
+          # Recipient type
+          attr :recipient
 
           # PID file name
           attr :pid_file
@@ -105,7 +122,11 @@ module Baykit
             @control_port = DEFAULT_CONTROL_PORT
             @multi_core = DEFAULT_MULTI_CORE
             @gzip_comp = DEFAULT_GZIP_COMP
-            @file_send_method = DEFAULT_FILE_SEND_METHOD
+            @net_multiplexer = DEFAULT_NET_MULTIPLEXER
+            @file_multiplexer = DEFAULT_FILE_MULTIPLEXER
+            @log_multiplexer = DEFAULT_LOG_MULTIPLEXER
+            @cgi_multiplexer = DEFAULT_CGI_MULTIPLEXER
+            @recipient = DEFAULT_RECIPIENT
             @pid_file = DEFAULT_PID_FILE
           end
 
@@ -128,22 +149,61 @@ module Baykit
               BayLog.warn(BayMessage.get(:CFG_MAX_SHIPS_IS_TO_SMALL, @max_ships))
             end
 
-            if @file_send_method == FILE_SEND_METHOD_SELECT and !SysUtil.support_select_file()
-              BayLog.warn(BayMessage.get(:CFG_FILE_SEND_METHOD_SELECT_NOT_SUPPORTED))
-              @file_send_method = FILE_SEND_METHOD_TAXI
+            if @net_multiplexer == MULTIPLEXER_TYPE_TAXI ||
+               @net_multiplexer == MULTIPLEXER_TYPE_TRAIN ||
+               @net_multiplexer == MULTIPLEXER_TYPE_SPIN
+              BayLog.warn(
+                BayMessage.get(
+                  :CFG_NET_MULTIPLEXER_NOT_SUPPORTED,
+                  Harbor::get_multiplexer_type_name(@net_multiplexer),
+                  Harbor::get_multiplexer_type_name(DEFAULT_NET_MULTIPLEXER)))
+              @net_multiplexer = DEFAULT_NET_MULTIPLEXER
             end
 
-            if @file_send_method == FILE_SEND_METHOD_SPIN and !SysUtil.support_nonblock_file_read()
-              BayLog.warn(BayMessage.get(:CFG_FILE_SEND_METHOD_SPIN_NOT_SUPPORTED))
-              @file_send_method = FILE_SEND_METHOD_TAXI
+            if @file_multiplexer == MULTIPLEXER_TYPE_SPIDER and !SysUtil.support_select_file ||
+               @file_multiplexer == MULTIPLEXER_TYPE_SPIN and !SysUtil.support_nonblock_file_read ||
+               @file_multiplexer == MULTIPLEXER_TYPE_TRAIN
+              BayLog.warn(
+                BayMessage.get(
+                  :CFG_FILE_MULTIPLEXER_NOT_SUPPORTED,
+                  Harbor::get_multiplexer_type_name(@file_multiplexer),
+                  Harbor::get_multiplexer_type_name(DEFAULT_FILE_MULTIPLEXER)))
+              @file_multiplexer = DEFAULT_FILE_MULTIPLEXER
             end
 
+            if @log_multiplexer == MULTIPLEXER_TYPE_SPIDER and !SysUtil.support_select_file ||
+               @log_multiplexer == MULTIPLEXER_TYPE_SPIN and !SysUtil.support_nonblock_file_write ||
+               @log_multiplexer == MULTIPLEXER_TYPE_TRAIN
+              BayLog.warn(
+                BayMessage.get(
+                  :CFG_LOG_MULTIPLEXER_NOT_SUPPORTED,
+                  Harbor::get_multiplexer_type_name(@log_multiplexer),
+                  Harbor::get_multiplexer_type_name(DEFAULT_LOG_MULTIPLEXER)))
+              @log_multiplexer = DEFAULT_LOG_MULTIPLEXER
+            end
+
+            if @log_multiplexer == MULTIPLEXER_TYPE_SPIN ||
+               @log_multiplexer == MULTIPLEXER_TYPE_PIGEON
+              BayLog.warn(
+                BayMessage.get(
+                  :CFG_CGI_MULTIPLEXER_NOT_SUPPORTED,
+                  Harbor::get_multiplexer_type_name(@cgi_multiplexer),
+                  Harbor::get_multiplexer_type_name(DEFAULT_CGI_MULTIPLEXER)))
+              @cgi_multiplexer = DEFAULT_CGI_MULTIPLEXER
+            end
+
+            if @net_multiplexer == MULTIPLEXER_TYPE_SPIDER &&
+               @recipient != RECIPIENT_TYPE_SPIDER
+              BayLog.warn(
+                BayMessage.get(
+                  :CFG_NET_MULTIPLEXER_DOES_NOT_SUPPORT_THIS_RECIPIENT,
+                  Harbor::get_multiplexer_type_name(@net_multiplexer),
+                  Harbor::get_recipient_type_name(@recipient),
+                  Harbor::get_recipient_type_name(RECIPIENT_TYPE_SPIDER)))
+              @recipient = RECIPIENT_TYPE_SPIDER
+            end
 
           end
-
-          #######################
-          # Implements DockerBase
-          #######################
 
           def init_docker(dkr)
             if dkr.instance_of?(Trouble)
@@ -193,17 +253,47 @@ module Baykit
               @multi_core = StringUtil.parse_bool(kv.value)
             when "gzipcomp"
               @gzip_comp = StringUtil.parse_bool(kv.value)
-            when "sendfilemethod"
-              case kv.value.downcase()
-              when "select"
-                @file_send_method = FILE_SEND_METHOD_SELECT
-              when "spin"
-                @file_send_method = FILE_SEND_METHOD_SPIN
-              when "taxi"
-                @file_send_method = FILE_SEND_METHOD_TAXI
-              else
-                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage.get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
+
+            when "netmultiplexer"
+              begin
+                @net_multiplexer = Harbor::get_multiplexer_type(kv.value.downcase)
+              rescue => e
+                BayLog.error_e(e)
+                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage::get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
               end
+
+            when "filemultiplexer"
+              begin
+                @file_multiplexer = Harbor::get_multiplexer_type(kv.value.downcase)
+              rescue => e
+                BayLog.error_e(e)
+                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage::get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
+              end
+
+            when "logmultiplexer"
+              begin
+                @log_multiplexer = Harbor.get_multiplexer_type(kv.value.downcase)
+              rescue => e
+                BayLog.error_e(e)
+                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage::get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
+              end
+
+            when "cgimultiplexer"
+              begin
+                @cgi_multiplexer = Harbor.get_multiplexer_type(kv.value.downcase)
+              rescue => e
+                BayLog.error_e(e)
+                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage::get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
+              end
+
+            when "recipient"
+              begin
+                @recipient = Harbor.get_recipient_type(kv.value.downcase)
+              rescue => e
+                BayLog.error_e(e)
+                raise ConfigException.new(kv.file_name, kv.line_no, BayMessage::get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
+              end
+
             when "pidfile"
               @pid_file = kv.value
             else
@@ -212,13 +302,10 @@ module Baykit
             true
           end
 
-          def trace_header?
-            @trace_header
-          end
+          #######################
+          # Implements Harbor
+          #######################
 
-          def multi_core?
-            @multi_core
-          end
         end
       end
     end

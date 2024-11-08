@@ -1,0 +1,31 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpPacket
+          PREAMBLE_SIZE: Integer
+          MAX_DATA_LEN: Integer
+          MIN_BUF_SIZE: Integer
+          @type: Integer
+
+          attr_accessor to_server: false
+          def initialize: (Integer `type`) -> void
+          def reset: -> void
+          def new_ajp_header_accessor: -> AjpAccessor
+          def new_ajp_data_accessor: -> AjpAccessor
+          def to_s: -> String
+
+          class AjpAccessor
+            def initialize: (AjpPacket `type`, Integer start, Integer max_len) -> void
+            def put_string: (String str) -> void
+            def get_string: -> String
+            def get_string_by_len: (Integer len) -> String
+          end
+        end
+      end
+    end
+  end
+end

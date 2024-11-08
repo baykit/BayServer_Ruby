@@ -1,7 +1,7 @@
 module Baykit
   module BayServer
     module Util
-      class DataConsumeListener
+      class DataConsumeListener # interface
         #
         # interface
         #

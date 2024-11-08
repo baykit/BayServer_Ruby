@@ -1,0 +1,12 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class PacketFactory
+        def create_packet: (Integer typ) -> Packet
+      end
+    end
+  end
+end

@@ -1,0 +1,37 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    class BayLog
+      LOG_LEVEL_TRACE: Integer
+      LOG_LEVEL_DEBUG: Integer
+      LOG_LEVEL_INFO: Integer
+      LOG_LEVEL_WARN: Integer
+      LOG_LEVEL_ERROR: Integer
+      LOG_LEVEL_FATAL: Integer
+      LOG_LEVEL_NAME: [String, String, String, String, String, String]
+      self.@log_level: Integer
+      self.@full_path: String
+
+      def self.set_log_level: (String lvl) -> Integer?
+      def self.info: (String fmt, *untyped args) -> nil
+      def self.trace: (String fmt, *untyped args) -> nil
+      def self.debug: (String fmt, *untyped args) -> nil
+      def self.debug_e: (Exception err, ?nil fmt, *untyped args) -> nil
+      def self.warn: (String fmt, *bot args) -> nil
+      def self.warn_e: (Exception err, ?nil fmt, *untyped args) -> nil
+      def self.error: (String fmt, *untyped args) -> nil
+      def self.error_e: (Exception err, ?nil fmt, *untyped args) -> nil
+      def self.fatal: (String fmt, *untyped args) -> nil
+      def self.fatal_e: (Exception err, ?nil fmt, *untyped args) -> bot
+      def self.log: (Integer lvl, Integer stack_idx, Exception err, String? fmt, Array[untyped] args) -> nil
+      def self.debug_mode?: -> bool
+      def self.trace_mode?: -> bool
+      def self.print_exception: (Exception err) -> nil
+
+      private
+      def self.parse_caller: (String str) -> [String?, String?, String?]
+    end
+  end
+end

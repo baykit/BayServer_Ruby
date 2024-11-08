@@ -1,0 +1,23 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class InOutCommandBase
+            MAX_DATA_LEN: Integer
+            @data: String
+            @start: Integer
+            @length: Integer
+
+            def initialize: (Integer `type`, Integer req_id, ?String data, ?Integer start, ?Integer len) -> void
+            def unpack: (FcgPacket pkt) -> void
+            def pack: (FcgPacket pkt) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+        end
+      end
+    end
+  end
+end

@@ -8,10 +8,13 @@ require 'baykit/bayserver/version'
 require 'baykit/bayserver/mem_usage'
 require 'baykit/bayserver/sink'
 
+require 'baykit/bayserver/rudders/io_rudder'
+
 require 'baykit/bayserver/agent/signal/signal_agent'
 require 'baykit/bayserver/agent/signal/signal_sender'
 require 'baykit/bayserver/agent/signal/signal_sender'
 require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/monitor/grand_agent_monitor'
 
 require 'baykit/bayserver/bcf/package'
 
@@ -24,8 +27,8 @@ require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/protocol/protocol_handler_store'
 
 require 'baykit/bayserver/docker/package'
-require 'baykit/bayserver/docker/base/inbound_ship_store'
-require 'baykit/bayserver/docker/warp/warp_ship_store'
+require 'baykit/bayserver/common/inbound_ship_store'
+require 'baykit/bayserver/common/warp_ship_store'
 
 require 'baykit/bayserver/util/locale'
 require 'baykit/bayserver/util/md5_password'
@@ -33,8 +36,9 @@ require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/mimes'
 require 'baykit/bayserver/util/reusable'
 require 'baykit/bayserver/util/http_status'
-require 'baykit/bayserver/util/cities'
 require 'baykit/bayserver/util/selector'
+
+require 'baykit/bayserver/common/cities'
 
 module Baykit
   module BayServer
@@ -46,12 +50,14 @@ module Baykit
       include Baykit::BayServer::Train
       include Baykit::BayServer::Taxi
       include Baykit::BayServer::Agent::Signal
+      include Baykit::BayServer::Agent::Monitor
       include Baykit::BayServer::Protocol
       include Baykit::BayServer::WaterCraft
       include Baykit::BayServer::Tours
       include Baykit::BayServer::Docker
       include Baykit::BayServer::Docker::Base
-      include Baykit::BayServer::Docker::Warp
+      include Baykit::BayServer::Common
+      include Baykit::BayServer::Rudders
 
       ENV_BSERV_HOME = "BSERV_HOME"
       ENV_BSERV_LIB  = "BSERV_LIB"
@@ -68,12 +74,12 @@ module Baykit
         attr :my_host_name
         attr :my_host_addr
         attr :dockers
+        attr :software_name
+        attr :cities
         attr :ports
         attr :harbor
-        attr :bay_agent
-        attr :cities
-        attr :ractor_local_map
-        attr :software_name
+        attr :anchorable_port_map
+        attr :unanchorable_port_map
         attr :rack_app
         attr :derived_port_nos
         attr :monitor_port
@@ -88,8 +94,8 @@ module Baykit
       @harbor = nil
       @any_city = nil
       @cities = Cities.new()
-      @ractor_local_map = {}
-      @rack_app = nil
+      @anchorable_port_map = {}
+      @unanchorable_port_map = {}
 
       def self.get_version
         return Version::VERSION
@@ -212,7 +218,7 @@ module Baykit
       #
       def self.start(agt_id)
         begin
-          BayMessage.init(@bserv_lib + "/conf/messages", Locale.new('ja', 'JP'))
+          BayMessage.init(@bserv_lib + "/conf/messages", Locale.default())
 
           @dockers = BayDockers.new
           @dockers.init(@bserv_lib + "/conf/dockers.bcf")
@@ -266,6 +272,8 @@ module Baykit
           else
             child_start(agt_id)
           end
+
+          return
 
           while not GrandAgentMonitor.monitors.empty?
             sel = Selector.new()
@@ -326,6 +334,8 @@ module Baykit
               raise e
             end
 
+            @anchorable_port_map[IORudder.new(skt)] = dkr
+
             skt.listen(0)
 
             #skt = port_dkr.new_server_socket skt
@@ -376,17 +386,18 @@ module Baykit
         SignalAgent.init(@harbor.control_port)
         GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
         create_pid_file(Process.pid)
+        GrandAgentMonitor.join
       end
 
       def self.child_start(agt_id)
 
         invoke_runners()
 
-        anchored_port_map = {}
+        @anchorable_port_map = {}
         unanchored_port_map = {}
 
         if(SysUtil.run_on_windows())
-         open_ports(anchored_port_map, unanchored_port_map)
+         open_ports(@anchorable_port_map, unanchored_port_map)
         else
           @derived_port_nos.each do |no|
             # Rebuild server socket
@@ -402,27 +413,23 @@ module Baykit
             end
 
             if portDkr == nil
-              BayLog.fatal("Cannot find port docker: %d", port)
+              BayLog.fatal("Cannot find port docker: %d", portDkr.port)
               exit(1)
             end
 
-            anchored_port_map[skt] = portDkr
+            BayLog.debug("agt#%d server port=%d socket=%s(%d)", agt_id, portDkr.port, skt, no)
+            @anchorable_port_map[IORudder.new(skt)] = portDkr
           end
         end
 
-        skt= TCPSocket.new("localhost", @monitor_port)
 
-        GrandAgent.init(
-          [agt_id],
-          anchored_port_map,
-          nil,
-          @harbor.max_ships,
-          @harbor.multi_core
-        )
+        GrandAgent.init([agt_id], @harbor.max_ships)
         agt = GrandAgent.get(agt_id)
 
-        agt.run_command_receiver(skt)
+        skt= TCPSocket.new("localhost", @monitor_port)
+        rd = IORudder.new(skt)
 
+        agt.add_command_receiver(rd)
         agt.run()
       end
 

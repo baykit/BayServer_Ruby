@@ -1,0 +1,20 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class WriteUnit
+          @buf: String
+          @adr: Addrinfo
+          @tag: Object
+          @listener: untyped  #  Proc[() -> void]
+
+          def initialize: (String string, Addrinfo adr, Object tag, untyped lis) -> void
+          def done: -> void
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,14 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      module WarpHandler
+        def next_warp_id: -> Integer
+        def new_warp_data: (Integer warp_id) -> WarpData
+        def verify_protocol: (String protocol) -> void
+      end
+    end
+  end
+end

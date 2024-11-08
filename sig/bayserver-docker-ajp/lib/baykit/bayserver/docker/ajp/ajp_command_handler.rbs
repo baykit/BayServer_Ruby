@@ -1,0 +1,21 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module AjpCommandHandler
+          def handle_data: (Command::CmdData cmd) -> Integer
+          def handle_end_response: (Command::CmdEndResponse cmd) -> Integer
+          def handle_forward_request: (Command::CmdForwardRequest cmd) -> Integer
+          def handle_send_body_chunk: (Command::CmdSendBodyChunk cmd) -> Integer
+          def handle_send_headers: (Command::CmdSendHeaders cmd) -> Integer
+          def handle_shutdown: (Command::CmdShutdown cmd) -> Integer
+          def handle_get_body_chunk: (Command::CmdSendBodyChunk cmd) -> Integer
+          def need_data: -> bool
+        end
+      end
+    end
+  end
+end

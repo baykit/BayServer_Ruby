@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Secure
+        include Docker
+
+        def set_app_protocols: (Array[String] protocols) -> void
+        def reload_cert: -> void
+        def new_transporter: (Integer agt_id, Ships::Ship sip) -> Agent::Multiplexer::Transporter
+      end
+    end
+  end
+end

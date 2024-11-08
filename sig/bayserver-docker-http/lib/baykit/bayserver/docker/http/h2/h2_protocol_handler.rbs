@@ -1,0 +1,23 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2ProtocolHandler
+            CTL_STREAM_ID: Integer
+            include H2
+
+            def initialize: (H2CommandHandler h2_handler, Protocol::PacketUnPacker pkt_unpacker, Protocol::PacketPacker pkt_packer,
+                Protocol::CommandUnPacker cmd_unpacker, Protocol::CommandPacker cmd_packer, bool svr_mode) -> void
+            def max_req_packet_data_size: -> Integer
+            def max_res_packet_data_size: -> Integer
+            def protocol: -> String
+          end
+        end
+      end
+    end
+  end
+end

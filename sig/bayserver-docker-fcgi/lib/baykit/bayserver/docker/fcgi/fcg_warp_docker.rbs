@@ -1,0 +1,21 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgWarpDocker
+          @script_base: String
+          @doc_root: String
+
+          def init: (Bcf::BcfElement elm, BayServer::Docker parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> true
+          def secure: -> bool
+          def protocol: -> String
+          def new_transporter: (Agent::GrandAgent agt, Rudders::Rudder rd, Ships::Ship sip) -> Agent::Multiplexer::PlainTransporter
+        end
+      end
+    end
+  end
+end

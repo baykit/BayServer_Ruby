@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class CmdStdOut
+            def initialize: (Integer req_id, ?String data, ?Integer start, ?Integer len) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

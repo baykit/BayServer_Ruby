@@ -1,0 +1,21 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1Packet
+            MAX_HEADER_LEN: Integer
+            MAX_DATA_LEN: Integer
+            @type: Integer
+
+            def initialize: (Integer `type`) -> void
+            def to_s: -> String
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Bcf
+      class BcfKeyVal
+        @key: String
+        @value: String
+
+        def initialize: (String key, String val, String file_name, Integer line_no) -> void
+      end
+    end
+  end
+end

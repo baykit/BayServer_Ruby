@@ -23,32 +23,6 @@ module Baykit
           end
 
           def on_acceptable(server_skt)
-            port_dkr = @port_map[server_skt]
-
-            begin
-              client_skt, = server_skt.accept_nonblock
-            rescue IO::WaitReadable
-              # Maybe another agent get socket
-              BayLog.debug("Accept failed (must wait readable)")
-              return
-            end
-
-            BayLog.debug("Accepted: skt=%d", client_skt.fileno)
-
-            begin
-              port_dkr.check_admitted(client_skt)
-            rescue => e
-              BayLog.error_e(e)
-              client_skt.close()
-              return
-            end
-
-            client_skt.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
-
-            tp = port_dkr.new_transporter(@agent, client_skt)
-            @agent.non_blocking_handler.ask_to_start(client_skt)
-            @agent.non_blocking_handler.ask_to_read(client_skt)
-            @ch_count += 1
           end
 
           def on_closed()

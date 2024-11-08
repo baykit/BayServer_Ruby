@@ -2,13 +2,15 @@
 module Baykit
   module BayServer
     module Agent
-      module LifecycleListener
-        #
-        # interface
-        #
-        #             void add(int agentId);
-        #             void remove(int agentId);
-        #
+      module LifecycleListener # interface
+
+        def add(agent_id)
+          raise NotImplementedError
+        end
+
+        def remove(agent_id)
+          raise NotImplementedError
+        end
       end
     end
   end

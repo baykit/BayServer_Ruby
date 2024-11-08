@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module Command
+          class CmdData
+            LENGTH_OF_SIZE: Integer
+            MAX_DATA_LEN: untyped
+            @start: Integer
+
+            attr_accessor length: Integer
+            attr_accessor data: String
+            def initialize: (?String data, ?Integer start, ?Integer length) -> void
+            def unpack: (AjpPacket pkt) -> void
+            def pack: (AjpPacket pkt) -> void
+            def handle: (AjpCommandHandler handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

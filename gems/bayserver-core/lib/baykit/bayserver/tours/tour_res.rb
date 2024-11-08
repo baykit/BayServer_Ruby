@@ -1,6 +1,6 @@
 require 'baykit/bayserver/http_exception'
 require 'baykit/bayserver/protocol/protocol_exception'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/docker/harbor'
 require 'baykit/bayserver/tours/send_file_yacht'
@@ -101,6 +101,7 @@ module Baykit
           end
 
           @bytes_limit = @headers.content_length()
+          BayLog.debug("%s send_headers content length: %s", self, @bytes_limit)
 
           # Compress check
           if BayServer.harbor.gzip_comp &&
@@ -161,7 +162,7 @@ module Baykit
           @available = true
         end
 
-        def send_content(chk_tour_id, buf, ofs, len)
+        def send_res_content(chk_tour_id, buf, ofs, len)
           @tour.check_tour_id(chk_tour_id)
           BayLog.debug("%s sendContent len=%d", @tour, len)
 
@@ -223,7 +224,7 @@ module Baykit
           return @available
         end
 
-        def end_content(chk_tour_id)
+        def end_res_content(chk_tour_id)
           @tour.check_tour_id(chk_tour_id)
 
           BayLog.debug("%s end ResContent", self)
@@ -345,92 +346,7 @@ module Baykit
             end
           end
 
-          end_content(chk_tour_id)
-        end
-
-
-
-        def send_file(chk_tour_id, file, charset, async)
-          @tour.check_tour_id(chk_tour_id)
-
-          if @tour.zombie?
-            return
-          end
-
-          if File.directory?(file)
-            raise HttpException.new HttpStatus::FORBIDDEN, file
-          elsif !File.exist?(file)
-            raise HttpException.new HttpStatus::NOT_FOUND, file
-          end
-
-          mime_type = nil
-
-          rname = File.basename(file)
-          pos = rname.rindex('.')
-          if pos
-            ext = rname[pos + 1 .. -1].downcase
-            mime_type = Mimes.type(ext)
-          end
-
-          if !mime_type
-            mime_type = "application/octet-stream"
-          end
-
-          if mime_type.start_with?("text/") && charset != nil
-            mime_type = mime_type + "; charset=" + charset
-          end
-
-          file_len = ::File.size(file)
-          BayLog.debug("%s send_file %s async=%s len=%d", @tour, file, async, file_len)
-
-          @headers.set_content_type(mime_type)
-          @headers.set_content_length(file_len)
-
-          begin
-            send_headers(Tour::TOUR_ID_NOCHECK)
-
-            if async
-              bufsize = @tour.ship.protocol_handler.max_res_packet_data_size()
-
-              case(BayServer.harbor.file_send_method())
-
-              when Harbor::FILE_SEND_METHOD_SELECT
-                tp = PlainTransporter.new(false, bufsize)
-                @yacht.init(@tour, file, tp)
-                tp.init(@tour.ship.agent.non_blocking_handler, File.open(file, "rb"), @yacht)
-                @tour.ship.resume(@tour.ship_id)
-                tp.open_valve()
-
-              when Harbor::FILE_SEND_METHOD_SPIN
-                timeout = 10
-                tp = SpinReadTransporter.new(bufsize)
-                @yacht.init(@tour, file, tp)
-                tp.init(@tour.ship.agent.spin_handler, @yacht, File.open(file, "rb"), File.size(file), timeout, nil)
-                @tour.ship.resume(@tour.ship_id)
-                tp.open_valve()
-
-              when Harbor::FILE_SEND_METHOD_TAXI
-                txi = ReadFileTaxi.new(@tour.ship.agent.agent_id, bufsize)
-                @yacht.init(@tour, file, txi)
-                txi.init(File.open(file, "rb"), @yacht)
-                if !TaxiRunner.post(@tour.ship.agent.agent_id, txi)
-                  raise HttpException.new(HttpStatus::SERVICE_UNAVAILABLE, "Taxi is busy!");
-                end
-
-              else
-                raise Sink.new();
-              end
-
-            else
-              SendFileTrain.new(@tour, file).run()
-            end
-          rescue HttpException => e
-            raise e
-          rescue => e
-            BayLog.error_e(e)
-            raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, file)
-          end
-
+          end_res_content(chk_tour_id)
         end
 
         def get_compressor()

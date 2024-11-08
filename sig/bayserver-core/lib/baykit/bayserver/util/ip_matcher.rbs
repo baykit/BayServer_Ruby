@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class IpMatcher
+        @match_all: bool
+        @cidr_ip: IPAddr
+
+        def initialize: (String ip_desc) -> void
+        def match: (IPAddr ip) -> bool
+
+        private
+        def parse_cidr: (String cidr) -> void
+      end
+    end
+  end
+end

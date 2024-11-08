@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module H2CommandHandler
+            def handle_preface: (Command::CmdPreface cmd) -> Integer
+            def handle_data: (Command::CmdData cmd) -> Integer
+            def handle_headers: (Command::CmdHeaders cmd) -> Integer
+            def handle_priority: (Command::CmdPriority cmd) -> Integer
+            def handle_settings: (Command::CmdSettings cmd) -> Integer
+            def handle_window_update: (Command::CmdWindowUpdate cmd) -> Integer
+            def handle_go_away: (Command::CmdGoAway cmd) -> Integer
+            def handle_ping: (Command::CmdPing cmd) -> Integer
+            def handle_rst_stream: (Command::CmdRstStream cmd) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

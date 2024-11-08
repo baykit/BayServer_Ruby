@@ -30,7 +30,7 @@ module Baykit
             Process.waitpid(pid)
             return true
           rescue NotImplementedError => e
-            if BayLog.debug_mode?
+            if BayLog.debug_mode
               BayLog.warn("fork() failed: %s ", e)
               #BayLog.warn_e(e)
             end
@@ -45,7 +45,7 @@ module Baykit
               n = select([f], [], [], 10)
               return true
             rescue IOError => e
-              if BayLog.debug_mode?
+              if BayLog.debug_mode
                 BayLog.warn("select() failed: %s", e)
                 #BayLog.warn_e(e)
               end
@@ -61,7 +61,7 @@ module Baykit
               f.read_nonblock(1)
               return true
             rescue SystemCallError => e
-              if BayLog.debug_mode?
+              if BayLog.debug_mode
                 BayLog.warn("read_nonblock() failed: %s", e)
                 #BayLog.warn_e(e)
               end
@@ -77,7 +77,7 @@ module Baykit
                 f.write_nonblock(1)
                 return true
               rescue SystemCallError => e
-                if BayLog.debug_mode?
+                if BayLog.debug_mode
                   BayLog.warn("write_nonblock() failed: %s", e)
                   #BayLog.warn_e(e)
                 end
@@ -94,7 +94,7 @@ module Baykit
               n = select([r], [w], [], 10)
               return true
             rescue IOError => e
-              if BayLog.debug_mode?
+              if BayLog.debug_mode
                 BayLog.warn("select() failed: %s", e)
                 #BayLog.warn_e(e)
               end
@@ -111,7 +111,7 @@ module Baykit
               r.read_nonblock(1)
               return true
             rescue SystemCallError => e
-              if BayLog.debug_mode?
+              if BayLog.debug_mode
                 BayLog.warn("read_nonblock() failed: %s", e)
                 #BayLog.warn_e(e)
               end

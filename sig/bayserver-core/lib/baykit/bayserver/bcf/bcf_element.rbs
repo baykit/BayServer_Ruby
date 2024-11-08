@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Bcf
+      class BcfElement
+        @name: String
+        @arg: String
+        @content_list: Array[BcfObject]
+
+        def initialize: (String name, String arg, String file_name, Integer line_no) -> void
+        def get_value: (String key) -> String
+      end
+    end
+  end
+end

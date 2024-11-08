@@ -1,3 +1,5 @@
+require 'baykit/bayserver/sink'
+
 require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/tours/package'
 require 'baykit/bayserver/agent/next_socket_action'
@@ -6,7 +8,7 @@ require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/simple_buffer'
 require 'baykit/bayserver/util/cgi_util'
 
-require 'baykit/bayserver/docker/warp/warp_data'
+require 'baykit/bayserver/common/warp_data'
 require 'baykit/bayserver/docker/fcgi/fcg_protocol_handler'
 require 'baykit/bayserver/docker/fcgi/command/package'
 require 'baykit/bayserver/docker/fcgi/fcg_params'
@@ -15,14 +17,24 @@ module Baykit
   module BayServer
     module Docker
       module Fcgi
-        class FcgWarpHandler < Baykit::BayServer::Docker::Fcgi::FcgProtocolHandler
-          include Baykit::BayServer::Docker::Warp::WarpHandler # implements
+        class FcgWarpHandler
+          include Baykit::BayServer::Common::WarpHandler # implements
+          include FcgHandler
 
           class WarpProtocolHandlerFactory
             include Baykit::BayServer::Protocol::ProtocolHandlerFactory  # implements
+            include Baykit::BayServer::Protocol
 
             def create_protocol_handler(pkt_store)
-              return FcgWarpHandler.new(pkt_store)
+              warp_handler =  FcgWarpHandler.new
+              cmd_unpacker = FcgCommandUnPacker.new(warp_handler)
+              pkt_unpacker = FcgPacketUnPacker.new(pkt_store, cmd_unpacker)
+              pkt_packer = PacketPacker.new()
+              cmd_packer = CommandPacker.new(pkt_packer, pkt_store)
+
+              proto_handler = FcgProtocolHandler.new(warp_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, false)
+              warp_handler.init(proto_handler)
+              return proto_handler
             end
           end
 
@@ -30,13 +42,14 @@ module Baykit
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Util
-          include Baykit::BayServer::Docker::Warp
+          include Baykit::BayServer::Common
           include Baykit::BayServer::Docker::Fcgi::Command
 
 
           STATE_READ_HEADER = 1
           STATE_READ_CONTENT = 2
 
+          attr :protocol_handler
           attr :cur_warp_id
           attr :state
           attr :line_buf
@@ -45,15 +58,17 @@ module Baykit
           attr :last
           attr :data
 
-          def initialize(pkt_store)
-            super(pkt_store, false)
+          def initialize
             @cur_warp_id = 0
             @line_buf = SimpleBuffer.new
             reset()
           end
 
+          def init(proto_handler)
+            @protocol_handler = proto_handler
+          end
+
           def reset
-            super
             reset_state
             @line_buf.reset
             @pos = 0
@@ -71,26 +86,31 @@ module Baykit
           end
 
           def new_warp_data(warp_id)
-            return WarpData.new(@ship, warp_id)
+            return WarpData.new(ship, warp_id)
           end
 
-          def post_warp_headers(tur)
+          ######################################################
+          # Implements TourHandler
+          ######################################################
+
+          def send_res_headers(tur)
             send_begin_req(tur)
             send_params(tur)
           end
 
-          def post_warp_contents(tur, buf, start, len, &callback)
+          def send_res_content(tur, buf, start, len, &callback)
             send_stdin(tur, buf, start, len, &callback)
           end
 
-          def post_warp_end(tur)
-            callback = lambda do
-              @ship.agent.non_blocking_handler.ask_to_read(@ship.socket)
-            end
+          def send_end_tour(tur, keep_alive, &callback)
             send_stdin(tur, nil, 0, 0, &callback)
           end
 
           def verify_protocol(proto)
+          end
+
+          def on_protocol_error(e)
+            raise Sink.new
           end
 
 
@@ -103,7 +123,7 @@ module Baykit
           end
 
           def handle_end_request(cmd) 
-            tur = @ship.get_tour(cmd.req_id)
+            tur = ship.get_tour(cmd.req_id)
             end_req_content(tur)
             NextSocketAction::CONTINUE
           end 
@@ -123,10 +143,10 @@ module Baykit
           end
 
           def handle_stdout(cmd)
-            BayLog.debug("%s handle_stdout req_id=%d len=%d", @ship, cmd.req_id, cmd.length)
+            BayLog.debug("%s handle_stdout req_id=%d len=%d", ship, cmd.req_id, cmd.length)
             #BayLog.debug "#{self} handle_stdout data=#{cmd.data}"
 
-            tur = @ship.get_tour(cmd.req_id)
+            tur = ship.get_tour(cmd.req_id)
             if tur == nil
               raise Sink.new("Tour not found")
             end
@@ -146,9 +166,9 @@ module Baykit
             end
 
             if @pos < @last
-              BayLog.debug("%s fcgi: pos=%d last=%d len=%d", @ship, @pos, @last, @last - @pos)
+              BayLog.debug("%s fcgi: pos=%d last=%d len=%d", ship, @pos, @last, @last - @pos)
               if @state == STATE_READ_CONTENT
-                available = tur.res.send_content(Tour::TOUR_ID_NOCHECK, @data, @pos, @last - @pos)
+                available = tur.res.send_res_content(Tour::TOUR_ID_NOCHECK, @data, @pos, @last - @pos)
                 if !available
                   return NextSocketAction::SUSPEND
                 end
@@ -157,6 +177,10 @@ module Baykit
 
             NextSocketAction::CONTINUE
           end
+
+          ######################################################
+          # Implements FcgCommandHandler
+          ######################################################
 
           ######################################################
           # Custom methods
@@ -179,11 +203,11 @@ module Baykit
                 tur.res.headers.remove(Headers::STATUS)
               end
 
-              BayLog.debug("%s fcgi: read header status=%d contlen=%d", @ship, tur.res.headers.status, wdat.res_headers.content_length())
-              sid = @ship.ship_id
+              BayLog.debug("%s fcgi: read header status=%d contlen=%d", ship, tur.res.headers.status, wdat.res_headers.content_length())
+              sid = ship.ship_id
               tur.res.set_consume_listener do |len, resume|
                 if resume
-                  @ship.resume(sid)
+                  ship.resume(sid)
                 end
               end
 
@@ -229,8 +253,8 @@ module Baykit
                   end
 
                   headers.add(name, value)
-                  if BayServer.harbor.trace_header?
-                    BayLog.info("%s fcgi_warp: resHeader: %s=%s", @ship, name, value)
+                  if BayServer.harbor.trace_header
+                    BayLog.info("%s fcgi_warp: resHeader: %s=%s", ship, name, value)
                   end
                 end
                 @line_buf.reset()
@@ -242,8 +266,8 @@ module Baykit
           end
 
           def end_req_content(tur)
-            @ship.end_warp_tour(tur)
-            tur.res.end_content(Tour::TOUR_ID_NOCHECK)
+            ship.end_warp_tour(tur)
+            tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
             reset_state()
           end
 
@@ -258,18 +282,18 @@ module Baykit
 
           def send_stdin(tur, data, ofs, len, &callback)
             cmd = CmdStdIn.new(WarpData.get(tur).warp_id, data, ofs, len)
-            @ship.post(cmd, callback)
+            ship.post(cmd, &callback)
           end
 
           def send_begin_req(tur)
             cmd = CmdBeginRequest.new(WarpData.get(tur).warp_id)
             cmd.role = CmdBeginRequest::FCGI_RESPONDER
             cmd.keep_conn = true
-            @ship.post(cmd)
+            ship.post(cmd)
           end
 
           def send_params(tur)
-            script_base = @ship.docker.script_base
+            script_base = ship.docker.script_base
             if script_base == nil
               script_base = tur.town.location
             end
@@ -278,7 +302,7 @@ module Baykit
               raise StandardError.new("#{tur.town} Could not create SCRIPT_FILENAME. Location of town not specified.")
             end
 
-            doc_root = @ship.docker.doc_root
+            doc_root = ship.docker.doc_root
             if doc_root == nil
               doc_root = tur.town.location
             end
@@ -298,7 +322,7 @@ module Baykit
               end
             end
 
-            script_fname = "proxy:fcgi://#{@ship.docker.host}:#{@ship.docker.port}#{script_fname}"
+            script_fname = "proxy:fcgi://#{ship.docker.host}:#{ship.docker.port}#{script_fname}"
             cmd.add_param(CgiUtil::SCRIPT_FILENAME, script_fname)
 
             # Add FCGI params
@@ -308,18 +332,21 @@ module Baykit
             #cmd.add_param(FcgParams::X_FORWARDED_PROTO, tur.is_secure ? "https" : "http")
             #cmd.add_param(FcgParams::X_FORWARDED_PORT, tur.req.req_port.to_s)
 
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               cmd.params.each do |kv|
-                BayLog.info("%s fcgi_warp: env: %s=%s", @ship, kv[0], kv[1])
+                BayLog.info("%s fcgi_warp: env: %s=%s", ship, kv[0], kv[1])
               end
             end
 
-            @ship.post(cmd)
+            ship.post(cmd)
 
             cmd_params_end = CmdParams.new(WarpData.get(tur).warp_id)
-            @ship.post(cmd_params_end)
+            ship.post(cmd_params_end)
           end
 
+          def ship
+            return @protocol_handler.ship
+          end
         end
       end
     end

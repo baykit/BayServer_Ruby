@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgCommand
+          @req_id: Integer
+
+          def initialize: (Integer `type`, Integer req_id) -> void
+          def unpack: (FcgPacket pkt) -> void
+          def pack: (FcgPacket pkt) -> void
+          def pack_header: (FcgPacket pkt) -> void
+        end
+      end
+    end
+  end
+end

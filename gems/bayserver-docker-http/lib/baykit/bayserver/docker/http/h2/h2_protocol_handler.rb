@@ -20,17 +20,9 @@ module Baykit
 
             CTL_STREAM_ID = 0
 
-            attr :req_header_tbl
-            attr :res_header_tbl
 
-            def initialize(pkt_store, svr_mode)
-              @command_unpacker = H2CommandUnPacker.new(self)
-              @packet_unpacker = H2PacketUnPacker.new(@command_unpacker, pkt_store, svr_mode)
-              @packet_packer = PacketPacker.new()
-              @command_packer = CommandPacker.new(@packet_packer, pkt_store)
-              @server_mode = svr_mode
-              @req_header_tbl = HeaderTable.create_dynamic_table()
-              @res_header_tbl = HeaderTable.create_dynamic_table()
+            def initialize(h2_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, svr_mode)
+              super(pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, h2_handler, svr_mode)
             end
 
             ######################################################

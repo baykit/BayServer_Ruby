@@ -1,0 +1,81 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      class GrandAgent
+        SELECT_TIMEOUT_SEC: Integer
+        CMD_OK: Integer
+        CMD_CLOSE: Integer
+        CMD_RELOAD_CERT: Integer
+        CMD_MEM_USAGE: Integer
+        CMD_SHUTDOWN: Integer
+        CMD_ABORT: Integer
+        CMD_CATCHUP: Integer
+        include BayServer
+        self.@agent_count: Integer
+        self.@max_agent_id: Integer
+        self.@max_ships: Integer
+        self.@agents: Hash[Integer, GrandAgent]
+        self.@listeners: Array[LifecycleListener]
+        self.@finale: bool
+        @agent_id: Integer
+        @max_inbound_ships: Integer
+        @anchorable: bool
+        @job_multiplexer: Common::Multiplexer
+        @spider_multiplexer: Common::Multiplexer
+        @timer_handlers: Array[TimerHandler]
+        @select_timeout_sec: Integer
+        @aborted: bool
+        @letter_queue: Array[Letter]
+        @letter_queue_lock: Thread::Mutex
+        @postpone_queue: Array[Common::Postpone]
+        @postpone_queue_lock: Thread::Mutex
+        @selector: Util::Selector
+        @command_receiver: CommandReceiver
+        @net_multiplexer: Common::Multiplexer
+        @spin_multiplexer: Common::Multiplexer
+        @recipient: Common::Recipient
+        @last_timeout_check: Time
+
+        def initialize: (Integer agent_id, Integer max_ships, true anchorable) -> void
+        def to_s: -> String
+        def inspect: -> String
+        def run: -> void
+        def abort_agent: -> nil
+        def req_shutdown: -> void
+        def print_usage: -> void
+        def add_timer_handler: (TimerHandler handler) -> void
+        def remove_timer_handler: (TimerHandler handler) -> void
+        def add_command_receiver: (Rudders::Rudder rd) -> void
+        def send_accepted_letter: (Multiplexer::RudderState st, Rudders::Rudder client_rd, Exception e, bool wakeup) -> void
+        def send_connected_letter: (Multiplexer::RudderState st, Exception e, untyped wakeup) -> void
+        def send_read_letter: (Multiplexer::RudderState st, Integer n, untyped adr, Exception e, bool wakeup) -> void
+        def send_wrote_letter: (Multiplexer::RudderState st, Integer n, Exception e, bool wakeup) -> void
+        def send_close_req_letter: (Multiplexer::RudderState st, bool wakeup) -> void
+        def shutdown: -> void
+        def abort: -> void
+        def reload_cert: -> void
+        def add_postpone: (Common::Postpone p) -> void
+        def count_postpone: -> Integer
+        def req_catch_up: -> void
+        def catch_up: -> void
+
+        private
+        def ring: -> Time
+        def send_letter: (Letter let, bool wakeup) -> void
+        def on_accept: (Letter let) -> void
+        def on_connect: (Letter let) -> void
+        def on_read: (Letter let) -> void
+        def on_wrote: (Letter let) -> void
+        def on_close_req: (Letter let) -> void
+        def next_action: (Multiplexer::RudderState st, Interrupt act, bool reading) -> void
+        def self.init: (Array[Integer] agt_ids, Integer max_ships) -> void
+        def self.get: (Interrupt agt_id) -> GrandAgent
+        def self.add: (Integer agt_id, bool anchorable) -> GrandAgent
+        def self.add_lifecycle_listener: (LifecycleListener lis) -> void
+      end
+    end
+  end
+end

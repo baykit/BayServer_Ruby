@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module Command
+          class CmdParams
+            @params: Array[Array[String]]
+
+            def initialize: (Integer req_id) -> void
+            def unpack: (FcgPacket pkt) -> void
+            def pack: (FcgPacket pkt) -> void
+            def handle: (FcgCommandHandler cmd_handler) -> Integer
+            def read_length: (Protocol::PacketPartAccessor acc) -> void
+            def write_length: (Integer len, Protocol::PacketPartAccessor acc) -> void
+            def add_param: (String name, String value) -> void
+            def to_s: -> String
+          end
+        end
+      end
+    end
+  end
+end

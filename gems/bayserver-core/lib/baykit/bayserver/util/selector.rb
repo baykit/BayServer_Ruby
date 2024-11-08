@@ -18,6 +18,10 @@ module Baykit
         end
 
         def register(ch, op)
+          #BayLog.debug("register io=%s", ch)
+          if not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
+            raise ArgumentError
+          end
           if op & OP_READ != 0
             register_read(ch, @channels)
           end
@@ -27,11 +31,18 @@ module Baykit
         end
 
         def unregister(ch)
+          #BayLog.debug("unregister io=%s", ch)
+          if  not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
+            raise ArgumentError
+          end
           unregister_read(ch, @channels)
           unregister_write(ch, @channels)
         end
 
         def modify(ch, op)
+          if  not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
+            raise ArgumentError
+          end
           if op & OP_READ != 0
             register_read(ch, @channels)
           else
@@ -46,10 +57,16 @@ module Baykit
         end
 
         def get_op(ch)
+          if not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
+            raise ArgumentError
+          end
           return @channels[ch]
         end
 
-        def select(timeout = 0)
+        def select(timeout_sec = nil)
+          if timeout_sec == nil
+            timeout_sec = 0
+          end
           except_list = []
 
           read_list = []
@@ -64,16 +81,18 @@ module Baykit
               end
             end
           end
-          selected_read_list, selected_write_list = Kernel.select(read_list, write_list, except_list, timeout)
+          #BayLog.debug("Select read_list=%s", read_list)
+          #BayLog.debug("Select write_list=%s", write_list)
+          selected_read_list, selected_write_list = Kernel.select(read_list, write_list, except_list, timeout_sec)
 
           result = {}
-          if selected_read_list
+          if selected_read_list != nil
             selected_read_list.each do |ch|
               register_read(ch, result)
             end
           end
 
-          if selected_write_list
+          if selected_write_list != nil
             selected_write_list.each do |ch|
               register_write(ch, result)
             end
@@ -82,7 +101,7 @@ module Baykit
           return result
         end
 
-        def count()
+        def count
           @lock.synchronize do
             return @channels.length
           end

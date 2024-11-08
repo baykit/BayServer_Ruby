@@ -1,0 +1,52 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2InboundHandler
+            @window_size: Integer
+            @settings: H2Settings
+            @analyzer: untyped
+            @req_header_tbl: untyped
+            @res_header_tbl: untyped
+            @protocol_handler: untyped
+            @header_read: bool
+            @req_cont_len: Integer
+            @req_cont_read: Integer
+            @http_protocol: String
+
+            def initialize: -> void
+            def reset: -> Integer
+            def init: (H2ProtocolHandler proto_handler) -> void
+            def send_res_headers: (Tours::Tour tur) -> void
+            def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
+            def send_end_tour: (Tours::Tour tur, bool keep_alive) -> void
+            def send_req_protocol_error: (Exception err) -> bool
+            def handle_preface: (Command::CmdPreface cmd) -> Integer
+            def handle_data: (Command::CmdData cmd) -> Integer
+            def handle_headers: (Command::CmdHeaders cmd) -> Integer
+            def handle_priority: (Command::CmdPriority cmd) -> Integer
+            def handle_settings: (Command::CmdSettings cmd) -> Integer
+            def handle_window_update: (Command::CmdWindowUpdate cmd) -> Integer
+            def handle_go_away: (Command::CmdGoAway cmd) -> Integer
+            def handle_ping: (Command::CmdPing cmd) -> Integer
+            def handle_rst_stream: (Command::CmdRstStream cmd) -> Integer
+
+            private
+            def ship: -> Common::InboundShip
+            def get_tour: (Integer key) -> Tours::Tour
+            def end_req_content: (Integer check_id, Tours::Tour tur) -> void
+            def start_tour: (Tours::Tour tur) -> void
+
+            class InboundProtocolHandlerFactory
+              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> H2ProtocolHandler
+            end
+          end
+        end
+      end
+    end
+  end
+end

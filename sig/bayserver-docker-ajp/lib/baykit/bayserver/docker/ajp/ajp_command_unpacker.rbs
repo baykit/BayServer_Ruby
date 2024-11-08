@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpCommandUnPacker
+          @cmd_handler: AjpCommandHandler
+
+          def initialize: (AjpCommandHandler handler) -> void
+          def reset: -> nil
+          def packet_received: (AjpPacket pkt) -> Integer
+          def need_data: -> bool
+        end
+      end
+    end
+  end
+end

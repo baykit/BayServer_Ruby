@@ -1,0 +1,56 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class InboundShip
+        MAX_TOURS: Integer
+        include BayServer
+        self.@err_counter: Util::Counter
+        @lock: Thread::Mutex
+        @active_tours: Array[Tours::Tour]
+        @protocol_handler: untyped
+        @agent_id: bot
+        @ship_id: bot
+        @object_id: bot
+        @port_docker: untyped
+        @socket_timeout_sec: untyped
+        @tour_store: untyped
+        @keeping: bot
+
+        attr_accessor need_end: bool
+        def initialize: -> void
+        def to_s: -> String
+        def init_inbound: (untyped rd, untyped agt_id, untyped tp, untyped port_dkr, untyped proto_hnd) -> untyped
+        def reset: -> false
+        def notify_handshake_done: (untyped proto) -> untyped
+        def notify_connect: -> bot
+        def notify_read: (untyped buf) -> untyped
+        def notify_eof: -> untyped
+        def notify_error: (untyped e) -> untyped
+        def notify_protocol_error: (untyped e) -> untyped
+        def notify_close: -> true
+        def check_timeout: (untyped duration_sec) -> false
+        def set_protocol_handler: (untyped proto_handler) -> untyped
+        def get_tour: (untyped tur_key, ?false force, ?true rent) -> nil
+        def get_error_tour: -> untyped
+        def send_headers: (untyped check_id, Tours::Tour tur) -> nil
+        def send_redirect: (untyped check_id, Tours::Tour tur, untyped status, untyped location) -> nil
+        def send_res_content: (untyped check_id, Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
+        def send_end_tour: (untyped chk_ship_id, Tours::Tour tur) -> untyped
+        def send_error: (untyped chk_id, Tours::Tour tour, untyped status, untyped message, untyped e) -> nil
+        def end_ship: -> untyped
+        def abort_tours: -> Array[untyped]
+        def tour_handler: -> untyped
+        def send_error_content: (untyped chk_id, untyped tour, String content) -> nil
+
+        private
+        def self.uniq_key: (nil sip_id, untyped tur_key) -> untyped
+
+        public
+        def return_tour: (Tours::Tour tur) -> untyped
+      end
+    end
+  end
+end

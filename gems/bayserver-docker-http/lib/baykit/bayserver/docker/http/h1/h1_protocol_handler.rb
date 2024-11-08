@@ -10,7 +10,6 @@ module Baykit
       module Http
         module H1
           class H1ProtocolHandler < Baykit::BayServer::Protocol::ProtocolHandler
-            include Baykit::BayServer::Docker::Http::H1::H1CommandHandler # implements
 
             include Baykit::BayServer::Agent
             include Baykit::BayServer::Protocol
@@ -20,17 +19,8 @@ module Baykit
 
             attr :keeping
 
-            def initialize(pkt_store, svr_mode)
-              @command_unpacker = H1CommandUnPacker.new(self, svr_mode)
-              @packet_unpacker = H1PacketUnPacker.new(@command_unpacker, pkt_store)
-              @packet_packer = PacketPacker.new()
-              @command_packer = CommandPacker.new(@packet_packer, pkt_store)
-              @server_mode = svr_mode
-              @keeping = false
-            end
-
-            def inspect()
-              return @ship.inspect()
+            def initialize(h1_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, svr_mode)
+              super(pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, h1_handler, svr_mode)
             end
 
             ######################################################

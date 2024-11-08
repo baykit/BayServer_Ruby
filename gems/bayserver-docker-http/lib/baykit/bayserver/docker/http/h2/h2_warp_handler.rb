@@ -1,4 +1,4 @@
-require 'baykit/bayserver/docker/warp/package'
+require 'baykit/bayserver/common/warp_handler'
 require 'baykit/bayserver/protocol/protocol_exception'
 
 module Baykit
@@ -7,7 +7,7 @@ module Baykit
       module Http
         module H2
           class H2WarpHandler < H2ProtocolHandler
-            include Baykit::BayServer::Docker::Warp::WarpHandler # implements
+            include Baykit::BayServer::Common::WarpHandler # implements
 
             class WarpProtocolHandlerFactory
               include Baykit::BayServer::Protocol::ProtocolHandlerFactory  # implements

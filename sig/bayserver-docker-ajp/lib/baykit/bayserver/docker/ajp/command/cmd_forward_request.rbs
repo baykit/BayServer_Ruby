@@ -1,0 +1,43 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module Command
+          class CmdForwardRequest
+            self.@method_map: Hash[Integer, String]
+            self.@well_known_header_map: Hash[Integer, String]
+            self.@attribute_name_map: Hash[Integer, String]
+            @attributes: Hash[Integer, String]
+
+            def self.get_method_code: (String method) -> Integer
+            def self.get_well_known_header_code: (String name) -> Integer
+            def self.get_attribute_code: (String atr) -> Integer
+            attr_accessor method: String
+            attr_accessor protocol: String
+            attr_accessor req_uri: String
+            attr_accessor remote_addr: String
+            attr_accessor remote_host: String
+            attr_accessor server_name: String
+            attr_accessor server_port: Integer
+            attr_accessor is_ssl: bool
+            attr_accessor headers: Util::Headers
+            def initialize: -> void
+            def to_s: -> String
+            def unpack: (AjpPacket pkt) -> void
+            def pack: (AjpPacket pkt) -> void
+            def handle: (AjpCommandHandler handler) -> Integer
+
+            private
+            def read_request_headers: (AjpPacket::AjpAccessor acc) -> void
+            def read_attributes: (AjpPacket::AjpAccessor acc) -> void
+            def write_request_headers: (AjpPacket::AjpAccessor acc) -> void
+            def write_attributes: (AjpPacket::AjpAccessor acc) -> void
+          end
+        end
+      end
+    end
+  end
+end

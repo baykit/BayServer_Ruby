@@ -79,13 +79,13 @@ module Baykit
               raise ProtocolException("Header command not expected: state=%d", @state)
             end
 
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               BayLog.info("%s hijack: resStatus: %d", self, cmd.status)
             end
 
             cmd.headers.each do |nv|
               @tour.res.headers.add(nv[0], nv[1])
-              if BayServer.harbor.trace_header?
+              if BayServer.harbor.trace_header
                 BayLog.info("%s hijack: resHeader: %s=%s", self, nv[0], nv[1]);
               end
             end

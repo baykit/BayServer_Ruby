@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class Packet
+        INITIAL_BUF_SIZE: Integer
+        @type: Integer
+        @header_len: Integer
+        @max_data_len: Integer
+        @buf: String
+
+        attr_accessor buf_len: Integer
+        def initialize: (Integer `type`, Integer header_len, Integer max_data_len) -> void
+        def reset: -> void
+        def data_len: -> Integer
+        def expand: -> void
+        def new_header_accessor: -> PacketPartAccessor
+        def new_data_accessor: -> PacketPartAccessor
+        def to_s: -> String
+      end
+    end
+  end
+end

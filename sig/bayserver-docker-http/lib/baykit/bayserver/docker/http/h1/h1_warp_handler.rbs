@@ -1,0 +1,46 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1WarpHandler
+            STATE_READ_HEADER: Integer
+            STATE_READ_CONTENT: Integer
+            STATE_FINISHED: Integer
+            FIXED_WARP_ID: Integer
+            @state: Integer
+            @protocol_handler: H1ProtocolHandler
+
+            def initialize: -> void
+            def init: (H1ProtocolHandler proto_handler) -> untyped
+            def to_s: -> String
+            def reset: -> Integer
+            def send_res_headers: (Tours::Tour tur) -> untyped
+            def send_res_content: (Tours::Tour tur, untyped buf, untyped start, untyped len) -> untyped
+            def send_end_tour: (Tours::Tour tur) -> untyped
+            def next_warp_id: -> Integer
+            def new_warp_data: (Integer warp_id) -> untyped
+            def verify_protocol: (untyped proto) -> nil
+            def handle_header: (Command::CmdHeader cmd) -> Integer
+            def handle_content: (Command::CmdContent cmd) -> Integer
+            def handle_end_content: (Command::CmdEndContent cmd) -> Integer
+            def req_finished: -> bool
+
+            private
+            def reset_state: -> Integer
+            def end_res_content: (Tours::Tour tur) -> void
+            def change_state: (Integer new_state) -> Integer
+            def ship: -> Common::WarpShip
+
+            class WarpProtocolHandlerFactory
+              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> untyped
+            end
+          end
+        end
+      end
+    end
+  end
+end

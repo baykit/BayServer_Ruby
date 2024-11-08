@@ -7,17 +7,37 @@ module Baykit
         module AjpCommandHandler
           include Baykit::BayServer::Protocol::CommandHandler  # implements
 
-          # abstract method
-          #
-          # handle_data(cmd)
-          # handle_end_response(cmd)
-          # handle_forward_request(cmd)
-          # handle_send_body_chunk(cmd)
-          # handle_send_headers(cmd)
-          # handle_shutdown(cmd)
-          # handle_get_body_chunk(cmd)
-          # need_data()
-          #
+          def handle_data(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_end_response(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_forward_request(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_send_body_chunk(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_send_headers(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_shutdown(cmd)
+            raise NotImplementedError.new
+          end
+
+          def handle_get_body_chunk(cmd)
+            raise NotImplementedError.new
+          end
+
+          def need_data()
+            raise NotImplementedError.new
+          end
         end
       end
     end

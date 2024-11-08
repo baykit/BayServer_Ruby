@@ -1,0 +1,40 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Ships
+      class Ship
+        SHIP_ID_NOCHECK: Integer
+        INVALID_SHIP_ID: Integer
+        self.@oid_counter: Util::Counter
+        self.@ship_id_counter: Util::Counter
+        @object_id: Integer
+        @ship_id: Integer
+        @initialized: bool
+        @agentId: Integer
+        @rudder: Rudders::Rudder
+        @transporter: Agent::Multiplexer::Transporter
+        @agent_id: Integer
+
+        attr_accessor keeping: bool
+
+        def initialize: -> void
+        def init: (Integer agt_id, Rudders::Rudder rd, Agent::Multiplexer::Transporter tp) -> void
+        def reset: -> void
+        def id: -> Integer
+        def check_ship_id: (Integer check_id) -> void
+        def resume_read: (Integer check_id) -> void
+        def post_close: -> void
+        def notify_handshake_done: (String proto) -> void
+        def notify_connect: -> void
+        def notify_read: (String buf) -> void
+        def notify_eof: -> void
+        def notify_error: (Exception e) -> void
+        def notify_protocol_error: (Protocol::ProtocolException e) -> void
+        def notify_close: -> void
+        def check_timeout: (Integer duration_sec) -> void
+      end
+    end
+  end
+end

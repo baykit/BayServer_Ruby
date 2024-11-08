@@ -1,0 +1,27 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Port
+        include Docker
+
+        def protocol: -> String
+        def host: -> String
+        def port: -> Integer
+        def socket_path: -> String
+        def address: -> untyped
+        def anchored: -> bool
+        def secure: -> bool
+        def timeout_sec: -> Integer
+        def additional_headers: -> Array[Array[String]]
+        def cities: -> Array[City]
+        def find_city: (String name) -> City
+        def on_connected: (Integer agent_id, Rudders::Rudder rd) -> void
+        def return_protocol_handler: (Integer agt_id, Protocol::ProtocolHandler proto_hnd) -> void
+        def return_ship: (Common::InboundShip sip) -> void
+      end
+    end
+  end
+end

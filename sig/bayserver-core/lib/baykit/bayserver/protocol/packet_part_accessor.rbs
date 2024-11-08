@@ -1,0 +1,30 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class PacketPartAccessor
+        include BayServer
+        @packet: Packet
+        @start: Integer
+        @max_len: Integer
+        @pos: Integer
+
+        def initialize: (Packet pkt, Integer start, Integer max_len) -> void
+        def put_byte: (Integer b) -> void
+        def put_bytes: (String buf, ?Integer ofs, ?Integer len) -> void
+        def put_short: (Integer val) -> void
+        def put_int: (Integer val) -> void
+        def put_string: (String str) -> void
+        def get_byte: -> Integer
+        def get_bytes: (String buf, ?Integer ofs, ?Integer len) -> (Complex | Float | Integer | Rational)
+        def get_short: -> Integer
+        def get_int: -> Integer
+        def check_read: (Integer len) -> void
+        def check_write: (Integer len) -> void
+        def forward: (Integer len) -> void
+      end
+    end
+  end
+end

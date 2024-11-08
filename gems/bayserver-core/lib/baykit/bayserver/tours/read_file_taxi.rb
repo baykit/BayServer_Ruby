@@ -59,7 +59,7 @@ module Baykit
         ######################################################
 
         def depart()
-          @start_time = Time.now.to_i
+          @start_time = Time.now.tv_sec
           begin
             @buf.clear()
             @infile.read(@buf_size, @buf)
@@ -86,7 +86,7 @@ module Baykit
         end
 
         def on_timer()
-          duration_sec = Time.now.to_i - @start_time
+          duration_sec = Time.now.tv_sec - @start_time
           if (@data_listener.check_timeout(duration_sec))
             close()
           end

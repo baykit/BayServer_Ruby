@@ -1,0 +1,40 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class PacketStore
+        self.@proto_map: Hash[String, ProtocolInfo]
+        @protocol: String
+        @factory: PacketFactory
+        @store_map: Hash[Object, ObjectStore]
+
+        def initialize: (String proto, PacketFactory factory) -> void
+        def reset: () -> void
+        def rent: (Integer `type`) -> Packet
+        def Return: (Packet pkt) -> void
+        def print_usage: (Integer indent) -> void
+        def self.init: -> void
+        def self.get_store: (String protocol, Integer agent_id) -> PacketStore
+        def self.register_protocol: (String protocol, PacketFactory factory) -> void
+        def self.get_stores: (Integer agent_id) -> Array[PacketStore]
+
+        class AgentListener
+          def add: (Integer agt_id) -> void
+          def remove: (Integer agt_id) -> void
+        end
+
+        class ProtocolInfo
+          @protocol: String
+          @packet_factory: PacketFactory
+          @stores: Hash[Integer, PacketStore]
+
+          def initialize: (String proto, PacketFactory pkt_factory) -> void
+          def add_agent: (Integer agt_id) -> PacketStore
+          def remove_agent: (Integer agt_id) -> PacketStore?
+        end
+      end
+    end
+  end
+end

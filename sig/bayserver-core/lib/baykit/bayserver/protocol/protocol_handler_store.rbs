@@ -1,0 +1,39 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class ProtocolHandlerStore
+        self.@proto_map: Hash[String, ProtocolInfo]
+        @protocol: String
+        @server_mode: bool
+        @factory: untyped
+
+        def initialize: (String proto, bool svr_mode, ProtocolHandlerFactory proto_hnd_factory, PacketStore pkt_store) -> void
+        def print_usage: (Integer indent) -> void
+        def self.init: -> void
+        def self.get_store: (String protocol, bool svr_mode, Integer agent_id) -> ProtocolHandlerStore
+        def self.get_stores: (Integer agent_id) -> Array[ProtocolHandlerStore]
+        def self.register_protocol: (String protocol, bool svr_mode, ProtocolHandlerFactory proto_hnd_factory) -> void
+        def self.construct_protocol: (String protocol, bool svr_mode) -> String
+
+        class AgentListener
+          def add: (Integer agt_id) -> void
+          def remove: (Integer agt_id) -> void
+        end
+
+        class ProtocolInfo
+          @protocol: String
+          @server_mode: bool
+          @protocol_handler_factory: ProtocolHandlerFactory
+          @stores: Hash[Integer, ProtocolHandlerStore]
+
+          def initialize: (String proto, bool svr_mode, ProtocolHandlerFactory proto_hnd_factory) -> void
+          def add_agent: (Integer agt_id) -> void
+          def remove_agent: (Integer agt_id) -> void
+        end
+      end
+    end
+  end
+end

@@ -6,19 +6,41 @@ module Baykit
           module H2CommandHandler
             include Baykit::BayServer::Protocol::CommandHandler # implements
 
-            #
-            # abstract methods
-            #
-            # handle_preface(cmd)
-            # handle_data(cmd)
-            # handle_headers(cmd)
-            # handle_priority(cmd)
-            # handle_settings(cmd)
-            # handle_window_update(cmd)
-            # handle_go_away(cmd)
-            # handle_ping(cmd)
-            # handle_rst_stream(cmd)
-            #
+            def handle_preface(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_data(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_headers(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_priority(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_settings(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_window_update(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_go_away(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_ping(cmd)
+              raise NotImplementedError.new
+            end
+
+            def handle_rst_stream(cmd)
+              raise NotImplementedError.new
+            end
           end
         end
       end

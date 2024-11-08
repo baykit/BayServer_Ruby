@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class SendFileShip
+          @tour: Tours::Tour
+          @tour_id: Integer
+          @file_wrote_len: Integer
+
+          def init: (Rudders::Rudder rd, Agent::Multiplexer::Transporter tp, Tours::Tour tur) -> void
+          def reset: -> void
+          def notify_read: (String buf) -> Integer
+          def notify_error: (Exception e) -> Integer
+          def notify_eof: -> Integer
+          def notify_close: -> void
+          def check_timeout: (Integer duration_sec) -> bool
+        end
+      end
+    end
+  end
+end

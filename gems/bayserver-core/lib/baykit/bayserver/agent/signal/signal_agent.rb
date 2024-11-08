@@ -1,7 +1,7 @@
 require 'baykit/bayserver/mem_usage'
 require 'baykit/bayserver/bcf/package'
 
-require 'baykit/bayserver/agent/grand_agent_monitor'
+require 'baykit/bayserver/agent/monitor/grand_agent_monitor'
 require 'baykit/bayserver/agent/signal/signal_proxy'
 require 'baykit/bayserver/util/sys_util'
 
@@ -14,6 +14,7 @@ module Baykit
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
           include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Monitor
           include Baykit::BayServer::Agent::Signal
 
           COMMAND_RELOAD_CERT = "reloadcert"

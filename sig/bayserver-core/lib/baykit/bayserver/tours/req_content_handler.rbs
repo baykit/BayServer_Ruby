@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      module ReqContentHandler
+        DEV_NULL: DevNullReqContentHandler
+
+        def on_read_req_content: (Tour tur, Strubg buf, int start, int len) -> void
+        def on_end_req_content: (Tour tur) -> void
+        def on_abort_req: (Tour tur) -> bool
+      end
+
+      class DevNullReqContentHandler
+        include ReqContentHandler
+
+        def on_read_req_content: (Tour tur, Strubg buf, int start, int len) -> void
+        def on_end_req_content: (Tour tur) -> void
+        def on_abort_req: (Tour tur) -> bool
+      end
+    end
+  end
+end

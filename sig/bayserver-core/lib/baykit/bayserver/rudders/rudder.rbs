@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Rudders
+      module Rudder
+        def key: () -> Object
+        def set_non_blocking: () -> void
+        def read: (String buf, Integer len) -> Integer
+        def write: (String buf) -> Integer
+        def close: () -> void
+      end
+    end
+  end
+end

@@ -1,0 +1,14 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class Command
+        @type: Integer
+
+        def initialize: (Integer `type`) -> void
+      end
+    end
+  end
+end

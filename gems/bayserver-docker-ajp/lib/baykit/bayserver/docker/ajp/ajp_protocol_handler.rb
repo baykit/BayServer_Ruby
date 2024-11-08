@@ -1,7 +1,4 @@
 require 'baykit/bayserver/protocol/protocol_handler'
-require 'baykit/bayserver/protocol/packet_store'
-require 'baykit/bayserver/util/http_status'
-require 'baykit/bayserver/tours/package'
 require 'baykit/bayserver/docker/ajp/package'
 require 'baykit/bayserver/docker/ajp/command/package'
 
@@ -14,16 +11,11 @@ module Baykit
 
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Agent
-          include Baykit::BayServer::Util
           include Baykit::BayServer::Docker::Ajp::Command
 
 
-          def initialize(pkt_store, svr_mode)
-            @command_unpacker = AjpCommandUnPacker.new(self)
-            @packet_unpacker = AjpPacketUnPacker.new(pkt_store, @command_unpacker)
-            @packet_packer = PacketPacker.new()
-            @command_packer = CommandPacker.new(@packet_packer, pkt_store)
-            @server_mode = svr_mode
+          def initialize(ajp_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, svr_mode)
+            super(pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, ajp_handler, svr_mode)
           end
 
           def to_s

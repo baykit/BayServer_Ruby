@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        module Command
+          class CmdSendBodyChunk
+            MAX_CHUNKLEN: untyped
+            include Ajp
+            @chunk: String
+            @offset: Integer
+            @length: Integer
+
+            def initialize: (String buf, Integer ofs, Integer len) -> void
+            def unpack: (AjpPacket pkt) -> void
+            def pack: (AjpPacket pkt) -> void
+            def handle: (AjpCommandHandler handler) -> Integer
+          end
+        end
+      end
+    end
+  end
+end

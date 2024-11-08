@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1Command
+            def initialize: (untyped `type`) -> void
+          end
+        end
+      end
+    end
+  end
+end

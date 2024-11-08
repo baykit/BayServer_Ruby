@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Bcf
+      class BcfDocument
+        @content_list: Array[BcfObject]
+
+        def initialize: () -> void
+        def print_document: () -> void
+
+        private
+        def print_content_list: (Array[BcfObject] list, Integer indent) -> void
+        def print_indent: (Integer indent) -> void
+      end
+    end
+  end
+end

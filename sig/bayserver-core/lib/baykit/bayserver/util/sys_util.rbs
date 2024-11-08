@@ -1,0 +1,22 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class SysUtil
+        def self.run_on_windows: -> bool
+        def self.run_on_rubymine: -> bool
+        def self.support_fork: -> bool
+        def self.support_select_file: -> bool
+        def self.support_nonblock_file_read: -> bool
+        def self.support_nonblock_file_write: -> bool
+        def self.support_select_pipe: -> bool
+        def self.support_nonblock_pipe_read: -> bool
+        def self.pid: -> Integer
+        def self.processor_count: -> Integer
+        def self.support_unix_domain_socket_address: -> bool
+      end
+    end
+  end
+end

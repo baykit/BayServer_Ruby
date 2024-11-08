@@ -1,0 +1,25 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class Transporter
+          def init: -> void
+          def on_connect: (Rudders::Rudder rd) -> void
+          def on_read: (Rudders::Rudder rd, String data, Integer len, Addrinfo adr) -> void
+          def on_error: (Rudders::Rudder rd, Exception e) -> void
+          def on_closed: (Rudders::Rudder rd) -> void
+          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_read: (Rudders::Rudder rd) -> void
+          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) -> void
+          def req_close: (Rudders::Rudder rd) -> void
+          def check_timeout: (Rudders::Rudder rd, Integer duretion_sec) -> bool
+          def get_read_buffer_size: -> Integer
+          def print_usage: (Integer indent) -> void
+        end
+      end
+    end
+  end
+end

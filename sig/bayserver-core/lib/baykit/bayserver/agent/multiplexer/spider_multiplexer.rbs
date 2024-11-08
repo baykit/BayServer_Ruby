@@ -1,0 +1,61 @@
+# TypeProf 0.21.11
+
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class SpiderMultiplexer < MultiplexerBase
+          include TimerHandler #implements
+          include Common::Recipient  # implements
+
+          @anchorable: bool
+          @selector: Util::Selector
+          @agent: GrandAgent
+          @operations_lock: Thread::Mutex
+          @operations: Array[ChannelOperation]
+          @select_wakeup_pipe: [IO, IO]
+
+          def initialize: (GrandAgent agt, bool anchorable) -> void
+          def to_s: -> String
+          def req_accept: (Rudders::Rudder rd) -> void
+          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_read: (Rudders::Rudder rd) -> void
+          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag, untyped lis) -> void
+          def req_end: (Rudders::Rudder rd) -> void
+          def req_close: (Rudders::Rudder rd) -> void
+          def shutdown: -> void
+          def is_non_blocking: -> bool
+          def use_async_api: -> bool
+          def cancel_read: (RudderState st) -> void
+          def cancel_write: (RudderState st) -> void
+          def next_accept: (RudderState st) -> void
+          def next_read: (RudderState st) -> void
+          def next_write: (RudderState st) -> void
+
+          private
+          def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect, ?bool to_close) -> void
+          def register_channel_ops: -> Integer
+          def handle_channel: (IO ch, Integer op) -> void
+          def on_acceptable: (RudderState st) -> void
+          def on_connectable: (RudderState st) -> void
+          def on_readable: (RudderState st) -> void
+          def on_writable: (RudderState st) -> void
+          def on_close_req: (RudderState st) -> void
+          def self.op_mode: (Integer mode) -> void
+          def on_waked_up: () -> void
+
+          class ChannelOperation
+            @rudder: Rudders::Rudder
+
+            attr_accessor op: Integer
+            attr_accessor to_connect: bool
+            attr_accessor to_close: bool
+            def initialize: (Rudders::Rudder rd, Integer op, bool to_connect, bool to_close) -> void
+          end
+        end
+      end
+    end
+  end
+end

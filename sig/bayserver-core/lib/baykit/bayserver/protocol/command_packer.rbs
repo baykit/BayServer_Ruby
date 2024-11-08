@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class CommandPacker
+        @pkt_packer: PacketPacker
+        @pkt_store: PacketStore
+
+        def initialize: (PacketPacker pkt_packer, PacketStore store) -> void
+        def reset: -> void
+        def post: (Ships::Ship sip, Command cmd) -> untyped
+      end
+    end
+  end
+end

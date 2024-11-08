@@ -16,53 +16,22 @@ module Baykit
             include Baykit::BayServer::Protocol
             include Baykit::BayServer::Util
 
-            class WriteUnit
-              attr :buf
-              attr :adr
-              attr :tag
-              attr :listener
-
-              def initialize(buf, adr, tag, lis)
-                @buf = buf
-                @adr = adr
-                @tag = tag
-                @listener = lis
-              end
-
-              def done()
-                if @listener != nil
-                  @listener.call()
-                end
-              end
-            end
-
             #
             # Abstract methods
             #
             def secure()
-              raise NotImplementedError()
+              raise NotImplementedError.new
             end
 
             def handshake_nonblock()
-              raise NotImplementedError()
+              raise NotImplementedError.new
             end
 
             def handshake_finished()
-              raise NotImplementedError()
+              raise NotImplementedError.new
             end
-
-            def read_nonblock()
-              raise NotImplementedError()
-            end
-
-            def write_nonblock(buf, adr)
-              raise NotImplementedError()
-            end
-
 
             attr :data_listener
-            attr :server_mode
-            attr :trace_ssl
             attr :infile
             attr :write_queue
             attr :finale
@@ -79,7 +48,7 @@ module Baykit
             def initialize(server_mode, bufsiz, trace_ssl, write_only = false)
               @server_mode = server_mode
               @write_queue = []
-              @lock = Monitor.new()
+              @lock = ::Monitor.new()
               @capacity = bufsiz
               @read_buf = StringUtil.alloc(bufsiz)
               @trace_ssl = trace_ssl
@@ -91,31 +60,6 @@ module Baykit
               return "tpt[#{@data_listener.to_s}]"
             end
 
-            def init(nb_hnd, ch, lis)
-              if ch == nil
-                raise ArgumentError.new("Channel is nil")
-              end
-              if lis == nil
-                raise ArgumentError.new("Data listener is nil")
-              end
-
-              if @initialized
-                BayLog.error("%s This transporter is already in use by channel: %s", self, @ch)
-                raise Sink.new("IllegalState")
-              end
-
-              if !@write_queue.empty?
-                raise Sink.new()
-              end
-
-              @channel_handler = nb_hnd
-              @data_listener = lis
-              @ch = ch
-              @initialized = true
-              set_valid(true)
-              @handshaked = false
-              @channel_handler.add_channel_listener(ch, self)
-            end
 
             ######################################################
             # Implements Reusable
@@ -146,19 +90,7 @@ module Baykit
 
               BayLog.debug("%s post: %s len=%d", self, tag, buf.length)
 
-              @lock.synchronize do
 
-                if !@ch_valid
-                  raise IOError.new("#{self} channel is invalid, Ignore")
-                else
-                  unt = WriteUnit.new(buf, adr, tag, lisnr)
-                  @write_queue << unt
-
-                  BayLog.trace("%s sendBytes->askToWrite", self)
-                  @channel_handler.ask_to_write(@ch)
-                end
-
-              end
             end
 
             ######################################################
@@ -186,71 +118,6 @@ module Baykit
 
             def on_readable(chk_ch)
               check_channel(chk_ch)
-              BayLog.trace("%s on_readable", self)
-
-              if !@handshaked
-                begin
-                  handshake_nonblock()
-                  @handshaked = true
-                rescue IO::WaitReadable => e
-                  BayLog.debug("%s Handshake status: read more", @data_listener)
-                  return NextSocketAction::CONTINUE
-                rescue IO::WaitWritable => e
-                  BayLog.debug("%s Handshake status: write more", @data_listener)
-                  @channel_handler.ask_to_write(@ch)
-                  return NextSocketAction::CONTINUE
-                end
-              end
-
-              # read data
-              # If closed, EOFError is raised
-              if @read_buf.length == 0
-                eof = false
-                begin
-                  adr = read_nonblock()
-                rescue IO::WaitReadable => e
-                  BayLog.debug("%s Read status: read more", self)
-                  return NextSocketAction::CONTINUE
-                rescue IO::WaitWritable => e
-                  BayLog.debug("%s Read status: write more", self)
-                  @channel_handler.ask_to_write(@ch)
-                  return NextSocketAction::CONTINUE
-                rescue EOFError => e
-                  BayLog.debug("%s EOF", self)
-                  eof = true
-                rescue SystemCallError => e
-                  BayLog.debug_e(e, "SystemCall Error")
-                  eof = true
-                end
-
-                if eof
-                  return @data_listener.notify_eof()
-                end
-              end
-
-              BayLog.debug("%s read %d bytes", self, @read_buf.length)
-
-              begin
-                begin
-                  next_action = @data_listener.notify_read(@read_buf, adr)
-                  BayLog.trace("%s returned from notify_read(). next action=%d", @ship, next_action)
-                  return next_action
-                rescue UpgradeException => e
-                  BayLog.debug("%s Protocol upgrade", @ship)
-                  return @data_listener.notify_read(@read_buf, adr)
-                ensure
-                  @read_buf.clear()
-                end
-
-
-              rescue ProtocolException => e
-                close = @data_listener.notify_protocol_error(e)
-                if !close && @server_mode
-                  return NextSocketAction::CONTINUE
-                else
-                  return NextSocketAction::CLOSE
-                end
-              end
             end
 
             def on_writable(chk_ch)
@@ -397,9 +264,8 @@ module Baykit
                   write_unit.done()
                 end
                 @write_queue.clear()
-
-                @data_listener.notify_close()
               end
+              @data_listener.notify_close()
             end
 
             def flush()

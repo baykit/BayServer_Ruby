@@ -1,0 +1,13 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module LifecycleListener
+        def add: (Integer agent_id) -> nil
+        def remove: (Integer agent_id) -> nil
+      end
+    end
+  end
+end

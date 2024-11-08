@@ -1,0 +1,13 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Docker
+        def init: (Bcf::BcfElement ini, BayServer::Docker parent) -> void
+        def type: -> String
+      end
+    end
+  end
+end

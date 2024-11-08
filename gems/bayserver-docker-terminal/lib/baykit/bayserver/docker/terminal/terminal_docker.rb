@@ -1,4 +1,4 @@
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/docker/base/port_base'
 require 'baykit/bayserver/tours/content_consume_listener'
 

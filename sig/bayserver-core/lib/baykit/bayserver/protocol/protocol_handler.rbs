@@ -1,0 +1,27 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Protocol
+      class ProtocolHandler
+        @command_unpacker: CommandUnPacker
+        @command_packer: CommandPacker
+        @packet_unpacker: PacketUnPacker
+        @packet_packer: PacketPacker
+        @command_handler: CommandHandler
+        @server_mode: bool
+
+        attr_accessor ship: Ships::Ship
+        def to_s: -> String
+        def init: (Ships::Ship sip) -> void
+        def reset: -> void
+        def protocol: -> String
+        def max_req_packet_data_size: -> Integer
+        def max_res_packet_data_size: -> Integer
+        def bytes_received: (String buf) -> Integer
+        def post: (Command cmd, untyped lis) -> void
+      end
+    end
+  end
+end

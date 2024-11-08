@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Club
+        include Docker
+
+        def file_name: () -> String
+        def extension: () -> String
+        def matches: (String fname) -> bool
+        def charset: -> String
+        def decode_path_info: -> bool
+        def arrive: (Tours::Tour tur) -> void
+      end
+    end
+  end
+end

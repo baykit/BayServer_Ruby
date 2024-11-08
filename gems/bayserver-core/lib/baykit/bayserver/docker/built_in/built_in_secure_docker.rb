@@ -1,7 +1,8 @@
 require 'openssl'
 
 require 'baykit/bayserver/bcf/package'
-require 'baykit/bayserver/agent/transporter/secure_transporter'
+require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/multiplexer/secure_transporter'
 
 require 'baykit/bayserver/docker/secure'
 require 'baykit/bayserver/util/string_util'
@@ -14,7 +15,8 @@ module Baykit
           include Baykit::BayServer::Docker::Secure  # implements
 
           include Baykit::BayServer::Bcf
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Util
           include OpenSSL
 
@@ -109,8 +111,15 @@ module Baykit
             end
           end
 
-          def create_transporter(buf_size)
-            SecureTransporter.new(@sslctx, true, buf_size, @trace_ssl)
+          def new_transporter(agt_id, sip, buf_size)
+            agt = GrandAgent.get(agt_id)
+            return SecureTransporter.new(
+              agt.net_multiplexer,
+              sip,
+              true,
+              buf_size,
+              @trace_ssl,
+              @sslctx)
           end
 
           def reload_cert()

@@ -1,0 +1,30 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2Settings
+            DEFAULT_HEADER_TABLE_SIZE: Integer
+            DEFAULT_ENABLE_PUSH: bool
+            DEFAULT_MAX_CONCURRENT_STREAMS: Integer
+            DEFAULT_MAX_WINDOW_SIZE: Integer
+            DEFAULT_MAX_FRAME_SIZE: Integer
+            DEFAULT_MAX_HEADER_LIST_SIZE: Integer
+
+            attr_accessor header_table_size: Integer
+            attr_accessor enable_push: bool
+            attr_accessor max_concurrent_streams: Integer
+            attr_accessor initial_window_size: Integer
+            attr_accessor max_frame_size: Integer
+            attr_accessor max_header_list_size: Integer
+            def initialize: -> void
+            def reset: -> Integer
+          end
+        end
+      end
+    end
+  end
+end

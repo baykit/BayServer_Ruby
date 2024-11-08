@@ -1,0 +1,36 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class PlainTransporter
+          include Agent
+          @multiplexer: Common::Multiplexer
+          @ship: Ships::Ship
+          @server_mode: bool
+          @trace_ssl: bool
+          @read_buffer_size: Integer
+          @closed: bool
+
+          def initialize: (Common::Multiplexer mpx, Ships::Ship sip, bool server_mode, Integer bufsiz, bool trace_ssl) -> void
+          def to_s: -> String
+          def init: -> void
+          def on_connect: (Rudders::Rudder rd) -> Integer
+          def on_read: (Rudders::Rudder rd, String buf, Integer len, Addrinfo adr) -> Integer
+          def on_error: (Rudders::Rudder rd, Exception e) -> void
+          def on_closed: (Rudders::Rudder rd) -> void
+          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_read: (Rudders::Rudder rd) -> void
+          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) -> void
+          def req_close: (Rudders::Rudder rd) -> void
+          def check_timeout: (Rudders::Rudder rd, untyped duration_sec) -> bool
+          def get_read_buffer_size: -> Integer
+          def print_usage: (Integer indent) -> void
+          def secure: -> bool
+        end
+      end
+    end
+  end
+end

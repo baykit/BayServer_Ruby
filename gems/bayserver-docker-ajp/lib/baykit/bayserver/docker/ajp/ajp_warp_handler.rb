@@ -1,8 +1,10 @@
 require 'baykit/bayserver/agent/next_socket_action'
 require 'baykit/bayserver/protocol/protocol_exception'
+require 'baykit/bayserver/common/warp_data'
 require 'baykit/bayserver/docker/ajp/command/package'
 require 'baykit/bayserver/util/string_util'
 
+require 'baykit/bayserver/docker/ajp/ajp_handler'
 require 'baykit/bayserver/docker/ajp/ajp_protocol_handler'
 
 
@@ -10,14 +12,24 @@ module Baykit
   module BayServer
     module Docker
       module Ajp
-        class AjpWarpHandler < Baykit::BayServer::Docker::Ajp::AjpProtocolHandler
-          include Baykit::BayServer::Docker::Warp::WarpHandler # implements
+        class AjpWarpHandler
+          include Baykit::BayServer::Common::WarpHandler # implements
+          include AjpHandler # implements
 
           class WarpProtocolHandlerFactory
             include Baykit::BayServer::Protocol::ProtocolHandlerFactory  # implements
+            include Baykit::BayServer::Protocol
 
             def create_protocol_handler(pkt_store)
-              return AjpWarpHandler.new(pkt_store)
+              ib_handler = AjpWarpHandler.new
+              cmd_unpacker = AjpCommandUnPacker.new(ib_handler)
+              pkt_unpacker = AjpPacketUnPacker.new(pkt_store, cmd_unpacker)
+              pkt_packer = PacketPacker.new()
+              cmd_packer = CommandPacker.new(pkt_packer, pkt_store)
+
+              proto_handler = AjpProtocolHandler.new(ib_handler, pkt_unpacker, pkt_packer, cmd_unpacker, cmd_packer, false)
+              ib_handler.init(proto_handler)
+              return proto_handler
             end
           end
 
@@ -25,9 +37,9 @@ module Baykit
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Tours
-          include Baykit::BayServer::Docker::Warp
           include Baykit::BayServer::Docker::Ajp::Command
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           FIXED_WARP_ID = 1
 
@@ -38,19 +50,41 @@ module Baykit
 
           attr :cont_read_len
 
-          def initialize(pkt_store)
-            super(pkt_store, false)
+          def initialize
             reset()
           end
 
+          def init(proto_handler)
+            @protocol_handler = proto_handler
+          end
+
           def reset()
-            super
             reset_state()
             @cont_read_len = 0
           end
 
           def to_s()
             return ship().to_s()
+          end
+
+          ######################################################
+          # Implements TourHandler
+          ######################################################
+
+          def send_res_headers(tur)
+            send_forward_request(tur)
+          end
+
+          def send_res_content(tur, buf, start, len, &lis)
+            send_data(tur, buf, start, len, &lis)
+          end
+
+          def send_end_tour(tur, keep_alive, &lis)
+            ship.post(nil, &lis)
+          end
+
+          def on_protocol_error(e)
+            raise Sink.new
           end
 
           ######################################################
@@ -64,20 +98,6 @@ module Baykit
             return WarpData.new(ship, warp_id)
           end
 
-          def post_warp_headers(tur)
-            send_forward_request(tur)
-          end
-
-          def post_warp_contents(tur, buf, start, len, &callback)
-            send_data(tur, buf, start, len, &callback)
-          end
-
-          def post_warp_end(tur)
-            callback = lambda do
-              @ship.agent.non_blocking_handler.ask_to_read(@ship.socket)
-            end
-            @ship.post(nil, callback)
-          end
 
           def verify_protocol(proto)
           end
@@ -90,8 +110,8 @@ module Baykit
           end
 
           def handle_end_response(cmd)
-            BayLog.debug("%s handle_end_response reuse=%s", @ship, cmd.reuse)
-            tur = @ship.get_tour(FIXED_WARP_ID)
+            BayLog.debug("%s handle_end_response reuse=%s st=%d", ship, cmd.reuse, @state)
+            tur = ship.get_tour(FIXED_WARP_ID)
 
             if @state == STATE_READ_HEADER
               end_res_header(tur)
@@ -111,22 +131,22 @@ module Baykit
           end
 
           def handle_send_body_chunk(cmd)
-            BayLog.debug("%s handle_send_body_chunk: len=%d", @ship, cmd.length)
-            tur = @ship.get_tour(FIXED_WARP_ID)
+            BayLog.debug("%s handle_send_body_chunk: len=%d st=%d", ship, cmd.length, @state)
+            tur = ship.get_tour(FIXED_WARP_ID)
 
             if @state == STATE_READ_HEADER
 
-              sid = @ship.ship_id
+              sid = ship.ship_id
               tur.res.set_consume_listener do |len, resume|
                 if resume
-                  @ship.resume(sid)
+                  ship.resume(sid)
                 end
               end
 
               end_res_header(tur)
             end
 
-            available = tur.res.send_content(tur.tour_id, cmd.chunk, 0, cmd.length)
+            available = tur.res.send_res_content(tur.tour_id, cmd.chunk, 0, cmd.length)
             @cont_read_len += cmd.length
 
             if available
@@ -137,9 +157,9 @@ module Baykit
           end
 
           def handle_send_headers(cmd)
-            BayLog.debug("%s handle_send_headers", @ship)
+            BayLog.debug("%s handle_send_headers", ship)
 
-            tur = @ship.get_tour(FIXED_WARP_ID)
+            tur = ship.get_tour(FIXED_WARP_ID)
 
             if @state != STATE_READ_HEADER
               raise ProtocolException.new("Invalid AJP command: %d state=%s", cmd.type, @state)
@@ -147,14 +167,14 @@ module Baykit
 
             wdat = WarpData.get(tur)
 
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               BayLog.info("%s recv res status: %d", wdat, cmd.status)
             end
 
             wdat.res_headers.status = cmd.status
             cmd.headers.keys.each do |name|
               cmd.headers[name].each do |value|
-                if BayServer.harbor.trace_header?
+                if BayServer.harbor.trace_header
                   BayLog.info("%s recv res header: %s=%s", wdat, name, value)
                 end
                 wdat.res_headers.add(name, value)
@@ -190,8 +210,8 @@ module Baykit
           end
 
           def end_res_content(tur)
-            @ship.end_warp_tour(tur)
-            tur.res.end_content(Tour::TOUR_ID_NOCHECK)
+            ship.end_warp_tour(tur)
+            tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
             reset_state()
           end
 
@@ -218,7 +238,7 @@ module Baykit
             end
 
             rel_uri = rel_uri[town_path.length .. -1]
-            req_uri = @ship.docker.warp_base + rel_uri
+            req_uri = ship.docker.warp_base + rel_uri
 
             pos = req_uri.index('?')
             if pos != nil
@@ -231,10 +251,10 @@ module Baykit
             cmd.remote_addr = tur.req.remote_address
             cmd.remote_host = tur.req.remote_host()
             cmd.server_name = tur.req.server_name
-            cmd.server_port = @ship.docker.port
+            cmd.server_port = ship.docker.port
             cmd.is_ssl = tur.is_secure
             cmd.headers = tur.req.headers
-            if BayServer.harbor.trace_header?
+            if BayServer.harbor.trace_header
               cmd.headers.names.each do |name|
                 cmd.headers.values(name).each do |value|
                   BayLog.info("%s sendWarpHeader: %s=%s", WarpData.get(tur), name, value)
@@ -242,7 +262,7 @@ module Baykit
               end
             end
 
-            @ship.post(cmd)
+            ship.post(cmd)
           end
 
           def send_data(tur, data, ofs, len, &callback)
@@ -251,7 +271,11 @@ module Baykit
             cmd = CmdData.new(data, ofs, len)
             cmd.to_server = true
 
-            @ship.post(cmd, &callback)
+            ship.post(cmd, &callback)
+          end
+
+          def ship
+            return @protocol_handler.ship
           end
 
         end

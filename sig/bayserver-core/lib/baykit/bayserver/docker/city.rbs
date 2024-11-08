@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module City
+        def name: () -> String
+        def clubs: () -> Array[Club]
+        def towns: () -> Array[Town]
+        def enter: (Tours::Tour tur) -> void
+        def get_trouble: () -> Trouble
+        def log: (Tours::Tour tur) -> void
+      end
+    end
+  end
+end

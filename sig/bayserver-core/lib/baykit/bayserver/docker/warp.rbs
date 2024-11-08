@@ -1,0 +1,19 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Warp
+        include Docker
+
+        def host: -> String
+        def port: -> Integer
+        def warp_base: -> String
+        def timeout_sec: -> Integer
+        def keep: (Ships::Ship warp_ship) -> void
+        def on_end_ship: (Ships::Ship warp_ship) -> void
+      end
+    end
+  end
+end

@@ -38,13 +38,13 @@ module Baykit
             @stores = {}
           end
 
-          def add_agent(agt)
-            store = PacketStore.get_store(@protocol, agt.agent_id);
-            @stores[agt.agent_id] = ProtocolHandlerStore.new(@protocol, @server_mode, @protocol_handler_factory, store);
+          def add_agent(agt_id)
+            store = PacketStore.get_store(@protocol, agt_id);
+            @stores[agt_id] = ProtocolHandlerStore.new(@protocol, @server_mode, @protocol_handler_factory, store);
           end
 
-          def remove_agent(agt)
-            @stores.delete(agt.agent_id);
+          def remove_agent(agt_id)
+            @stores.delete(agt_id);
           end
 
         end

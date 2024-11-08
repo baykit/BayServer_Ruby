@@ -1,0 +1,26 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class WarpData
+        @warp_ship: WarpShip
+        @warp_ship_id: Integer
+        @warp_id: Integer
+        @req_headers: Util::Headers
+        @res_headers: Util::Headers
+        @started: bool
+        @ended: false
+
+        def initialize: (untyped warp_ship, untyped warp_id) -> void
+        def on_read_req_content: (untyped tur, untyped buf, untyped start, untyped len) -> nil
+        def on_end_req_content: (untyped tur) -> untyped
+        def on_abort_req: (untyped tur) -> false
+        def start: -> true?
+        def to_s: -> String
+        def self.get: (untyped tur) -> untyped
+      end
+    end
+  end
+end

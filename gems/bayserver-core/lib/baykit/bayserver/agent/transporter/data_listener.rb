@@ -5,31 +5,31 @@ module Baykit
         module DataListener  # interface
 
           def notify_connect()
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def notify_handshake_done(protocol)
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def notify_read(buf)
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def notify_eof()
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def notify_protocol_error(err)
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def notify_close()
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
 
           def check_timeout(duration_sec)
-            raise NotImplementedError()
+            raise NotImplementedError.new
           end
         end
       end

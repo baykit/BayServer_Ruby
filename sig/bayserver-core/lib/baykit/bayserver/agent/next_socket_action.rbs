@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      class NextSocketAction
+        CONTINUE: Integer
+        SUSPEND: Integer
+        READ: Integer
+        WRITE: Integer
+        CLOSE: Integer
+      end
+    end
+  end
+end

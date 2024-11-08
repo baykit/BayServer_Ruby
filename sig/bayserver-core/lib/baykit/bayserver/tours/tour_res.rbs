@@ -1,0 +1,40 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class TourRes
+        include Tours
+        @headers: Util::Headers
+        @tour: Tour
+        @buffer_size: Integer
+        @available: bool
+        @consume_listener: untyped
+        @can_compress: bool
+        @compressor: untyped
+        @bytes_posted: Integer
+        @bytes_consumed: Integer
+        @bytes_limit: Integer
+        @tour_returned: bool
+
+        attr_accessor charset: Integer
+        attr_accessor header_sent: bool
+        def initialize: (Tour tur) -> void
+        def init: -> void
+        def to_s: -> String
+        def reset: -> void
+        def send_headers: (Integer chk_tour_id) -> nil
+        def send_redirect: (Integer chk_tour_id, Integer status, untyped location) -> void
+        def set_consume_listener: -> void
+        def send_res_content: (Integer chk_tour_id, String buf, Integer ofs, Integer len) -> bool
+        def end_res_content: (Integer chk_tour_id) -> void
+        def consumed: (Integer check_id, Integer length) -> void
+        def send_http_exception: (Integer chk_tour_id, HttpException http_ex) -> void
+        def send_error: (Integer chk_tour_id, ?Integer status, ?String msg, ?nil err) -> void
+        def get_compressor: -> untyped
+        def buffer_available: -> bool
+      end
+    end
+  end
+end

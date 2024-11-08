@@ -1,0 +1,20 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class HostMatcher
+        MATCH_TYPE_ALL: Integer
+        MATCH_TYPE_EXACT: Integer
+        MATCH_TYPE_DOMAIN: Integer
+        @match_type: Integer
+        @domain: String
+        @host: String
+
+        def initialize: (String host) -> void
+        def match: (String remote_host) -> bool
+      end
+    end
+  end
+end

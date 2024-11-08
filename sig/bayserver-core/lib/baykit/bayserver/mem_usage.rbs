@@ -1,0 +1,23 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    class MemUsage
+      include BayServer
+      self.@mem_usages: Hash[Integer, MemUsage]
+      @agent_id: Integer
+
+      def initialize: (Integer agt_id) -> void
+      def print_usage: (Integer indent) -> void
+      def print_city_usage: (Docker::Port port, Docker::City city, Integer indent) -> void
+      def self.init: -> void
+      def self.get: (Integer agent_id) -> void
+
+      class AgentListener
+        def add: (Integer agt_id) -> void
+        def remove: (Integer agt_id) -> void
+      end
+    end
+  end
+end

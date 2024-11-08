@@ -5,7 +5,7 @@ module Baykit
       module TimerHandler # interface
 
         def on_timer()
-          raise NotImplementedError()
+          raise NotImplementedError.new
         end
 
       end

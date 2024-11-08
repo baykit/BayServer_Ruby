@@ -1,0 +1,14 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class IOUtil
+        def self.read_int32: (IO io) -> Integer
+        def self.write_int32: (IO io, Integer i) -> Integer
+        def self.get_sock_recv_buf_size: (IO skt) -> Integer
+      end
+    end
+  end
+end

@@ -1,6 +1,5 @@
 require 'baykit/bayserver/agent/transporter/package'
 require 'baykit/bayserver/docker/base/port_base'
-require 'baykit/bayserver/docker/warp/package'
 require 'baykit/bayserver/docker/http/h1/package'
 
 

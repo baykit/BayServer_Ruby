@@ -1,0 +1,62 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class SpinMultiplexer
+          @spin_count: Integer
+          @running_list: Array[Lapper]
+          @running_list_lock: Thread::Mutex
+          @agent: GrandAgent
+
+          def initialize: (GrandAgent agt) -> void
+          def to_s: -> String
+          def req_accept: (Rudders::Rudder rd) -> void
+          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_read: (Rudders::Rudder rd) -> void
+          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag, untyped lis) -> void
+          def req_end: (Rudders::Rudder rd) -> void
+          def req_close: (Rudders::Rudder rd) -> void
+          def shutdown: -> void
+          def is_non_blocking: -> bool
+          def use_async_api: -> bool
+          def cancel_read: (RudderState st) -> void
+          def cancel_write: (RudderState st) -> void
+          def next_accept: (RudderState st) -> void
+          def next_read: (RudderState st) -> void
+          def next_write: (RudderState st) -> void
+
+          def on_busy: -> void
+          def on_free: -> void
+          def close_rudder: (RudderState st) -> void
+          def on_timer: -> void
+          def is_empty: -> bool
+          def process_data: -> bool
+
+          private
+          def remove_from_running_list: (RudderState st) -> void
+
+          class Lapper
+            @state: RudderState
+            @last_access: Integer
+
+            def initialize: (RudderState state) -> void
+            def access: () -> void
+            def lap: () -> bool
+            def next: () -> void
+          end
+
+          class ReadIOLapper < Lapper
+            @agent: nil
+
+            def initialize: (nil agt, untyped st) -> void
+            def lap: -> bool
+            def next: -> nil
+          end
+        end
+      end
+    end
+  end
+end

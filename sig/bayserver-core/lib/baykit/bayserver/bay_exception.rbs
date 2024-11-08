@@ -1,0 +1,6 @@
+# TypeProf 0.21.11
+
+# Classes
+class BayException < StandardError
+  def initialize: (?String fmt, *untyped args) -> void
+end

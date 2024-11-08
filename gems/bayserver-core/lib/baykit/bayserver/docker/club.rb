@@ -11,32 +11,32 @@ module Baykit
 
         # Get the file name part of club
         def file_name()
-          raise NotImplementedError.new()
+          raise NotImplementedError.new
         end
 
         # Get the ext (file extension part) of club
         def extension()
-          raise NotImplementedError.new()
+          raise NotImplementedError.new
         end
 
         # Check if file name matches this club
         def matches(fname)
-          raise NotImplementedError.new()
+          raise NotImplementedError.new
         end
 
         # Get charset of club
-        def charset()
-          raise NotImplementedError.new()
+        def charset
+          raise NotImplementedError.new
         end
 
         # Check if this club decodes PATH_INFO
-        def decode_path_info()
-          raise NotImplementedError.new()
+        def decode_path_info
+          raise NotImplementedError.new
         end
 
         #  Arrive
         def arrive(tur)
-          raise NotImplementedError.new()
+          raise NotImplementedError.new
         end
 
       end

@@ -1,6 +1,7 @@
 require 'baykit/bayserver/train/train'
 require 'baykit/bayserver/tours/req_content_handler'
 
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/http_status'
 
@@ -14,6 +15,7 @@ module Baykit
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Train
           include Baykit::BayServer::Tours
+          include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
 
           READ_CHUNK_SIZE = 8192
@@ -23,12 +25,13 @@ module Baykit
           attr :tour_id
           attr :available
           attr :pid
-          attr :std_in
-          attr :std_out
-          attr :std_err
+          attr :std_in_rd
+          attr :std_out_rd
+          attr :std_err_rd
           attr :std_out_closed
           attr :std_err_closed
           attr :last_access
+          attr_accessor :multiplexer
 
           def initialize(cgi_docker, tur)
             @cgi_docker = cgi_docker
@@ -42,27 +45,28 @@ module Baykit
           # Implements ReqContentHandler
           ######################################################
 
-          def on_read_content(tur, buf, start, len)
+          def on_read_req_content(tur, buf, start, len, &callback)
             BayLog.debug("%s CGI:onReadReqContent: len=%d", tur, len)
 
-            wrote_len = @std_in[1].write(buf[start, len])
+            wrote_len = @std_in_rd.write(buf[start, len])
             BayLog.debug("%s CGI:onReadReqContent: wrote=%d", tur, wrote_len)
-            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len)
+            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len, &callback)
             access()
           end
 
-          def on_end_content(tur)
+          def on_end_req_content(tur)
             BayLog.trace("%s CGI:endReqContent", tur)
             access()
           end
 
-          def on_abort(tur)
+          def on_abort_req(tur)
             BayLog.debug("%s CGI:abortReq", tur)
+            agt = GrandAgent.get(tur.ship.agent_id)
             if !@std_out_closed
-              @tour.ship.agent.non_blocking_handler.ask_to_close(@std_out[0])
+              @multiplexer.req_close(@std_out_rd)
             end
             if !@std_err_closed
-              @tour.ship.agent.non_blocking_handler.ask_to_close(@std_err[0])
+              @multiplexer.req_close(@std_err_rd)
             end
 
             BayLog.debug("%s KILL PROCESS!: %d", tur, @pid)
@@ -78,21 +82,25 @@ module Baykit
           def start_tour(env)
             @available = false
 
-            @std_in = IO.pipe()
-            @std_out = IO.pipe()
-            @std_err = IO.pipe()
-            @std_in[1].set_encoding("ASCII-8BIT")
-            @std_out[0].set_encoding("ASCII-8BIT")
-            @std_err[0].set_encoding("ASCII-8BIT")
+            std_in = IO.pipe()
+            std_out = IO.pipe()
+            std_err = IO.pipe()
+            std_in[1].set_encoding("ASCII-8BIT")
+            std_out[0].set_encoding("ASCII-8BIT")
+            std_err[0].set_encoding("ASCII-8BIT")
 
             command = @cgi_docker.create_command(env)
             BayLog.debug("%s Spawn: %s", @tour, command)
-            @pid = Process.spawn(env, command, :in => @std_in[0], :out => @std_out[1], :err => @std_err[1])
+            @pid = Process.spawn(env, command, :in => std_in[0], :out => std_out[1], :err => std_err[1])
             BayLog.debug("%s created process; %s", @tour, @pid)
 
-            @std_in[0].close()
-            @std_out[1].close()
-            @std_err[1].close()
+            std_in[0].close()
+            std_out[1].close()
+            std_err[1].close()
+
+            @std_in_rd = IORudder.new(std_in[1])
+            @std_out_rd = IORudder.new(std_out[0])
+            @std_err_rd = IORudder.new(std_err[0])
             BayLog.debug("#{@tour} PID: #{pid}")
 
             @std_out_closed = false
@@ -115,7 +123,7 @@ module Baykit
           end
 
           def access()
-            @last_access = Time.now.to_i
+            @last_access = Time.now.tv_sec
           end
 
           def timed_out()
@@ -123,7 +131,7 @@ module Baykit
               return false
             end
 
-            duration_sec = Time.now.to_i - @last_access
+            duration_sec = Time.now.tv_sec - @last_access
             BayLog.debug("%s Check CGI timeout: dur=%d, timeout=%d", @tour, duration_sec, @cgi_docker.timeout_sec)
             return duration_sec > @cgi_docker.timeout_sec
           end
@@ -142,7 +150,7 @@ module Baykit
                 BayLog.error("%s CGI Invalid exit status pid=%d code=%s", @tour, @pid, stat.exitstatus)
                 @tour.res.send_error(@tour_id, HttpStatus::INTERNAL_SERVER_ERROR, "Invalid exit Status")
               else
-                @tour.res.end_content(@tour_id)
+                @tour.res.end_res_content(@tour_id)
               end
             rescue IOError => e
               BayLog.error_e(e)

@@ -1,18 +1,20 @@
 require 'baykit/bayserver/bcf/package'
-require 'baykit/bayserver/docker/warp/warp_docker'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/docker/base/warp_base'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/docker/fcgi/package'
+require 'baykit/bayserver/util/io_util'
 
 module Baykit
   module BayServer
     module Docker
       module Fcgi
-        class FcgWarpDocker < Baykit::BayServer::Docker::Warp::WarpDocker
+        class FcgWarpDocker < Baykit::BayServer::Docker::Base::WarpBase
           include Baykit::BayServer::Docker::Fcgi::FcgDocker  # implements
 
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Protocol
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Util
+          include Baykit::BayServer::Agent::Multiplexer
 
           attr :script_base
           attr :doc_root
@@ -34,7 +36,7 @@ module Baykit
 
           def init_key_val(kv)
             case kv.key.downcase
-            when "scritbase"
+            when "scriptbase"
               @script_base = kv.value
             when "docroot"
               @doc_root = kv.value
@@ -58,8 +60,15 @@ module Baykit
             return PROTO_NAME
           end
 
-          def new_transporter(agt, skt)
-            PlainTransporter.new(false, IOUtil.get_sock_recv_buf_size(skt))
+          def new_transporter(agt, rd, sip)
+            tp = PlainTransporter.new(
+              agt.net_multiplexer,
+              sip,
+              false,
+              IOUtil.get_sock_recv_buf_size(rd.io),
+              false
+            )
+            return tp
           end
 
           ######################################################

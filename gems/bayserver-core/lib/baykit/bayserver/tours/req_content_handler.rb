@@ -2,27 +2,30 @@ module Baykit
   module BayServer
     module Tours
 
-      module ReqContentHandler
-        #
-        # interface
-        #
-        #         void onReadContent(Tour tur, byte[] buf, int start, int len) throws IOException;
-        #         void onEndContent(Tour tur) throws IOException, HttpException;
-        #         void onAbort(Tour tur);
-        #
+      module ReqContentHandler # interface
+        def on_read_req_content(tur, buf, start, len)
+          raise NotImplementedError.new
+        end
 
-        #DEV_NULL = nil
+        def on_end_req_content(tur)
+          raise NotImplementedError.new
+        end
+
+        def on_abort_req(tur)
+          raise NotImplementedError.new
+        end
+
       end
 
       class DevNullReqContentHandler
         include ReqContentHandler  # implements
-        def on_read_content(tur, buf, start, len)
+        def on_read_req_content(tur, buf, start, len)
         end
 
-        def on_end_content(tur)
+        def on_end_req_content(tur)
         end
 
-        def on_abort(tur)
+        def on_abort_req(tur)
           return false
         end
       end

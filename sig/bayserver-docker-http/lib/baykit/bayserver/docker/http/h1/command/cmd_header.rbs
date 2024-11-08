@@ -1,0 +1,46 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          module Command
+            class CmdHeader
+              STATE_READ_FIRST_LINE: Integer
+              STATE_READ_MESSAGE_HEADERS: Integer
+              CR_CODE_POINT: Integer
+              LF_CODE_POINT: Integer
+              @headers: Array[Array[String]]
+              @is_req_header: bool
+
+              attr_accessor method: String
+              attr_accessor uri: String
+              attr_accessor version: String
+              attr_accessor status: Integer
+              def initialize: (bool is_req_header) -> void
+              def self.new_req_header: (String method, String uri, String version) -> CmdHeader
+              def self.new_res_header: (Util::Headers headers, String version) -> CmdHeader
+              def add_header: (String name, String value) -> nil
+              def set_header: (String name, String value) -> nil
+              def unpack: (H1Packet pkt) -> void
+              def pack: (H1Packet pkt) -> void
+              def handle: (H1CommandHandler cmd_handler) -> Integer
+              def to_s: -> String
+
+              private
+              def unpack_request_line: (String buf, Integer start, Integer len) -> void
+              def unpack_status_line: (String buf, Integer start, Integer len) -> void
+              def unpack_message_header: (String bytes, Integer start, Integer len) -> void
+              def pack_request_line: (Protocol::PacketPartAccessor acc) -> untyped
+              def pack_status_line: (Protocol::PacketPartAccessor acc) -> untyped
+              def pack_message_header: (Protocol::PacketPartAccessor acc, String name, String value) -> untyped
+              def pack_end_header: (Protocol::PacketPartAccessor acc) -> untyped
+            end
+          end
+        end
+      end
+    end
+  end
+end

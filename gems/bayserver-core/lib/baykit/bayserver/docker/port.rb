@@ -6,32 +6,60 @@ module Baykit
       module Port
         include Docker  # implements
 
-        def address()
-          raise NotImplementedError()
+        def protocol
+          raise NotImplementedError.new
         end
 
-        def check_admitted(skt)
-          raise NotImplementedError()
+        def host
+          raise NotImplementedError.new
+        end
+
+        def port
+          raise NotImplementedError.new
+        end
+
+        def socket_path
+          raise NotImplementedError.new
+        end
+
+        def address()
+          raise NotImplementedError.new
+        end
+
+        def anchored
+          raise NotImplementedError.new
+        end
+
+        def secure
+          raise NotImplementedError.new
+        end
+
+        def timeout_sec
+          raise NotImplementedError.new
+        end
+
+        def additional_headers
+          raise NotImplementedError.new
+        end
+
+        def cities
+          raise NotImplementedError.new
         end
 
         def find_city(name)
-          raise NotImplementedError()
+          raise NotImplementedError.new
         end
 
-        def new_transporter(agt, skt)
-          raise NotImplementedError()
-        end
-
-        def check_admitted(skt)
-          raise NotImplementedError()
+        def on_connected(agent_id, rd)
+          raise NotImplementedError.new
         end
 
         def return_protocol_handler(agt, proto_hnd)
-          raise NotImplementedError()
+          raise NotImplementedError.new
         end
 
         def return_ship(sip)
-          raise NotImplementedError()
+          raise NotImplementedError.new
         end
       end
     end

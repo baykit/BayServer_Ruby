@@ -24,7 +24,7 @@ module Baykit
           pkt = @pkt_store.rent(cmd.type)
           begin
             cmd.pack(pkt)
-            @pkt_packer.post(sip.postman, pkt) do
+            @pkt_packer.post(sip, pkt) do
               @pkt_store.Return(pkt)
               if lisnr != nil
                 lisnr.call()
@@ -36,13 +36,6 @@ module Baykit
           end
         end
 
-        def flush(sip)
-          @pkt_packer.flush(sip.postman)
-        end
-
-        def end(sip)
-          @pkt_packer.end(sip.postman)
-        end
       end
     end
   end

@@ -1,0 +1,24 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Town
+        MATCH_TYPE_MATCHED: Integer
+        MATCH_TYPE_NOT_MATCHED: Integer
+        MATCH_TYPE_CLOSE: Integer
+        include Docker
+
+        def name: () -> String
+        def city: () -> City
+        def location: -> String
+        def welcome_file: -> String
+        def clubs: -> Array[Club]
+        def reroute: (String uri) -> String
+        def matches: (String uri) -> Integer
+        def check_admitted: (Tours::Tour tur) -> void
+      end
+    end
+  end
+end

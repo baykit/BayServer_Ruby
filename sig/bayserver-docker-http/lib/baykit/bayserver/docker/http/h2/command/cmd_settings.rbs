@@ -1,0 +1,43 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module Command
+            class CmdSettings
+              HEADER_TABLE_SIZE: Integer
+              ENABLE_PUSH: Integer
+              MAX_CONCURRENT_STREAMS: Integer
+              INITIAL_WINDOW_SIZE: Integer
+              MAX_FRAME_SIZE: Integer
+              MAX_HEADER_LIST_SIZE: Integer
+              INIT_HEADER_TABLE_SIZE: Integer
+              INIT_ENABLE_PUSH: Integer
+              INIT_MAX_CONCURRENT_STREAMS: Integer
+              INIT_INITIAL_WINDOW_SIZE: Integer
+              INIT_MAX_FRAME_SIZE: Integer
+              INIT_MAX_HEADER_LIST_SIZE: Integer
+              include H2
+              @items: Array[Item]
+
+              def initialize: (Integer stream_id, ?Integer flags) -> void
+              def unpack: (H2Packet pkt) -> void
+              def pack: (H2Packet pkt) -> void
+              def handle: (H2CommandHandler cmd_handler) -> Integer
+
+              class Item
+                @id: Integer
+                @value: Integer
+
+                def initialize: (Integer id, Integer value) -> void
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+end

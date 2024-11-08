@@ -1,0 +1,13 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        module InboundHandler
+        end
+      end
+    end
+  end
+end

@@ -1,7 +1,7 @@
 require 'baykit/bayserver/bay_log'
 require 'baykit/bayserver/http_exception'
 
-require 'baykit/bayserver/watercraft/ship'
+require 'baykit/bayserver/ships/ship'
 require 'baykit/bayserver/util/counter'
 
 
@@ -10,7 +10,7 @@ module Baykit
     module Tours
       class Tour
         include Baykit::BayServer
-        include Baykit::BayServer::WaterCraft
+        include Baykit::BayServer::Ships
         include Baykit::BayServer::Util
         include Baykit::BayServer::Util::Reusable # implements
 

@@ -1,0 +1,57 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInPermissionDocker
+          include BayServer
+          @check_list: Array[CheckItem]
+          @groups: Array[Util::Groups::Group]
+
+          def initialize: -> void
+          def init: (untyped elm, untyped parent) -> untyped
+          def init_key_val: (untyped kv) -> true
+          def socket_admitted: (untyped skt) -> nil
+          def tour_admitted: (untyped tur) -> nil
+
+          private
+          def parse_value: (untyped kv) -> Array[untyped]
+
+          class CheckItem
+            @matcher: PermissionMatcher
+            @admit: bool
+
+            def initialize: (PermissionMatcher matcher, bool admit) -> void
+            def socket_admitted: (Rudders::Rudder rd) -> bool
+            def tour_admitted: (Tours::Tour tur) -> bool
+          end
+
+          module PermissionMatcher
+            def match_socket: (Rudders::Rudder rd) -> bool
+            def match_tour: (Tours::Tour tur) -> bool
+          end
+
+          class HostPermissionMatcher
+            include PermissionMatcher
+            @mch: Util::HostMatcher
+
+            def initialize: (String hostPtn) -> void
+            def match_socket: (Rudders::Rudder rd) -> bool
+            def match_tour: (Tours::Tour tur) -> bool
+          end
+
+          class IpPermissionMatcher
+            include PermissionMatcher
+            @mch: Util::IpMatcher
+
+            def initialize: (String ip_desc) -> void
+            def match_socket: (Rudders::Rudder rd) -> bool
+            def match_tour: (Tours::Tour tur) -> bool
+          end
+        end
+      end
+    end
+  end
+end

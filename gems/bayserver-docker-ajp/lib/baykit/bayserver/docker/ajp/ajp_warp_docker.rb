@@ -1,18 +1,20 @@
-require 'baykit/bayserver/docker/warp/warp_docker'
+require 'baykit/bayserver/docker/base/warp_base'
 require 'baykit/bayserver/docker/ajp/package'
-require 'baykit/bayserver/agent/transporter/plain_transporter'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/util/io_util'
 require 'baykit/bayserver/protocol/packet_store'
 
 module Baykit
   module BayServer
     module Docker
       module Ajp
-        class AjpWarpDocker < Baykit::BayServer::Docker::Warp::WarpDocker
+        class AjpWarpDocker < Baykit::BayServer::Docker::Base::WarpBase
           include Baykit::BayServer::Docker::Ajp::AjpDocker  # implements
 
           include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Protocol
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Util
 
           ######################################################
           # Implements WarpDocker
@@ -29,8 +31,10 @@ module Baykit
             return PROTO_NAME
           end
 
-          def new_transporter(agt, skt)
-            PlainTransporter.new(false, IOUtil.get_sock_recv_buf_size(skt))
+          def new_transporter(agt, rd, sip)
+            tp = PlainTransporter.new(agt.net_multiplexer, sip, false, IOUtil.get_sock_recv_buf_size(rd.io), false)
+            tp.init
+            return tp
           end
 
           ######################################################

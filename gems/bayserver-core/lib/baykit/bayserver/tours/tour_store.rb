@@ -18,12 +18,12 @@ module Baykit
         class AgentListener
           include Baykit::BayServer::Agent::LifecycleListener  # implements
 
-          def add(agt)
-            TourStore.stores[agt.agent_id] = TourStore.new();
+          def add(agt_id)
+            TourStore.stores[agt_id] = TourStore.new();
           end
 
-          def remove(agt)
-            TourStore.stores.delete(agt.agent_id);
+          def remove(agt_id)
+            TourStore.stores.delete(agt_id);
           end
         end
 
@@ -46,7 +46,7 @@ module Baykit
         def initialize()
           @free_tours = []
           @active_tour_map = {}
-          @lock = Monitor.new
+          @lock = ::Monitor.new
         end
 
         def get(key)

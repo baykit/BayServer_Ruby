@@ -1,0 +1,58 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class Tour
+        TOUR_ID_NOCHECK: Integer
+        INVALID_TOUR_ID: Integer
+        include BayServer
+        self.@oid_counter: Util::Counter
+        self.@tour_id_counter: Util::Counter
+        @obj_id: Integer
+        @req: TourReq
+        @res: TourRes
+        @lock: Thread::Mutex
+        @error_handling: bool
+        @tour_id: Integer
+        @ship: Common::InboundShip
+        @ship_id: Integer
+
+        attr_accessor town: nil
+        attr_accessor city: nil
+        attr_accessor club: nil
+        attr_accessor interval: Integer
+        attr_accessor is_secure: false
+        attr_accessor state: Integer
+        attr_accessor error: nil
+        def initialize: -> void
+        def to_s: -> String
+        def reset: -> untyped
+        def id: -> Integer
+        def init: (untyped key, untyped sip) -> untyped
+        def go: -> untyped
+        def valid?: -> bool
+        def preparing?: -> bool
+        def running?: -> bool
+        def zombie?: -> bool
+        def aborted?: -> bool
+        def ended?: -> bool
+        def initialized?: -> bool
+        def change_state: (Integer chk_id, Integer new_state) -> Integer
+        def secure?: -> false
+        def inspect: -> String
+        def check_tour_id: (Integer chk_id) -> nil
+
+        class TourState
+          UNINITIALIZED: Integer
+          PREPARING: Integer
+          RUNNING: Integer
+          ABORTED: Integer
+          ENDED: Integer
+          ZOMBIE: Integer
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class ReadOnlyShip
+        include BayServer
+
+        def reset: -> void
+        def notify_handshake_done: (String proto) -> void
+        def notify_connect: -> void
+        def notify_protocol_error: (Exception e) -> void
+      end
+    end
+  end
+end
