@@ -25,15 +25,19 @@ module Baykit
         end
 
         def read(buf, len)
-          if @non_blocking
-            buf = @io.read_nonblock(len, buf)
-          else
-            buf = @io.readpartial(len, buf)
-          end
-          if buf == nil
+          begin
+            if @non_blocking
+              buf = @io.read_nonblock(len, buf)
+            else
+              buf = @io.readpartial(len, buf)
+            end
+            if buf == nil
+              return 0
+            else
+              return buf.length
+            end
+          rescue EOFError => e
             return 0
-          else
-            return buf.length
           end
         end
 
