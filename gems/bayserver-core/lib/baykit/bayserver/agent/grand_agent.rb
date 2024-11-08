@@ -7,6 +7,7 @@ require 'baykit/bayserver/agent/letter'
 require 'baykit/bayserver/agent/multiplexer/spider_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/spin_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/job_multiplexer'
+require 'baykit/bayserver/agent/multiplexer/taxi_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/rudder_state'
 require 'baykit/bayserver/agent/monitor/grand_agent_monitor'
 require 'baykit/bayserver/agent/signal/signal_agent'
@@ -49,6 +50,7 @@ module Baykit
         attr :spin_multiplexer
         attr :spider_multiplexer
         attr :job_multiplexer
+        attr :taxi_multiplexer
         attr :recipient
 
         attr :send_wakeup_pipe
@@ -96,6 +98,7 @@ module Baykit
           @spider_multiplexer = SpiderMultiplexer.new(self, anchorable)
           @spin_multiplexer = SpinMultiplexer.new(self)
           @job_multiplexer = JobMultiplexer.new(self, anchorable)
+          @taxi_multiplexer = TaxiMultiplexer.new(self)
 
           case BayServer.harbor.recipient
           when Harbor::RECIPIENT_TYPE_SPIDER

@@ -25,6 +25,7 @@ module Baykit
         @anchorable: bool
         @job_multiplexer: Common::Multiplexer
         @spider_multiplexer: Common::Multiplexer
+        @taxi_multiplexer: Multiplexer::TaxiMultiplexer
         @timer_handlers: Array[TimerHandler]
         @select_timeout_sec: Integer
         @aborted: bool
