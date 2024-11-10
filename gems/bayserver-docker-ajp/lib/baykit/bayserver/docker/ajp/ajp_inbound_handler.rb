@@ -114,7 +114,7 @@ module Baykit
             end
           end
 
-          def send_req_protocol_error(e)
+          def on_protocol_error(e)
             tur = ship.get_error_tour()
             tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::BAD_REQUEST, e.message, e)
             return true

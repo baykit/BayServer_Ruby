@@ -50,7 +50,7 @@ module Baykit
             if BayLog.debug_mode?
               BayLog.error_e(err)
             end
-            return @ship.protocol_handler.send_req_protocol_error(err)
+            return @ship.protocol_handler.on_protocol_error(err)
           end
 
           def notify_close

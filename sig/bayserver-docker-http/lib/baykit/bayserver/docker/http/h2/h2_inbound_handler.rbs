@@ -24,7 +24,7 @@ module Baykit
             def send_res_headers: (Tours::Tour tur) -> void
             def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
             def send_end_tour: (Tours::Tour tur, bool keep_alive) -> void
-            def send_req_protocol_error: (Exception err) -> bool
+            def on_protocol_error: (Exception err) -> bool
             def handle_preface: (Command::CmdPreface cmd) -> Integer
             def handle_data: (Command::CmdData cmd) -> Integer
             def handle_headers: (Command::CmdHeaders cmd) -> Integer

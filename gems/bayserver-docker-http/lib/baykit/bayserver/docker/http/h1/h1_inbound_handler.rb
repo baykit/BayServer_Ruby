@@ -167,7 +167,7 @@ module Baykit
               end
             end
 
-            def send_req_protocol_error(err)
+            def on_protocol_error(err)
               if @cur_tour == nil
                 tur = ship.get_error_tour()
               else

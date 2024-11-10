@@ -130,7 +130,7 @@ module Baykit
               @protocol_handler.post(cmd, &callback)
             end
 
-            def send_req_protocol_error(err)
+            def on_protocol_error(err)
               BayLog.error_e err
               cmd = CmdGoAway.new(CTL_STREAM_ID)
               cmd.stream_id = CTL_STREAM_ID
