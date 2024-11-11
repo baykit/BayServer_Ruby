@@ -116,7 +116,7 @@ module Baykit
 
               tur.res.set_consume_listener do |len, resume|
                 if resume
-                  send.resume_read(sid)
+                  send_file_ship.resume_read(sid)
                 end
               end
 

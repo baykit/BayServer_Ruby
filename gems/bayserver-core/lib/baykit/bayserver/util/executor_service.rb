@@ -60,13 +60,17 @@ module Baykit
           count.times do |i|
             started = false
             Thread.new do
-              started = true
-              id = i + 1
-              th_name = "Executor[#{name}]##{id}"
-              Thread.current.name = th_name
-              e = Executor.new @que, id, th_name
-              e.run
-              @executors << e
+              begin
+                started = true
+                id = i + 1
+                th_name = "Executor[#{name}]##{id}"
+                Thread.current.name = th_name
+                e = Executor.new @que, id, th_name
+                e.run
+                @executors << e
+              rescue => e
+                BayLog.error_e(e)
+              end
             end
             while !started
               sleep(0.01)

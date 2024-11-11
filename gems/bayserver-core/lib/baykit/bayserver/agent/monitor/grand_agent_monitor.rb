@@ -46,14 +46,14 @@ module Baykit
           def run()
             begin
               while true do
-                buf = String.new
+                buf = " " * 4
 
                 n = @rudder.read(buf, 4)
                 if n == -1
                   raise EOFError.new()
                 end
                 if n < 4
-                  raise IOError.new("Cannot read int: nbytes=" + n)
+                  raise IOError.new("Cannot read int: nbytes=#{n}")
                 end
                 res = buffer_to_int(buf)
                 if res == GrandAgent::CMD_CLOSE
