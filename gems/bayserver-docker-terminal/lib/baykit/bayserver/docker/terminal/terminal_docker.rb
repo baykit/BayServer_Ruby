@@ -1,8 +1,10 @@
+require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/docker/base/port_base'
 require 'baykit/bayserver/tours/content_consume_listener'
 
-require 'baykit/bayserver/docker/terminal/fully_hijackers_yacht'
+require 'baykit/bayserver/docker/terminal/fully_hijackers_ship'
 require 'baykit/bayserver/docker/terminal/terminal_train'
 
 module Baykit
@@ -12,7 +14,9 @@ module Baykit
         class TerminalDocker < Baykit::BayServer::Docker::Base::ClubBase
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Util
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Multiplexer
+          include Baykit::BayServer::Rudders
           include Baykit::BayServer::Tours
 
           RACK_TERMINAL_PIPE = "rack.terminal.pipe"
@@ -104,8 +108,8 @@ module Baykit
               tur.res.headers.set_content_type("text/plain")
               tur.res.set_consume_listener(&ContentConsumeListener::DEV_NULL)
               tur.res.send_headers(tur.id)
-              tur.res.send_content(tur.id, RACK_ERR, 0, RACK_ERR.length)
-              tur.res.end_content(tur.id)
+              tur.res.send_res_content(tur.id, RACK_ERR, 0, RACK_ERR.length)
+              tur.res.end_res_content(tur.id)
               return
             end
 
@@ -168,7 +172,7 @@ module Baykit
             env[Rack::RACK_ERRORS] = STDERR
             env[Rack::RACK_INPUT] = nil
             env[RACK_MULTITHREAD] = true
-            env[RACK_MULTIPROCESS] = BayServer.harbor.multi_core?
+            env[RACK_MULTIPROCESS] = BayServer.harbor.multi_core
             env[RACK_RUNONCE] = false
             env[Rack::RACK_URL_SCHEME] = tur.is_secure ? "https" : "http"
             env[Rack::RACK_IS_HIJACK] = true
@@ -181,13 +185,25 @@ module Baykit
 
               env[RACK_HIJACK_IO] = w_pipe
 
-              yat = FullyHijackersYacht.new()
+              agt = GrandAgent.get(tur.ship.agent_id)
+              mpx = agt.net_multiplexer
+              rd_read = IORudder.new(pip[0])
+              sip = FullyHijackersShip.new()
               bufsize = tur.ship.protocol_handler.max_res_packet_data_size()
-              tp = PlainTransporter.new(false, bufsize)
 
-              yat.init(tur, pip[0], tp)
-              tp.init(tur.ship.agent.non_blocking_handler, pip[0], yat)
-              tur.ship.resume(tur.ship_id)
+              tp = PlainTransporter.new(mpx, sip, false, bufsize, false)
+
+              sip.init(tur, rd_read, tp)
+              sid = sip.ship_id
+
+              tur.res.set_consume_listener do |len, resume|
+                if resume
+                  sip.resume_read(sid)
+                end
+              end
+
+              mpx.add_rudder_state(rd_read, RudderState.new(rd_read, tp))
+              mpx.req_read(rd_read)
 
               w_pipe
             end

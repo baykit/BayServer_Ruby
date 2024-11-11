@@ -117,7 +117,7 @@ module Baykit
         end
 
         # Multi core flag
-        def multi_core?
+        def multi_core
           raise NotImplementedError
         end
 

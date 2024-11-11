@@ -1,15 +1,11 @@
+require 'baykit/bayserver/common/vehicle'
 require 'baykit/bayserver/util/counter'
+
 module Baykit
   module BayServer
     module Taxi
-      class Taxi
+      class Taxi < Baykit::BayServer::Common::Vehicle
         include Baykit::BayServer::Util
-        #
-        # abstract method
-        #
-        # depart()
-        # on_timer()
-        #
 
         class << self
           attr :taxi_id_counter
@@ -27,11 +23,20 @@ module Baykit
         end
 
         def run()
-          BayLog.trace("%s Start taxi on: %s", self, Thread.current.name);
-          self.depart();
-          BayLog.trace("%s End taxi on: %s", self, Thread.current.name);
+          BayLog.trace("%s Start taxi on: %s", self, Thread.current.name)
+          begin
+            self.depart
+          rescue => e
+            BayLog.error_e(e)
+          ensure
+            BayLog.trace("%s End taxi on: %s", self, Thread.current.name)
+          end
+
         end
 
+        def depart
+          NotImplementedError.new
+        end
       end
     end
   end

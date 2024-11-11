@@ -1,5 +1,4 @@
 require 'baykit/bayserver/agent/next_socket_action'
-require 'baykit/bayserver/watercraft/yacht'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/reusable'
 
@@ -9,7 +8,7 @@ module Baykit
   module BayServer
     module Docker
       module Terminal
-        class HijackersYacht < Baykit::BayServer::WaterCraft::Yacht
+        class HijackersShip < Baykit::BayServer::Common::ReadOnlyShip
           include Baykit::BayServer::Docker::Http::H1::H1CommandHandler   # implements
 
           include Baykit::BayServer::Util
@@ -21,7 +20,6 @@ module Baykit
           attr :tour_id
 
           attr :file_wrote_len
-          attr :pipe_io
 
           attr :packet_store
           attr :packet_unpacker
@@ -39,20 +37,12 @@ module Baykit
           ######################################################
           # Init method
           ######################################################
+          def init(tur, rd, tp)
+            super(tur.ship.agent_id, rd, tp)
 
-          def init(tur, io, tp)
-            init_yacht()
             @tour = tur
-            @tour_id = @tour.tour_id
-
-            tur.res.set_consume_listener do |len, resume|
-              if resume
-                tp.open_valve();
-              end
-            end
-            @pipe_io = io
+            @tour_id = tur.tour_id
             @file_wrote_len = 0
-            @tour.ship.agent.non_blocking_handler.ask_to_read(@pipe_io)
           end
 
 
@@ -71,12 +61,12 @@ module Baykit
           # implements Yacht
           ######################################################
 
-          def notify_read(buf, adr)
+          def notify_read(buf)
             @file_wrote_len += buf.length
 
             BayLog.debug "#{self} read hijack #{buf.length} bytes: total=#{@file_wrote_len}"
 
-            available = @tour.res.send_content(@tour_id, buf, 0, buf.length)
+            available = @tour.res.send_res_content(@tour_id, buf, 0, buf.length)
             if !available
               return NextSocketAction::SUSPEND
             else
@@ -84,9 +74,23 @@ module Baykit
             end
           end
 
+          def notify_error(e)
+            BayLog.debug_e(e, "%s Hijack Error", self)
+            begin
+              @tour.res.send_error(@tour_id, HttpStatus::INTERNAL_SERVER_ERROR, nil, e)
+            rescue IOError => ex
+              BayLog.debug_e(ex)
+            end
+          end
+
           def notify_eof()
             BayLog.debug "#{self} Hijack EOF"
-            @tour.res.end_content(@tour_id)
+            BayLog.debug("%s EOF", self)
+            begin
+              @tour.res.end_res_content(@tour_id)
+            rescue IOError => e
+              BayLog.debug_e(ex)
+            end
             return NextSocketAction::CLOSE
           end
 

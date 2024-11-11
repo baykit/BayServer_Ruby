@@ -1,9 +1,9 @@
 require 'baykit/bayserver/agent/next_socket_action'
-require 'baykit/bayserver/watercraft/yacht'
+require 'baykit/bayserver/protocol/package'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/reusable'
 
-require 'baykit/bayserver/docker/terminal/hijackers_yacht'
+require 'baykit/bayserver/docker/terminal/hijackers_ship'
 
 require 'baykit/bayserver/docker/http/h1/h1_command_handler'
 
@@ -11,7 +11,7 @@ module Baykit
   module BayServer
     module Docker
       module Terminal
-        class FullyHijackersYacht < HijackersYacht
+        class FullyHijackersShip < HijackersShip
           include Baykit::BayServer::Docker::Http::H1::H1CommandHandler   # implements
 
           include Baykit::BayServer::Util
@@ -35,7 +35,7 @@ module Baykit
           # Init method
           ######################################################
           #
-          def init(tur, io, tp)
+          def init(tur, rd, tp)
             super
             @packet_store = PacketStore.new(tur.ship, H1PacketFactory.new)
             @command_unpacker = H1CommandUnPacker.new(self, false)
@@ -56,7 +56,7 @@ module Baykit
           ######################################################
 
           # Override
-          def notify_read(buf, adr)
+          def notify_read(buf)
             @file_wrote_len += buf.length
 
             BayLog.debug "#{self} read hijack #{buf.length} bytes: total=#{@file_wrote_len}"
@@ -64,7 +64,6 @@ module Baykit
             return @packet_unpacker.bytes_received(buf)
 
           end
-
 
           ######################################################
           # Implements H1CommandHandler
@@ -76,7 +75,7 @@ module Baykit
             end
 
             if @state != STATE_READ_HEADER
-              raise ProtocolException("Header command not expected: state=%d", @state)
+              raise ProtocolException.new("Header command not expected: state=%d", @state)
             end
 
             if BayServer.harbor.trace_header
@@ -116,7 +115,7 @@ module Baykit
               raise ProtocolException.new("Content command not expected")
             end
 
-            available = @tour.res.send_content(@tour_id, cmd.buf, cmd.start, cmd.len)
+            available = @tour.res.send_res_content(@tour_id, cmd.buf, cmd.start, cmd.len)
             if @tour.res.bytes_posted == @tour.res.bytes_limit
               end_res_content(@tour)
               return NextSocketAction::CONTINUE
@@ -132,7 +131,7 @@ module Baykit
             raise Sink.new()
           end
 
-          def finished()
+          def req_finished()
             return @state == STATE_FINISHED
           end
 
@@ -140,7 +139,7 @@ module Baykit
           private
 
           def end_res_content(tur)
-            tur.res.end_content(Tour::TOUR_ID_NOCHECK)
+            tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
             reset()
           end
 

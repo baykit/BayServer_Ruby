@@ -5,26 +5,30 @@ module Baykit
   module BayServer
       module Train
         class TrainRunner
-          include Baykit::BayServer::Util
+          include Baykit::BayServer
+          include Baykit::BayServer::Common
 
-          # define class instance accessor
+
           class << self
-            attr :exe
+            attr :runner
           end
 
-          def self.init(num_agents)
-            @exe = ExecutorService.new("TrainRunner", num_agents)
+          @runner = VehicleRunner.new
+
+
+          ######################################################
+          # Class methods
+          ######################################################
+
+          def self.init(max_trains)
+            @runner.init(max_trains)
           end
 
-          def self.post(train)
-            begin
-              @exe.submit(train)
-              return true
-            rescue => e
-              BayLog.error_e(e)
-              return false
-            end
+          def self.post(agt_id, train)
+            BayLog.debug("agt#%d post train: thread=%s train=%s", agt_id, Thread.current.name, train);
+            @runner.post(agt_id, train)
           end
+
         end
       end
   end

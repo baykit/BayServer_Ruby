@@ -1,4 +1,7 @@
+require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/common/read_only_ship'
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/train/train'
 require 'baykit/bayserver/train/train_runner'
 require 'baykit/bayserver/tours/tour'
@@ -7,7 +10,7 @@ require 'baykit/bayserver/tours/req_content_handler'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/http_status'
 
-require 'baykit/bayserver/docker/terminal/hijackers_yacht'
+require 'baykit/bayserver/docker/terminal/hijackers_ship'
 
 module Baykit
   module BayServer
@@ -16,7 +19,9 @@ module Baykit
         class TerminalTrain < Baykit::BayServer::Train::Train
           include Baykit::BayServer::Tours::ReqContentHandler   # implements
 
-          include Baykit::BayServer::Agent::Transporter
+          include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Multiplexer
+          include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
           include Baykit::BayServer::Train
           include Baykit::BayServer::Tours
@@ -109,15 +114,25 @@ module Baykit
                 if hijack != nil
                   # Partially hijacked
                   BayLog.debug("%s Tour is partially hijacked", @tour)
-
+                  agt = GrandAgent.get(@tour.ship.agent_id)
+                  mpx = agt.net_multiplexer
                   pip = IO.pipe
-                  yat = HijackersYacht.new()
+                  rd_read = IORudder.new(pip[0])
+                  sip = HijackersShip.new()
                   bufsize = @tour.ship.protocol_handler.max_res_packet_data_size()
-                  tp = PlainTransporter.new(false, bufsize)
+                  tp = PlainTransporter.new(mpx, sip, false, bufsize, false)
 
-                  yat.init(@tour, pip[0], tp)
-                  tp.init(@tour.ship.agent.non_blocking_handler, pip[0], yat)
-                  @tour.ship.resume(@tour.ship_id)
+                  sip.init(@tour, rd_read, tp)
+                  sid = sip.ship_id
+
+                  @tour.res.set_consume_listener do |len, resume|
+                    if resume
+                      sip.resume_read(sid)
+                    end
+                  end
+
+                  mpx.add_rudder_state(rd_read, RudderState.new(rd_read, tp))
+                  mpx.req_read(rd_read)
 
                   hijack.call pip[1]
 
@@ -135,13 +150,13 @@ module Baykit
                   body.each do | str |
                     bstr = StringUtil.to_bytes(str)
                     BayLog.trace("%s TerminalTask: read body: len=%d", @tour, bstr.length)
-                    @available = @tour.res.send_content(@tour_id, bstr, 0, bstr.length)
+                    @available = @tour.res.send_res_content(@tour_id, bstr, 0, bstr.length)
                     while !@available
                       sleep 0.1
                     end
                   end
 
-                  @tour.res.end_content(@tour_id)
+                  @tour.res.end_res_content(@tour_id)
 
                 end
               end
@@ -157,7 +172,7 @@ module Baykit
             end
           end
 
-          def on_read_content(tur, buf, start, len)
+          def on_read_req_content(tur, buf, start, len, &lis)
             BayLog.trace("%s TerminalTask:onReadContent: len=%d", @tour, len)
 
             if @req_cont != nil
@@ -168,11 +183,11 @@ module Baykit
               @tmpfile.write(buf[start, len])
             end
 
-            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len)
+            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len, &lis)
             true
           end
 
-          def on_end_content(tur)
+          def on_end_req_content(tur)
             BayLog.trace("%s TerminalTask:endContent", @tour)
 
             if @req_cont != nil
@@ -185,18 +200,22 @@ module Baykit
             end
             env[Rack::RACK_INPUT] = rack_input
 
-            if !TrainRunner.post(self)
+            if !TrainRunner.post(tur.ship.agent_id, self)
               raise HttpException.new(HttpStatus::SERVICE_UNAVAILABLE, "TrainRunner is busy")
             end
           end
 
-          def on_abort(tur)
+          def on_abort_req(tur)
             BayLog.trace("%s TerminalTask:abort", @tour)
             if @tmpfile
               @tmpfile.close()
               @tmpfile = nil
             end
             return false
+          end
+
+          def on_timer
+            BayLog.debug("%s TerminalTask:timer", @tour)
           end
 
           def inspect
