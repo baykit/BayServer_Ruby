@@ -178,7 +178,7 @@ module Baykit
               if u.buf.length == 0
                 len = 0
               else
-                len = st.rudder.write(u.buf, u.buf.len)
+                len = st.rudder.write(u.buf)
                 u.buf.slice!(0, len)
               end
               @agent.send_wrote_letter(st, len, nil, true)

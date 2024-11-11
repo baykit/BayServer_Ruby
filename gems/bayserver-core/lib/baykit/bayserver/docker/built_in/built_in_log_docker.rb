@@ -61,6 +61,11 @@ module Baykit
                 when Harbor::MULTIPLEXER_TYPE_SPIDER
                   mpx = agt.spider_multiplexer
 
+                when Harbor::MULTIPLEXER_TYPE_JOB
+                  mpx = agt.job_multiplexer
+
+                else
+                  raise Sink.new
                 end
 
                 st = RudderState.new(rd)
