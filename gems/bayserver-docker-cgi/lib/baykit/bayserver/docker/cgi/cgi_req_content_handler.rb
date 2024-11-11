@@ -77,7 +77,7 @@ module Baykit
 
           def on_abort_req(tur)
             BayLog.debug("%s CGI:abortReq", tur)
-            agt = GrandAgent.get(tur.ship.agent_id)
+
             if !@std_out_closed
               @multiplexer.req_close(@std_out_rd)
             end
@@ -85,8 +85,12 @@ module Baykit
               @multiplexer.req_close(@std_err_rd)
             end
 
-            BayLog.debug("%s KILL PROCESS!: %d", tur, @pid)
-            Process.kill('KILL', @pid)
+            if @pid == nil
+              BayLog.warn("%s Cannot kill process (pid is null)", tur)
+            else
+              BayLog.debug("%s KILL PROCESS!: %d", tur, @pid)
+              Process.kill('KILL', @pid)
+            end
 
             return false  # not aborted immediately
           end
