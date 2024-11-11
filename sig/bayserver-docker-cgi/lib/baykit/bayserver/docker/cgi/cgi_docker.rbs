@@ -13,6 +13,10 @@ module Baykit
           @script_base: String
           @doc_root: String
           @timeout_sec: Integer
+          @max_processes: Integer
+          @process_count: Integer
+          @wait_count: Integer
+
 
           def initialize: -> void
           def init: (Bcf::BcfElement elm, Docker parent) -> void
@@ -20,6 +24,10 @@ module Baykit
           def arrive: (Tours::Tour tur) -> void
           def create_command: (Hash[String, String] env) -> String
           def eof_checker: -> bool
+          def get_wait_count: -> Integer
+          def add_process_count: -> bool
+          def sub_process_count: -> void
+          def sub_wait_count: -> void
         end
       end
     end

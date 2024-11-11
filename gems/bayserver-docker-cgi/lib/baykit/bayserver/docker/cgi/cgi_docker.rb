@@ -35,9 +35,10 @@ module Baykit
           attr :script_base
           attr :doc_root
           attr :timeout_sec
+          attr :max_processes
+          attr :process_count
+          attr :wait_count
 
-          # Method to read stdin/stderr
-          attr :proc_read_method
 
           def initialize()
             super
@@ -45,6 +46,9 @@ module Baykit
             @script_base = nil
             @doc_root = nil
             @timeout_sec = CgiDocker::DEFAULT_TIMEOUT_SEC
+            @max_processes = -1
+            @process_count = 0
+            @wait_count = 0
           end
 
           ######################################################
@@ -73,6 +77,9 @@ module Baykit
 
             when "timeout"
               @timeout_sec = kv.value.to_i
+
+            when "maxprocesses"
+              @max_processes = kv.value.to_i
 
             else
               return super
@@ -122,78 +129,9 @@ module Baykit
               raise HttpException.new(HttpStatus::NOT_FOUND, file_name)
             end
 
-            bufsize = 8192;
-            handler = CgiReqContentHandler.new(self, tur)
+            handler = CgiReqContentHandler.new(self, tur, env)
             tur.req.set_content_handler(handler)
-            handler.start_tour(env)
-            fname = "cgi#"
-
-            out_rd = handler.std_out_rd
-            err_rd = handler.std_err_rd
-
-            agt = GrandAgent.get(tur.ship.agent_id)
-
-            case(BayServer.harbor.cgi_multiplexer)
-            when Harbor::MULTIPLEXER_TYPE_SPIDER
-              mpx = agt.spider_multiplexer
-              out_rd.set_non_blocking
-              err_rd.set_non_blocking
-
-            when Harbor::MULTIPLEXER_TYPE_SPIN
-
-              def eof_checker()
-                begin
-                  pid = Process.wait(handler.pid,  Process::WNOHANG)
-                  return pid != nil
-                rescue Errno::ECHILD => e
-                  BayLog.error_e(e)
-                  return true
-                end
-              end
-              mpx = agt.spin_multiplexer
-              out_rd.set_non_blocking
-              err_rd.set_non_blocking
-
-            when Harbor::MULTIPLEXER_TYPE_TAXI
-              mpx = agt.taxi_multiplexer
-
-            when Harbor::MULTIPLEXER_TYPE_JOB
-              mpx = agt.job_multiplexer
-
-            else
-              raise Sink.new();
-            end
-
-            if mpx != nil
-              handler.multiplexer = mpx
-              out_ship = CgiStdOutShip.new
-              out_tp = PlainTransporter.new(agt.net_multiplexer, out_ship, false, bufsize, false)
-
-              out_ship.init_std_out(out_rd, tur.ship.agent_id, tur, out_tp, handler)
-
-              mpx.add_rudder_state(
-                out_rd,
-                RudderState.new(out_rd, out_tp)
-              )
-
-              ship_id = tur.ship.ship_id
-              tur.res.set_consume_listener do |len, resume|
-                if resume
-                  out_ship.resume_read(ship_id)
-                end
-              end
-
-              err_ship = CgiStdErrShip.new
-              err_tp = PlainTransporter.new(agt.net_multiplexer, err_ship, false, bufsize, false)
-              err_ship.init_std_err(err_rd, tur.ship.agent_id, handler)
-              mpx.add_rudder_state(
-                err_rd,
-                RudderState.new(err_rd, err_tp)
-              )
-
-              mpx.req_read(out_rd)
-              mpx.req_read(err_rd)
-            end
+            handler.req_start_tour()
           end
 
           def create_command(env)
@@ -204,6 +142,33 @@ module Baykit
               command = @interpreter + " " + script
             end
             command
+          end
+
+          ######################################################
+          # Other methods
+          ######################################################
+
+          def get_wait_count
+            @wait_count
+          end
+
+          def add_process_count
+            if @max_processes <= 0 || @process_count < @max_processes
+              @process_count += 1
+              BayLog.debug("%s Process count: %d", self, @process_count)
+              return true
+            end
+
+            @wait_count += 1
+            return false
+          end
+
+          def sub_process_count
+            return @process_count -= 1
+          end
+
+          def sub_wait_count
+            return @wait_count -= 1
           end
         end
       end

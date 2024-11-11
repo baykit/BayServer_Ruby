@@ -404,16 +404,15 @@ module Baykit
         end
 
         def on_accept(let)
-          p = BayServer::anchorable_port_map[let.state.rudder]
-
           begin
             if let.err != nil
               raise let.err
             end
 
+            p = BayServer::anchorable_port_map[let.state.rudder]
             p.on_connected(@agent_id, let.client_rudder)
           rescue IOError => e
-            let.state.transporter.on_error(let.state.rudder, e)
+            BayLog.error_e(e)
             next_action(let.state, NextSocketAction::CLOSE, false)
           rescue HttpException => e
             BayLog.error_e(e)

@@ -1,3 +1,6 @@
+require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/common/postpone'
 require 'baykit/bayserver/train/train'
 require 'baykit/bayserver/tours/req_content_handler'
 
@@ -11,8 +14,10 @@ module Baykit
       module Cgi
         class CgiReqContentHandler
           include Baykit::BayServer::Tours::ReqContentHandler   # implements
+          include Baykit::BayServer::Common::Postpone   # implements
 
           include Baykit::BayServer::Agent
+          include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Train
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Rudders
@@ -32,13 +37,24 @@ module Baykit
           attr :std_err_closed
           attr :last_access
           attr_accessor :multiplexer
+          attr :env
 
-          def initialize(cgi_docker, tur)
+          def initialize(cgi_docker, tur, env)
             @cgi_docker = cgi_docker
             @tour = tur
             @tour_id = tur.tour_id
+            @env = env
             @std_out_closed = true
             @std_err_closed = true
+          end
+
+          ######################################################
+          # Implements Postpone
+          ######################################################
+          def run
+            @cgi_docker.sub_wait_count
+            BayLog.info("%s challenge postponed tour", @tour, @cgi_docker.get_wait_count)
+            req_start_tour
           end
 
           ######################################################
@@ -79,7 +95,19 @@ module Baykit
           # Other methods
           ######################################################
 
-          def start_tour(env)
+          def req_start_tour
+            if @cgi_docker.add_process_count
+              BayLog.info("%s start tour: wait count=%d", @tour, @cgi_docker.get_wait_count)
+              start_tour
+            else
+              BayLog.warn("%s Cannot start tour: wait count=%d", @tour, @cgi_docker.get_wait_count)
+              agt = GrandAgent.get(@tour.ship.agent_id)
+              agt.add_postpone(self)
+            end
+            access()
+          end
+
+          def start_tour
             @available = false
 
             std_in = IO.pipe()
@@ -89,7 +117,7 @@ module Baykit
             std_out[0].set_encoding("ASCII-8BIT")
             std_err[0].set_encoding("ASCII-8BIT")
 
-            command = @cgi_docker.create_command(env)
+            command = @cgi_docker.create_command(@env)
             BayLog.debug("%s Spawn: %s", @tour, command)
             @pid = Process.spawn(env, command, :in => std_in[0], :out => std_out[1], :err => std_err[1])
             BayLog.debug("%s created process; %s", @tour, @pid)
@@ -105,7 +133,72 @@ module Baykit
 
             @std_out_closed = false
             @std_err_closed = false
-            access()
+
+            bufsize = 8192
+
+            agt = GrandAgent.get(@tour.ship.agent_id)
+
+            case(BayServer.harbor.cgi_multiplexer)
+            when Harbor::MULTIPLEXER_TYPE_SPIDER
+              mpx = agt.spider_multiplexer
+              @std_out_rd.set_non_blocking
+              @std_err_rd.set_non_blocking
+
+            when Harbor::MULTIPLEXER_TYPE_SPIN
+
+              def eof_checker()
+                begin
+                  pid = Process.wait(handler.pid,  Process::WNOHANG)
+                  return pid != nil
+                rescue Errno::ECHILD => e
+                  BayLog.error_e(e)
+                  return true
+                end
+              end
+              mpx = agt.spin_multiplexer
+              @std_out_rd.set_non_blocking
+              @std_err_rd.set_non_blocking
+
+            when Harbor::MULTIPLEXER_TYPE_TAXI
+              mpx = agt.taxi_multiplexer
+
+            when Harbor::MULTIPLEXER_TYPE_JOB
+              mpx = agt.job_multiplexer
+
+            else
+              raise Sink.new();
+            end
+
+            if mpx != nil
+              @multiplexer = mpx
+              out_ship = CgiStdOutShip.new
+              out_tp = PlainTransporter.new(agt.net_multiplexer, out_ship, false, bufsize, false)
+
+              out_ship.init_std_out(@std_out_rd, @tour.ship.agent_id, @tour, out_tp, self)
+
+              mpx.add_rudder_state(
+                @std_out_rd,
+                RudderState.new(@std_out_rd, out_tp)
+              )
+
+              ship_id = @tour.ship.ship_id
+              @tour.res.set_consume_listener do |len, resume|
+                if resume
+                  out_ship.resume_read(ship_id)
+                end
+              end
+
+              err_ship = CgiStdErrShip.new
+              err_tp = PlainTransporter.new(agt.net_multiplexer, err_ship, false, bufsize, false)
+              err_ship.init_std_err(@std_err_rd, @tour.ship.agent_id, self)
+              mpx.add_rudder_state(
+                @std_err_rd,
+                RudderState.new(@std_err_rd, err_tp)
+              )
+
+              mpx.req_read(@std_out_rd)
+              mpx.req_read(@std_err_rd)
+            end
           end
 
           def std_out_closed()
@@ -140,9 +233,8 @@ module Baykit
             BayLog.debug("%s CGI Process finished: pid=%s", @tour, @pid)
 
             pid, stat = Process.wait2(@pid)
-            print(stat)
-
             BayLog.debug("%s CGI Process finished: pid=%s code=%s", @tour, pid, stat.exitstatus)
+            agt_id = @tour.ship.agent_id
 
             begin
               if stat.exitstatus != 0
@@ -154,6 +246,13 @@ module Baykit
               end
             rescue IOError => e
               BayLog.error_e(e)
+            end
+
+            @cgi_docker.sub_process_count
+            if @cgi_docker.get_wait_count > 0
+              BayLog.warn("agt#%d Catch up postponed process: process wait count=%d", agt_id, @cgi_docker.get_wait_count)
+              agt = GrandAgent.get(agt_id)
+              agt.req_catch_up
             end
           end
         end

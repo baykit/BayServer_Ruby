@@ -13,7 +13,7 @@ module Baykit
         CMD_SHUTDOWN: Integer
         CMD_ABORT: Integer
         CMD_CATCHUP: Integer
-        include BayServer
+
         self.@agent_count: Integer
         self.@max_agent_id: Integer
         self.@max_ships: Integer

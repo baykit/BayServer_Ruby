@@ -5,7 +5,7 @@ module Baykit
     module Common
       module Postpone # interface
 
-        def run()
+        def run
           raise NotImplementedError.new
         end
 
