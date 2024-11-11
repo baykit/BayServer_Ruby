@@ -1,0 +1,31 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Terminal
+        class TerminalTrain
+          @terminal_docker: untyped
+          @tour: untyped
+          @tour_id: untyped
+          @app: untyped
+          @env: untyped
+          @available: bool
+          @tmpfile: nil
+          @req_cont: nil
+          @lock: Thread::Mutex
+
+          def initialize: (untyped terminal_docker, untyped tur, untyped app, untyped env) -> void
+          def start_tour: -> untyped
+          def depart: -> untyped
+          def on_read_req_content: (untyped tur, untyped buf, untyped start, untyped len) -> true
+          def on_end_req_content: (untyped tur) -> nil
+          def on_abort_req: (untyped tur) -> false
+          def on_timer: -> untyped
+          def inspect: -> String
+        end
+      end
+    end
+  end
+end

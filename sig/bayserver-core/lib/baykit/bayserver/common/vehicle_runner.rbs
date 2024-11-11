@@ -1,0 +1,37 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class VehicleRunner
+        @max_vehicles: Integer
+        @services: Array[VehicleService]
+
+        def initialize: -> void
+        def init: (Integer max) -> void
+        def post: (Integer agt_id, Vehicle vcl) -> void
+
+        class AgentListener
+          @runner: VehicleRunner
+
+          def initialize: (VehicleRunner runner) -> void
+          def add: (Integer agt_id) -> void
+          def remove: (Integer agt_id) -> void
+        end
+
+        class VehicleService
+          @agent: Agent::GrandAgent
+          @runnings: Array[Vehicle]
+          @runnings_lock: Thread::Mutex
+          @exe: Util::ExecutorService
+
+          def initialize: (Agent::GrandAgent agt, VehicleRunner runner) -> void
+          def on_timer: -> void
+          def terminate: -> void
+          def submit: (Vehicle vcl) -> void
+        end
+      end
+    end
+  end
+end

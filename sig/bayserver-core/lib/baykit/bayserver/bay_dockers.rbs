@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    class BayDockers
+      @docker_map: Hash[String, String]
+
+      def initialize: -> void
+      def init: (String conf) -> void
+      def create_docker: (Bcf::BcfElement elm, Docker parent) -> Docker
+      def create_docker_by_alias: (String category, String alias_name) -> Docker
+    end
+  end
+end

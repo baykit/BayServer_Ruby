@@ -1,0 +1,18 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Cities
+        @any_city: Docker::City
+        @cities: Array[Docker::City]
+
+        def initialize: -> void
+        def add: (Docker::City c) -> void
+        def find_city: (String name) -> Docker::City
+        def cities: -> Array[Docker::City]
+      end
+    end
+  end
+end

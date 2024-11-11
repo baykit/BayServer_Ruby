@@ -1,0 +1,33 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class ExecutorService
+        MAX_LEN_PER_EXECUTOR: Integer
+        @que: Thread::Queue
+        @count: Integer
+        @max_queue_len: Integer
+        @name: String
+        @executors: Array[Executor]
+
+        def initialize: (String name, Integer count) -> void
+        def to_s: -> String
+        def submit: -> void
+        def shutdown: -> void
+
+        class Executor
+          @que: Thread::Queue
+          @id: Integer
+          @name: String
+
+          def initialize: (Thread::Queue que, Integer id, String name) -> void
+          def to_s: -> String
+          def run: -> void
+          def shutdown: -> void
+        end
+      end
+    end
+  end
+end

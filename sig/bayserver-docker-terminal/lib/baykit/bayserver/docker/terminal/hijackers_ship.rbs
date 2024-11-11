@@ -1,0 +1,29 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Terminal
+        class HijackersShip
+          @file_wrote_len: Complex | Float | Integer | Rational
+          @file_len: Integer
+          @tour: nil
+          @tour_id: Integer
+          @yacht_id: bot
+          @object_id: bot
+
+          def initialize: -> void
+          def to_s: -> String
+          def init: (untyped tur, untyped rd, untyped tp) -> Integer
+          def reset: -> Integer
+          def notify_read: (untyped buf) -> untyped
+          def notify_error: (untyped e) -> untyped
+          def notify_eof: -> untyped
+          def notify_close: -> untyped
+          def check_timeout: (untyped duration) -> untyped
+        end
+      end
+    end
+  end
+end

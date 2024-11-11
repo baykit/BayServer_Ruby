@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class Vehicle
+        @id: Integer
+
+        def initialize: (Integer id) -> void
+        def run: -> void
+        def on_timer: -> void
+      end
+    end
+  end
+end

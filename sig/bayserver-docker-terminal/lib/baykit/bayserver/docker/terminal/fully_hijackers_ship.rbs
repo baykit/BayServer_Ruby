@@ -1,0 +1,36 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Terminal
+        class FullyHijackersShip
+          STATE_READ_HEADER: Integer
+          STATE_READ_CONTENT: Integer
+          STATE_FINISHED: Integer
+          @packet_store: untyped
+          @command_unpacker: untyped
+          @packet_unpacker: untyped
+          @state: Integer
+          @file_wrote_len: untyped
+          @tour: bot
+          @tour_id: bot
+
+          def initialize: -> void
+          def init: (untyped tur, untyped rd, untyped tp) -> untyped
+          def reset: -> Integer
+          def notify_read: (untyped buf) -> untyped
+          def handle_header: (untyped cmd) -> untyped
+          def handle_content: (untyped cmd) -> untyped
+          def handle_end_content: (untyped cmd) -> bot
+          def req_finished: -> bool
+
+          private
+          def end_res_content: (nil tur) -> Integer
+          def change_state: (Integer new_state) -> Integer
+        end
+      end
+    end
+  end
+end

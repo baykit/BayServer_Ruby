@@ -1,0 +1,53 @@
+# TypeProf 0.21.11
+
+# Revealed types
+#  gems/bayserver-core/lib/baykit/bayserver/bayserver.rb:259 #=> String
+
+# Classes
+module Baykit
+  module BayServer
+    class BayServer
+      ENV_BSERV_HOME: String
+      ENV_BSERV_LIB: String
+      ENV_BSERV_PLAN: String
+      ENV_BSERV_LOGLEVEL: String
+      self.@plan_str: String
+      self.@my_host_name: String
+      self.@my_host_addr: String
+      self.@dockers: BayDockers
+      self.@ports: Array[Docker::Port]
+      self.@harbor: Docker::Harbor
+      self.@any_city: Docker::City
+      self.@cities: Util::Cities
+      self.@anchorable_port_map: Hash[Rudders::Rudder, Docker::Port]
+      self.@unanchorable_port_map: Hash[Rudders::Rudder, Docker::Port]
+      self.@commandline_args: Array[String]
+      self.@bserv_home: String
+      self.@bserv_lib: String
+      self.@bserv_plan: String
+      self.@derived_port_nos: Array[String]
+      self.@monitor_port: Integer
+      self.@software_name: String
+
+      def self.get_version: -> String
+      def self.main: (Array[String] args) -> void
+      def self.get_home: (String home) -> void
+      def self.get_plan: (String plan) -> void
+      def self.get_lib: -> void
+      def self.init: -> void
+      def self.start: (Integer agt_id) -> void
+      def self.open_ports: (Hash[Rudders::Rudder, Docker::Port] anchored_port_map, Hash[Rudders::Rudder, Docker::Port] unanchored_port_map) -> void
+      def self.parent_start: -> void
+      def self.child_start: (Integer agt_id) -> void
+      def self.find_city: (String city_name) -> Docker::City
+      def self.parse_path: (String val) -> String
+      def self.get_location: (String location) -> String
+      def self.get_software_name: -> String
+      def self.shutdown: -> void
+      def self.print_version: -> void
+      def self.load_plan: (String bserv_plan) -> void
+      def self.create_pid_file: (Integer pid) -> void
+      def self.invoke_runners: -> void
+    end
+  end
+end

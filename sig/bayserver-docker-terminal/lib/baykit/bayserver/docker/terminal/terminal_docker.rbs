@@ -1,0 +1,32 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Terminal
+        class TerminalDocker
+          RACK_TERMINAL_PIPE: String
+          DEFAULT_POST_CACHE_THRESHOLD: Integer
+          RACK_ERR: String
+          RACK_MULTITHREAD: String
+          RACK_MULTIPROCESS: String
+          RACK_RUNONCE: String
+          RACK_HIJACK_IO: String
+          HTTP_VERSION: String
+          @post_cache_threshold: Integer
+          @available: bool
+          @config: untyped
+          @environment: String
+
+          attr_accessor app: untyped
+          def initialize: -> void
+          def init: (untyped elm, untyped parent) -> true?
+          def init_key_val: (untyped kv) -> true
+          def arrive: (untyped tur) -> nil
+          def create_env: (untyped tur) -> (Hash[String, (IO | Proc | String | [IO, IO] | bool)?])
+        end
+      end
+    end
+  end
+end

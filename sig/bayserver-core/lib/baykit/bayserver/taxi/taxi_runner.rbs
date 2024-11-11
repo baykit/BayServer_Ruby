@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Taxi
+      class TaxiRunner
+        include BayServer
+        self.@runner: Common::VehicleRunner
+
+        def self.init: (Integer max_taxis) -> void
+        def self.post: (Integer agt_id, BayServer::Taxi txi) -> void
+      end
+    end
+  end
+end
