@@ -221,7 +221,7 @@ module Baykit
               BayLog.debug("%s next write st=%s", @agent, st)
 
               if st == nil || st.closed
-                BayLog.warn("%s Channel is closed: %s", @agent, rd)
+                BayLog.warn("%s Channel is closed: %s", @agent, st.rudder)
                 next
               end
 

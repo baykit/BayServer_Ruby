@@ -133,7 +133,10 @@ module Baykit
           end
 
           def close_all()
-            copied = @rudders.values
+            copied = nil
+            @rudders_lock.synchronize do
+              copied = @rudders.values
+            end
             copied.each do |st|
               if st.rudder != @agent.command_receiver.rudder
                 close_rudder(st)
