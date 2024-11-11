@@ -385,7 +385,7 @@ module Baykit
         #########################################
         private
         def ring
-          BayLog.debug("%s Ring", self)
+          BayLog.trace("%s Ring", self)
           # timeout check
           @timer_handlers.each do |h|
             h.on_timer

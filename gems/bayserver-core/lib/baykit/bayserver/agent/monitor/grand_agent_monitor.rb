@@ -223,8 +223,8 @@ module Baykit
               # Agents run on single core (thread mode)
               child_thread = Thread.new() do
                 agt = GrandAgent.get(agt_id)
-                agt.run_command_receiver(pair[1])
-                agt.run()
+                agt.add_command_receiver(IORudder.new(pair[1]))
+                agt.start()
               end
 
             end

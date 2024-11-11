@@ -375,10 +375,7 @@ module Baykit
           # Thread mode
           GrandAgent.init(
             (1..@harbor.grand_agents).to_a,
-            anchored_port_map,
-            unanchored_port_map,
-            @harbor.max_ships,
-            @harbor.multi_core)
+            @harbor.max_ships)
 
           invoke_runners()
         end
