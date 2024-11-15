@@ -1,5 +1,9 @@
 # BayServer for Ruby
 
+# 3.0.1
+
+- Fixes minor bugs
+
 # 3.0.0
 
 - [Core] Performes a significant overall refactoring.
