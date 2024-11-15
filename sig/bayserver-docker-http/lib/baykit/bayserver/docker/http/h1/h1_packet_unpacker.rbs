@@ -1,0 +1,32 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1PacketUnPacker
+            STATE_READ_HEADERS: Integer
+            STATE_READ_CONTENT: Integer
+            STATE_END: Integer
+            MAX_LINE_LEN: Integer
+            include Http
+            @cmd_upacker: H1CommandUnPacker
+            @pkt_store: Protocol::PacketStore
+            @tmp_buf: String
+            @state: Integer
+
+            def initialize: (H1CommandUnPacker cmd_upacker, Protocol::PacketStore pkt_store) -> void
+            def reset: -> void
+            def bytes_received: (String buf) -> Integer
+
+            private
+            def change_state: (Integer new_state) -> void
+            def reset_state: -> void
+          end
+        end
+      end
+    end
+  end
+end

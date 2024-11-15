@@ -1,0 +1,52 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpWarpHandler
+          FIXED_WARP_ID: Integer
+          STATE_READ_HEADER: Integer
+          STATE_READ_CONTENT: Integer
+          @state: Integer
+          @cont_read_len: Integer
+          @protocol_handler: AjpProtocolHandler
+
+          def initialize: -> void
+          def init: (AjpProtocolHandler proto_handler) -> void
+          def reset: -> void
+          def to_s: -> String
+          def send_res_headers: (Tours::Tour tur) -> void
+          def send_res_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
+          def send_end_tour: (Tours::Tour tur, bool keep_alive) -> void
+          def on_protocol_error: (Exception e) -> bool
+          def next_warp_id: -> Integer
+          def new_warp_data: (Integer warp_id) -> Common::WarpData
+          def verify_protocol: (String proto) -> void
+          def handle_data: (Command::CmdData cmd) -> Integer
+          def handle_end_response: (Command::CmdEndResponse cmd) -> Integer
+          def handle_forward_request: (Command::CmdForwardRequest cmd) -> Integer
+          def handle_send_body_chunk: (Command::CmdSendBodyChunk cmd) -> Integer
+          def handle_send_headers: (Command::CmdSendHeaders cmd) -> Integer
+          def handle_shutdown: (Command::CmdShutdown cmd) -> Integer
+          def handle_get_body_chunk: (Command::CmdGetBodyChunk cmd) -> Integer
+          def need_data: -> false
+
+          private
+          def end_res_header: (Tours::Tour tur) -> void
+          def end_res_content: (Tours::Tour tur) -> void
+          def change_state: (Integer new_state) -> void
+          def reset_state: -> void
+          def send_forward_request: (Tours::Tour tur) -> void
+          def send_data: (Tours::Tour tur, String data, Integer ofs, Integer len) -> void
+          def ship: -> Common::WarpShip
+
+          class WarpProtocolHandlerFactory
+            def create_protocol_handler: (Protocol::PacketStore pkt_store) -> AjpProtocolHandler
+          end
+        end
+      end
+    end
+  end
+end

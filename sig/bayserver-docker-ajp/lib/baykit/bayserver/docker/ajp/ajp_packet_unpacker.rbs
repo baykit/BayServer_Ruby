@@ -1,0 +1,33 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpPacketUnPacker
+          STATE_READ_PREAMBLE: Integer
+          STATE_READ_BODY: Integer
+          STATE_END: Integer
+          @pkt_store: Protocol::PacketStore
+          @cmd_unpacker: AjpCommandUnPacker
+          @preamble_buf: String
+          @body_buf: String
+          @state: Integer
+          @body_len: Integer
+          @read_bytes: Integer
+          @need_data: bool
+          @type: Integer
+          @to_server: bool
+
+          def initialize: (Protocol::PacketStore pkt_store, AjpCommandUnPacker cmd_unpacker) -> void
+          def reset: -> void
+          def bytes_received: (String buf) -> Integer
+          def change_state: (Integer new_state) -> void
+          def preamble_read: -> void
+          def body_read: -> void
+        end
+      end
+    end
+  end
+end

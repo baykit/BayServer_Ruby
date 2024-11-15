@@ -15,15 +15,15 @@ module Baykit
             @protocol_handler: H1ProtocolHandler
 
             def initialize: -> void
-            def init: (H1ProtocolHandler proto_handler) -> untyped
+            def init: (H1ProtocolHandler proto_handler) -> void
             def to_s: -> String
-            def reset: -> Integer
-            def send_res_headers: (Tours::Tour tur) -> untyped
-            def send_res_content: (Tours::Tour tur, untyped buf, untyped start, untyped len) -> untyped
-            def send_end_tour: (Tours::Tour tur) -> untyped
+            def reset: -> void
+            def send_res_headers: (Tours::Tour tur) -> void
+            def send_res_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
+            def send_end_tour: (Tours::Tour tur) -> void
             def next_warp_id: -> Integer
-            def new_warp_data: (Integer warp_id) -> untyped
-            def verify_protocol: (untyped proto) -> nil
+            def new_warp_data: (Integer warp_id) -> Common::WarpData
+            def verify_protocol: (String proto) -> void
             def handle_header: (Command::CmdHeader cmd) -> Integer
             def handle_content: (Command::CmdContent cmd) -> Integer
             def handle_end_content: (Command::CmdEndContent cmd) -> Integer
@@ -36,7 +36,7 @@ module Baykit
             def ship: -> Common::WarpShip
 
             class WarpProtocolHandlerFactory
-              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> untyped
+              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> H1ProtocolHandler
             end
           end
         end

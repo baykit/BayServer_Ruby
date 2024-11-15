@@ -1,0 +1,20 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1CommandUnPacker
+
+            def initialize: (H1CommandHandler cmd_handler, bool svr_mode) -> void
+            def reset: -> nil
+            def packet_received: (H1Packet pkt) -> Integer
+            def finished: -> bool
+          end
+        end
+      end
+    end
+  end
+end
