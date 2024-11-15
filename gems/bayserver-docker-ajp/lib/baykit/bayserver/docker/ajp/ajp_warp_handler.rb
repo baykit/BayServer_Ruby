@@ -139,7 +139,7 @@ module Baykit
               sid = ship.ship_id
               tur.res.set_consume_listener do |len, resume|
                 if resume
-                  ship.resume(sid)
+                  ship.resume_read(sid)
                 end
               end
 
@@ -191,10 +191,6 @@ module Baykit
           def handle_get_body_chunk(cmd)
             BayLog.debug("%s handle_get_body_chunk", self)
             return NextSocketAction::CONTINUE
-          end
-
-          def handle_eof
-            raise EOFError.new()
           end
 
           def need_data

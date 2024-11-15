@@ -50,7 +50,7 @@ module Baykit
 
                 n = @rudder.read(buf, 4)
                 if n == -1
-                  raise EOFError.new()
+                  raise EOFError.new
                 end
                 if n < 4
                   raise IOError.new("Cannot read int: nbytes=#{n}")
@@ -60,13 +60,13 @@ module Baykit
                   BayLog.debug("%s read Close", self)
                   break
                 elsif res == GrandAgent::CMD_CATCHUP
-                  on_read_catch_up()
+                  on_read_catch_up
                 else
                   BayLog.debug("%s read OK: %d", self, res);
                 end
 
               end
-            rescue EOFError => e
+            rescue EOFError, IOError => e
               BayLog.fatal("Agent terminated")
             rescue Exception => e
               BayLog.fatal_e(e)

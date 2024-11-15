@@ -192,7 +192,7 @@ module Baykit
                 sid = ship.id()
                 tur.res.set_consume_listener do |len, resume|
                   if resume
-                    ship.resume(sid)
+                    ship.resume_read(sid)
                   end
                 end
               end

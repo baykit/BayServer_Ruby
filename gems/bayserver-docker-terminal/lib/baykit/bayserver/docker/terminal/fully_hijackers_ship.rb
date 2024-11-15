@@ -102,7 +102,7 @@ module Baykit
               sid = @tour.ship.id()
               @tour.res.set_consume_listener do |len, resume|
                 if resume
-                  @tour.ship.resume(sid)
+                  @tour.ship.resume_read(sid)
                 end
               end
             end

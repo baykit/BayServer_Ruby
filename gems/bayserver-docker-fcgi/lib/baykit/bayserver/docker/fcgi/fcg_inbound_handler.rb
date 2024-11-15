@@ -295,7 +295,7 @@ module Baykit
                 sid = ship.ship_id
                 success = tur.req.post_req_content(Tour::TOUR_ID_NOCHECK, cmd.data, cmd.start, cmd.length) do |len, resume|
                   if resume
-                    ship.resume(sid)
+                    ship.resume_read(sid)
                   end
                 end
 

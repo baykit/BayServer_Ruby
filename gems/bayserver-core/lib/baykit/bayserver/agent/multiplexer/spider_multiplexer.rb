@@ -328,7 +328,7 @@ module Baykit
             st = find_rudder_state_by_key(io)
             if st == nil
               BayLog.error("Cannot find fd state (Maybe file is closed)")
-              @agent.selector.unregister(io)
+              @selector.unregister(io)
               return
             end
 

@@ -322,11 +322,11 @@ module Baykit
           @command_receiver.end()
           GrandAgent.agents.delete(@agent_id)
 
-          @agent_id = -1
           if BayServer.harbor.multi_core
             BayLog.debug("%s exit", self)
             exit(1)
           end
+          @agent_id = -1
         end
 
         def abort
