@@ -1,5 +1,10 @@
 # BayServer for Ruby
 
+# 3.0.2
+
+- Fixes minor bugs of AJP Docker.
+- Fixes an issue where SignalAgent did not operate in socket mode.
+
 # 3.0.1
 
 - Fixes minor bugs
