@@ -32,7 +32,7 @@ module Baykit
         attr :headers
         attr_accessor :charset
         attr :available
-        attr :consume_listener
+        attr :res_consume_listener
 
         attr_accessor :header_sent
         attr :yacht
@@ -74,7 +74,7 @@ module Baykit
           end
 
           @available = false
-          @consume_listener = nil
+          @res_consume_listener = nil
 
           @can_compress = false
           @compressor = nil
@@ -156,10 +156,14 @@ module Baykit
         end
 
         def set_consume_listener(&listener)
-          @consume_listener = listener
+          @res_consume_listener = listener
           @bytes_consumed = 0
           @bytes_posted = 0
           @available = true
+        end
+
+        def detach_consume_listener
+          @res_consume_listener = nil
         end
 
         def send_res_content(chk_tour_id, buf, ofs, len)
@@ -182,7 +186,7 @@ module Baykit
           end
 
 
-          if @consume_listener == nil
+          if @res_consume_listener == nil
             raise Sink.new("Response consume listener is null")
           end
 
@@ -277,9 +281,6 @@ module Baykit
 
         def consumed(check_id, length)
           @tour.check_tour_id(check_id)
-          if @consume_listener == nil
-            raise Sink.new("Response consume listener is null")
-          end
 
           @bytes_consumed += length
 
@@ -297,7 +298,11 @@ module Baykit
           end
 
           if !@tour.zombie?
-            @consume_listener.call(length, resume)
+            if @res_consume_listener == nil
+              BayLog.debug("%s Consume listener is null, so can not invoke callback", self)
+            else
+              @res_consume_listener.call(length, resume)
+            end
           end
         end
 

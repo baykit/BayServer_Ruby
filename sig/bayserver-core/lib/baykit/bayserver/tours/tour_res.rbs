@@ -10,7 +10,7 @@ module Baykit
         @tour: Tour
         @buffer_size: Integer
         @available: bool
-        @consume_listener: untyped
+        @res_consume_listener: untyped
         @can_compress: bool
         @compressor: untyped
         @bytes_posted: Integer
@@ -27,6 +27,7 @@ module Baykit
         def send_headers: (Integer chk_tour_id) -> nil
         def send_redirect: (Integer chk_tour_id, Integer status, untyped location) -> void
         def set_consume_listener: -> void
+        def detach_consume_listener: -> void
         def send_res_content: (Integer chk_tour_id, String buf, Integer ofs, Integer len) -> bool
         def end_res_content: (Integer chk_tour_id) -> void
         def consumed: (Integer check_id, Integer length) -> void

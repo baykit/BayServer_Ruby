@@ -110,7 +110,7 @@ module Baykit
           end
 
           def handle_end_response(cmd)
-            BayLog.debug("%s handle_end_response reuse=%s st=%d", ship, cmd.reuse, @state)
+            BayLog.debug("%s handle_end_response reuse=%s st=%d", self, cmd.reuse, @state)
             tur = ship.get_tour(FIXED_WARP_ID)
 
             if @state == STATE_READ_HEADER
@@ -121,6 +121,9 @@ module Baykit
             if cmd.reuse
               return NextSocketAction::CONTINUE
             else
+              # Ensure the callback is not invoked when the connection is disconnected, and this instance becomes invalid.
+              tur.res.detach_consume_listener
+
               return NextSocketAction::CLOSE
             end
 
@@ -131,15 +134,16 @@ module Baykit
           end
 
           def handle_send_body_chunk(cmd)
-            BayLog.debug("%s handle_send_body_chunk: len=%d st=%d", ship, cmd.length, @state)
-            tur = ship.get_tour(FIXED_WARP_ID)
+            BayLog.debug("%s handle_send_body_chunk: len=%d st=%d", self, cmd.length, @state)
+            wsip = ship
+            tur = wsip.get_tour(FIXED_WARP_ID)
 
             if @state == STATE_READ_HEADER
 
-              sid = ship.ship_id
+              sid = wsip.ship_id
               tur.res.set_consume_listener do |len, resume|
                 if resume
-                  ship.resume_read(sid)
+                  wsip.resume_read(sid)
                 end
               end
 
@@ -157,7 +161,7 @@ module Baykit
           end
 
           def handle_send_headers(cmd)
-            BayLog.debug("%s handle_send_headers", ship)
+            BayLog.debug("%s handle_send_headers", self)
 
             tur = ship.get_tour(FIXED_WARP_ID)
 
