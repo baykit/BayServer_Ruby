@@ -39,46 +39,6 @@ module Baykit
           @signal_map = {}
           @signal_agent = nil
 
-          attr :port
-          attr :server_skt
-
-          def initialize(port)
-            @port = port
-            @server_skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-            @server_skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-            adr = Socket.sockaddr_in(@port, "127.0.0.1")
-            @server_skt.bind(adr)
-            @server_skt.listen(0)
-            BayLog.info( BayMessage.get(:MSG_OPEN_CTL_PORT, @port))
-          end
-
-          def on_socket_readable()
-
-            begin
-              skt, = @server_skt.accept
-              skt.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, [5, 0].pack("l_2"))
-
-              line = skt.readline.strip()
-              BayLog.info(BayMessage.get(:MSG_COMMAND_RECEIVED, line))
-              SignalAgent.handle_command(line)
-              skt.write("OK\n")
-              skt.flush
-
-            rescue => e
-              BayLog.error_e(e)
-
-            ensure
-              if skt
-                skt.close()
-              end
-            end
-
-          end
-
-          def close
-            @server_skt.close
-          end
-
 
           ######################################################
           # class methods
@@ -92,7 +52,7 @@ module Baykit
             end
 
             if bay_port > 0
-              @signal_agent = SignalAgent.new(bay_port)
+              run_signal_agent(bay_port)
             end
           end
 
@@ -153,9 +113,36 @@ module Baykit
             end
           end
 
-          def SignalAgent.term()
-            if @signal_agent
-              @signal_agent.close()
+          def self.run_signal_agent(port)
+            Thread.new do
+              server_skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+              server_skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
+              adr = Socket.sockaddr_in(port, "127.0.0.1")
+              server_skt.bind(adr)
+              server_skt.listen(0)
+              BayLog.info( BayMessage.get(:MSG_OPEN_CTL_PORT, @port))
+
+              while true
+                begin
+                  skt, = server_skt.accept
+                  skt.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, [5, 0].pack("l_2"))
+
+                  line = skt.readline.strip()
+                  BayLog.info(BayMessage.get(:MSG_COMMAND_RECEIVED, line))
+                  SignalAgent.handle_command(line)
+                  skt.write("OK\n")
+                  skt.flush
+
+                rescue => e
+                  BayLog.error_e(e)
+
+                ensure
+                  if skt
+                    skt.close()
+                  end
+                end
+
+              end
             end
           end
         end

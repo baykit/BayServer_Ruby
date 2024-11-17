@@ -275,32 +275,6 @@ module Baykit
 
           return
 
-          while not GrandAgentMonitor.monitors.empty?
-            sel = Selector.new()
-            pip_to_mon_map = {}
-            GrandAgentMonitor.monitors.values.each do |mon|
-              BayLog.debug("Monitoring pipe of %s", mon)
-              sel.register(mon.communication_channel, Selector::OP_READ)
-              pip_to_mon_map[mon.communication_channel] = mon
-            end
-            server_skt = nil
-            if SignalAgent.signal_agent
-              server_skt = SignalAgent.signal_agent.server_skt
-              sel.register(server_skt, Selector::OP_READ)
-            end
-
-            selected_map = sel.select(nil)
-            selected_map.keys().each do |ch|
-              if ch == server_skt
-                SignalAgent.signal_agent.on_socket_readable()
-              else
-                mon = pip_to_mon_map[ch]
-                mon.on_readable()
-              end
-            end
-          end
-
-          SignalAgent.term()
 
         rescue => err
           BayLog.fatal_e(err, "%s", err.message)
