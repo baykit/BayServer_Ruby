@@ -105,7 +105,7 @@ module Baykit
             end
 
             unt = WriteUnit.new(buf, adr, tag, lis)
-            st.writing_lock.synchronize do
+            st.write_queue_lock.synchronize do
               st.write_queue << unt
             end
 
