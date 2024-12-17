@@ -476,7 +476,7 @@ module Baykit
               next_act = st.transporter.on_read(st.rudder, st.read_buf, let.address)
             end
 
-          rescue => e
+          rescue IOError => e
             st.transporter.on_error(st.rudder, e)
             next_act = NextSocketAction::CLOSE
           end
@@ -541,7 +541,7 @@ module Baykit
 
         def on_close_req(let)
           st = let.state
-          BayLog.debug("%s reqClose rd=%s", self, st.rudder)
+          BayLog.debug("%s onCloseReq rd=%s", self, st.rudder)
           if st.closed
             BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder)
             return
