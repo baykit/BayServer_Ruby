@@ -141,13 +141,14 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf, len, adr, tag, lis)
+          def req_write(rd, buf, len, adr, tag, &lis)
             st = get_rudder_state(rd)
             if st == nil
-              raise IOError("Invalid rudder")
+              BayLog.warn("Invalid rudder")
+              lis.call()
             end
 
-            unt = WriteUnit.new(buf, adr, tag, lis)
+            unt = WriteUnit.new(buf, adr, tag, &lis)
             st.write_queue_lock.synchronize do
               st.write_queue << unt
             end

@@ -106,16 +106,17 @@ module Baykit
             st.access
           end
 
-          def req_write(rd, buf, adr, tag, lis)
+          def req_write(rd, buf, adr, tag, &lis)
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 
             if st == nil || st.closed
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
+              lis.call()
               return
             end
 
-            unt = WriteUnit.new(buf, adr, tag, lis)
+            unt = WriteUnit.new(buf, adr, tag, &lis)
             st.write_queue_lock.synchronize do
               st.write_queue << unt
             end

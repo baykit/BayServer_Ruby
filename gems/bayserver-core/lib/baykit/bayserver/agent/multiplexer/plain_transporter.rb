@@ -94,7 +94,7 @@ module Baykit
           end
 
           def req_write(rd, buf, adr, tag, &lis)
-            @multiplexer.req_write(rd, buf, adr, tag, lis)
+            @multiplexer.req_write(rd, buf, adr, tag, &lis)
           end
 
           def req_close(rd)

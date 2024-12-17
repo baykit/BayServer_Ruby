@@ -11,7 +11,7 @@ module Baykit
           attr :tag
           attr :listener
 
-          def initialize(buf, adr, tag, lis)
+          def initialize(buf, adr, tag, &lis)
             @buf = buf
             @adr = adr
             @tag = tag

@@ -95,16 +95,17 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf,adr, tag, lis)
+          def req_write(rd, buf,adr, tag, &lis)
             st = get_rudder_state(rd)
             BayLog.debug("%s req write st=%s tag=%s", @agent, st, tag)
 
             if st == nil || st.closed
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
+              lis.call()
               return
             end
 
-            unt = WriteUnit.new(buf, adr, tag, lis)
+            unt = WriteUnit.new(buf, adr, tag, &lis)
             st.write_queue_lock.synchronize do
               st.write_queue << unt
             end
@@ -327,7 +328,7 @@ module Baykit
             #BayLog.info("%s handle_channel io=%s op=%d", self, io, op)
             st = find_rudder_state_by_key(io)
             if st == nil
-              BayLog.error("Cannot find fd state (Maybe file is closed)")
+              BayLog.debug("Cannot find fd state (Maybe file is closed)")
               @selector.unregister(io)
               return
             end
