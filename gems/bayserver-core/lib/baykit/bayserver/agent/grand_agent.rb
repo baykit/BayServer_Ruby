@@ -411,7 +411,7 @@ module Baykit
 
             p = BayServer::anchorable_port_map[let.state.rudder]
             p.on_connected(@agent_id, let.client_rudder)
-          rescue IOError => e
+          rescue IOError, OpenSSL::SSL::SSLError => e
             BayLog.error_e(e)
             next_action(let.state, NextSocketAction::CLOSE, false)
           rescue HttpException => e
@@ -456,7 +456,8 @@ module Baykit
         def on_read(let)
           st = let.state
           if st.closed
-            BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder)
+            BayLog.debug("
+            %s Rudder is already closed: rd=%s", self, st.rudder)
             return
           end
 
@@ -476,7 +477,7 @@ module Baykit
               next_act = st.transporter.on_read(st.rudder, st.read_buf, let.address)
             end
 
-          rescue IOError => e
+          rescue IOError, OpenSSL::SSL::SSLError => e
             st.transporter.on_error(st.rudder, e)
             next_act = NextSocketAction::CLOSE
           end
@@ -532,7 +533,7 @@ module Baykit
                 st.multiplexer.cancel_write(st)
               end
             end
-          rescue SystemCallError, IOError => e
+          rescue SystemCallError, IOError, OpenSSL::SSL::SSLError => e
             BayLog.debug("%s IO error on wrote", self)
             st.transporter.on_error(st.rudder, e)
             next_action(st, NextSocketAction::CLOSE, false)
