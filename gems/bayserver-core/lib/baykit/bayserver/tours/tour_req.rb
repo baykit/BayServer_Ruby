@@ -166,6 +166,7 @@ module Baykit
           if @ended
             raise Sink.new("#{@tour} Request content is already ended")
           end
+          @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::RUNNING)
 
           if @bytes_limit >= 0 && @bytes_posted != @bytes_limit
             raise ProtocolException.new("Read data exceed content-length: #{@bytes_posted}/#{@bytes_limit}")

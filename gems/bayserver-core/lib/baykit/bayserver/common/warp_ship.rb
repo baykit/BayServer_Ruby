@@ -197,7 +197,7 @@ module Baykit
             end
 
             if must
-              raise Sink.new("%s warp tours not found: id=%d", self, warp_id)
+              raise Sink.new("%s warp tour not found: id=%d", self, warp_id)
             else
               nil
             end
@@ -212,7 +212,7 @@ module Baykit
               @tour_map.keys.each do |warp_id|
                 tur = get_tour(warp_id)
                 BayLog.debug("%s send error to owner: %s running=%s", self, tur, tur.running?)
-                if tur.running?
+                if tur.running? || tur.reading?
                   begin
                     tur.res.send_error(Tour::TOUR_ID_NOCHECK, status, msg)
                   rescue Exception => e

@@ -121,9 +121,6 @@ module Baykit
             if cmd.reuse
               return NextSocketAction::CONTINUE
             else
-              # Ensure the callback is not invoked when the connection is disconnected, and this instance becomes invalid.
-              tur.res.detach_consume_listener
-
               return NextSocketAction::CLOSE
             end
 

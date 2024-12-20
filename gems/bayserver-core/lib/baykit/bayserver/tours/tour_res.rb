@@ -162,10 +162,6 @@ module Baykit
           @available = true
         end
 
-        def detach_consume_listener
-          @res_consume_listener = nil
-        end
-
         def send_res_content(chk_tour_id, buf, ofs, len)
           @tour.check_tour_id(chk_tour_id)
           BayLog.debug("%s sendContent len=%d", @tour, len)
@@ -281,6 +277,9 @@ module Baykit
 
         def consumed(check_id, length)
           @tour.check_tour_id(check_id)
+          if @res_consume_listener == nil
+            raise Sink.new("Response consume listener is null")
+          end
 
           @bytes_consumed += length
 
@@ -297,12 +296,8 @@ module Baykit
             resume = true
           end
 
-          if !@tour.zombie?
-            if @res_consume_listener == nil
-              BayLog.debug("%s Consume listener is null, so can not invoke callback", self)
-            else
-              @res_consume_listener.call(length, resume)
-            end
+          if @tour.running?
+            @res_consume_listener.call(length, resume)
           end
         end
 

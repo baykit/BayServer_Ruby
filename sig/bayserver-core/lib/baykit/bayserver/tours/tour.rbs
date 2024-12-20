@@ -7,7 +7,7 @@ module Baykit
       class Tour
         TOUR_ID_NOCHECK: Integer
         INVALID_TOUR_ID: Integer
-        include BayServer
+        include Baykit::BayServer
         self.@oid_counter: Util::Counter
         self.@tour_id_counter: Util::Counter
         @obj_id: Integer
@@ -47,6 +47,7 @@ module Baykit
         class TourState
           UNINITIALIZED: Integer
           PREPARING: Integer
+          READING: Integer
           RUNNING: Integer
           ABORTED: Integer
           ENDED: Integer

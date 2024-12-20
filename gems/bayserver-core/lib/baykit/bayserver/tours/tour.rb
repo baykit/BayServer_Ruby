@@ -17,10 +17,11 @@ module Baykit
         class TourState
           UNINITIALIZED = 0
           PREPARING = 1
-          RUNNING = 2
-          ABORTED = 3
-          ENDED = 4
-          ZOMBIE = 5
+          READING = 2
+          RUNNING = 3
+          ABORTED = 4
+          ENDED = 5
+          ZOMBIE = 6
         end
 
         # class variables
@@ -65,7 +66,7 @@ module Baykit
         end
 
         def to_s()
-          return "#{@ship} tours##{@tour_id}/#{@obj_id}[key=#{@req.key}]"
+          return "#{@ship} tur##{@tour_id}/#{@obj_id}[key=#{@req.key}]"
         end
 
         ######################################################
@@ -110,7 +111,11 @@ module Baykit
         end
 
         def go
-          change_state(TOUR_ID_NOCHECK, TourState::RUNNING)
+          if(req.headers.content_length > 0)
+            change_state(TOUR_ID_NOCHECK, TourState::READING)
+          else
+            change_state(TOUR_ID_NOCHECK, TourState::RUNNING)
+          end
 
           city = @ship.port_docker.find_city(@req.req_host)
           if city == nil
@@ -131,12 +136,17 @@ module Baykit
         end
 
         def valid?()
-          return @state == TourState::PREPARING || @state == TourState::RUNNING
+          return @state == TourState::PREPARING || @state == TourState::READING || @state == TourState::RUNNING
         end
 
         def preparing?()
           return @state == TourState::PREPARING
         end
+
+        def reading?()
+          return @state == TourState::READING
+        end
+
 
         def running?()
           return @state == TourState::RUNNING
