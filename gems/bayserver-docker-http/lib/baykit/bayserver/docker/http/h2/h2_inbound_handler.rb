@@ -124,7 +124,7 @@ module Baykit
             end
 
             def send_end_tour(tur, keep_alive, &callback)
-              BayLog.debug("%s send_end_tour. keep=%s", self, keep_alive)
+              BayLog.debug("%s send_end_tour. tur=%s keep=%s", self, tur, keep_alive)
               cmd = CmdData.new(tur.req.key, nil, [], 0, 0)
               cmd.flags.set_end_stream(true)
               @protocol_handler.post(cmd, &callback)
