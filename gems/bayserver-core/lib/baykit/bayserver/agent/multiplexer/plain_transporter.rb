@@ -40,7 +40,7 @@ module Baykit
 
           end
 
-          def on_connect(rd)
+          def on_connected(rd)
             BayLog.trace("%s onConnect", self)
 
             return @ship.notify_connect

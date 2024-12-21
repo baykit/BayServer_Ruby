@@ -7,7 +7,7 @@ module Baykit
       module Multiplexer
         class Transporter
           def init: -> void
-          def on_connect: (Rudders::Rudder rd) -> void
+          def on_connected: (Rudders::Rudder rd) -> void
           def on_read: (Rudders::Rudder rd, String data, Integer len, Addrinfo adr) -> void
           def on_error: (Rudders::Rudder rd, Exception e) -> void
           def on_closed: (Rudders::Rudder rd) -> void

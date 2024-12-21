@@ -3,7 +3,7 @@ require 'objspace'
 
 require 'baykit/bayserver/sink'
 require 'baykit/bayserver/agent/command_receiver'
-require 'baykit/bayserver/agent/letter'
+require 'baykit/bayserver/agent/letters/package'
 require 'baykit/bayserver/agent/multiplexer/spider_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/spin_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/job_multiplexer'
@@ -28,6 +28,7 @@ module Baykit
         include Baykit::BayServer::Train
         include Baykit::BayServer::Taxi
         include Baykit::BayServer::Agent::Signal
+        include Baykit::BayServer::Agent::Letters
         include Baykit::BayServer::Agent::Multiplexer
         include Baykit::BayServer::Docker
         include Baykit::BayServer::Util
@@ -218,17 +219,19 @@ module Baykit
                   let = @letter_queue.shift
                 end
 
-                case let.type
-                when Letter::ACCEPTED
-                  on_accept(let)
-                when Letter::CONNECTED
-                  on_connect(let)
-                when Letter::READ
+                case let
+                when AcceptedLetter
+                  on_accepted(let)
+                when ConnectedLetter
+                  on_connected(let)
+                when ReadLetter
                   on_read(let)
-                when Letter::WROTE
+                when WroteLetter
                   on_wrote(let)
-                when Letter::CLOSEREQ
-                  on_close_req(let)
+                when ClosedLetter
+                  on_closed(let)
+                when ErrorLetter
+                  on_error(let)
                 end
               end
             end # while
@@ -287,23 +290,27 @@ module Baykit
           BayLog.info("ComRec=%s", @command_receiver)
         end
 
-        def send_accepted_letter(st, client_rd, e, wakeup)
-          send_letter(Letter.new(Letter::ACCEPTED, st, client_rd, -1, nil, e), wakeup)
+        def send_accepted_letter(st, client_rd, wakeup)
+          send_letter(AcceptedLetter.new(st, client_rd), wakeup)
         end
 
-        def send_connected_letter(st, e, wakeup)
-          send_letter(Letter.new(Letter::CONNECTED, st, nil, -1, nil, e), wakeup)
+        def send_connected_letter(st, wakeup)
+          send_letter(ConnectedLetter.new(st), wakeup)
         end
-        def send_read_letter(st, n, adr, e, wakeup)
-          send_letter(Letter.new(Letter::READ, st, nil, n, adr, e), wakeup)
-        end
-
-        def send_wrote_letter(st, n, e, wakeup)
-          send_letter(Letter.new(Letter::WROTE, st, nil, n, nil, e), wakeup)
+        def send_read_letter(st, n, adr, wakeup)
+          send_letter(ReadLetter.new(st, n, adr), wakeup)
         end
 
-        def send_close_req_letter(st, wakeup)
-          send_letter(Letter.new(Letter::CLOSEREQ, st, nil, -1, nil, nil), wakeup)
+        def send_wrote_letter(st, n, wakeup)
+          send_letter(WroteLetter.new(st, n), wakeup)
+        end
+
+        def send_closed_letter(st, wakeup)
+          send_letter(ClosedLetter.new(st), wakeup)
+        end
+
+        def send_error_letter(st, err, wakeup)
+          send_letter(ErrorLetter.new(st, err), wakeup)
         end
 
         def shutdown
@@ -403,28 +410,22 @@ module Baykit
           end
         end
 
-        def on_accept(let)
+        def on_accepted(let)
+          st = let.state
           begin
-            if let.err != nil
-              raise let.err
-            end
-
-            p = BayServer::anchorable_port_map[let.state.rudder]
+            p = BayServer::anchorable_port_map[st.rudder]
             p.on_connected(@agent_id, let.client_rudder)
-          rescue IOError, OpenSSL::SSL::SSLError => e
-            BayLog.error_e(e)
-            next_action(let.state, NextSocketAction::CLOSE, false)
           rescue HttpException => e
-            BayLog.error_e(e)
-            let.client_rudder.close
+            st.transporter.on_error(st.rudder, e)
+            next_action(st, NextSocketAction::CLOSE, false)
           end
 
           if !@net_multiplexer.is_busy
-            let.state.multiplexer.next_accept(let.state)
+            st.multiplexer.next_accept(st)
           end
         end
 
-        def on_connect(let)
+        def on_connected(let)
           st = let.state
           if st.closed
             BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder);
@@ -434,11 +435,7 @@ module Baykit
           BayLog.debug("%s connected rd=%s", self, st.rudder)
           next_act = nil
           begin
-            if let.err != nil
-              raise let.err
-            end
-
-            next_act = st.transporter.on_connect(st.rudder)
+            next_act = st.transporter.on_connected(st.rudder)
             BayLog.debug("%s nextAct=%s", self, next_act)
           rescue IOError => e
             st.transporter.on_error(st.rudder, e)
@@ -462,11 +459,6 @@ module Baykit
           end
 
           begin
-            if let.err != nil
-              BayLog.debug("%s error on OS read %s", self, let.err)
-              raise let.err
-            end
-
             BayLog.debug("%s read %d bytes (rd=%s)", self, let.n_bytes, st.rudder)
             st.bytes_read += let.n_bytes
 
@@ -477,7 +469,7 @@ module Baykit
               next_act = st.transporter.on_read(st.rudder, st.read_buf, let.address)
             end
 
-          rescue IOError, OpenSSL::SSL::SSLError => e
+          rescue IOError => e
             st.transporter.on_error(st.rudder, e)
             next_act = NextSocketAction::CLOSE
           end
@@ -492,55 +484,44 @@ module Baykit
             return
           end
 
-          begin
-            if let.err != nil
-              BayLog.debug("%s error on OS write %s", self, let.err)
-              raise let.err
-            end
+          BayLog.debug("%s wrote %d bytes rd=%s qlen=%d", self, let.n_bytes, st.rudder, st.write_queue.length)
+          st.bytes_wrote += let.n_bytes
 
-            BayLog.debug("%s wrote %d bytes rd=%s qlen=%d", self, let.n_bytes, st.rudder, st.write_queue.length)
-            st.bytes_wrote += let.n_bytes
+          if st.write_queue.empty?
+            raise Sink("%s Write queue is empty: rd=%s", self, st.rudder)
+          end
 
+          unit = st.write_queue[0]
+          if unit.buf.length > 0
+            BayLog.debug("Could not write enough data buf_len=%d", unit.buf.length)
+          else
+            st.multiplexer.consume_oldest_unit(st)
+          end
+
+          write_more = true
+
+          st.writing_lock.synchronize do
             if st.write_queue.empty?
-              raise Sink("%s Write queue is empty: rd=%s", self, st.rudder)
+              write_more = false
+              st.writing = false
             end
+          end
 
-            unit = st.write_queue[0]
-            if unit.buf.length > 0
-              BayLog.debug("Could not write enough data buf_len=%d", unit.buf.length)
+          if write_more
+            st.multiplexer.next_write(st)
+          else
+            if st.finale
+              # close
+              BayLog.debug("%s finale return Close", self)
+              next_action(st, NextSocketAction::CLOSE, false)
             else
-              st.multiplexer.consume_oldest_unit(st)
+              # Write off
+              st.multiplexer.cancel_write(st)
             end
-
-            write_more = true
-
-            st.writing_lock.synchronize do
-              if st.write_queue.empty?
-                write_more = false
-                st.writing = false
-              end
-            end
-
-            if write_more
-              st.multiplexer.next_write(st)
-            else
-              if st.finale
-                # close
-                BayLog.debug("%s finale return Close", self)
-                next_action(st, NextSocketAction::CLOSE, false)
-              else
-                # Write off
-                st.multiplexer.cancel_write(st)
-              end
-            end
-          rescue SystemCallError, IOError, OpenSSL::SSL::SSLError => e
-            BayLog.debug("%s IO error on wrote", self)
-            st.transporter.on_error(st.rudder, e)
-            next_action(st, NextSocketAction::CLOSE, false)
           end
         end
 
-        def on_close_req(let)
+        def on_closed(let)
           st = let.state
           BayLog.debug("%s onCloseReq rd=%s", self, st.rudder)
           if st.closed
@@ -548,8 +529,30 @@ module Baykit
             return
           end
 
-          st.multiplexer.close_rudder(st)
+          st.multiplexer.remove_rudder_state(st.rudder)
+
+          while st.multiplexer.consume_oldest_unit(st) do
+
+          end
+
+          if st.transporter != nil
+            st.transporter.on_closed(st.rudder)
+          end
+
+          st.closed = true
           st.access
+        end
+
+        def on_error(let)
+          begin
+            raise let.err
+          rescue SystemCallError, IOError, OpenSSL::SSL::SSLError, HttpException => e
+            BayLog.error_e(e)
+            next_action(let.state, NextSocketAction::CLOSE, false)
+          rescue => e
+            BayLog.fatal_e(e, "Cannot handle error")
+            raise e
+          end
         end
 
         def next_action(st, act, reading)
@@ -574,7 +577,7 @@ module Baykit
             if reading
               cancel = true
             end
-            st.multiplexer.close_rudder(st)
+            st.multiplexer.req_close(st.rudder)
 
           when NextSocketAction::SUSPEND
             if reading

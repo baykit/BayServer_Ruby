@@ -11,7 +11,7 @@ module Baykit
             raise NotImplementedError.new
           end
 
-          def on_connect(rd)
+          def on_connected(rd)
             raise NotImplementedError.new
           end
 

@@ -45,7 +45,7 @@ module Baykit
                 begin
                   client_skt, adr = rd.io.accept
                 rescue Exception => e
-                  @agent.send_accepted_letter(st, nil, e, true)
+                  @agent.send_error_letter(st, e, true)
                   next
                 end
 
@@ -54,7 +54,7 @@ module Baykit
                   BayLog.error("%s Agent is not alive (close)", @agent);
                   client_skt.close
                 else
-                  @agent.send_accepted_letter(st, IORudder.new(client_skt), nil, true)
+                  @agent.send_accepted_letter(st, IORudder.new(client_skt), true)
                 end
 
               rescue Exception => e
@@ -74,9 +74,9 @@ module Baykit
               begin
                 rd.io.connect(adr)
                 BayLog.debug("%s Connected rd=%s", @agent, rd)
-                @agent.send_connected_letter(st, nil, false)
+                @agent.send_connected_letter(st, false)
               rescue Exception => e
-                @agent.send_connected_letter(st, e, false)
+                @agent.send_error_letter(st, e, false)
                 return
               end
             end
@@ -111,7 +111,7 @@ module Baykit
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 
             if st == nil || st.closed
-              BayLog.warn("%s Channel is closed: %s", @agent, rd)
+              BayLog.warn("%s Channel is closed(callback immediately): %s", @agent, rd)
               lis.call()
               return
             end
@@ -154,6 +154,7 @@ module Baykit
                 end
 
                 close_rudder(st)
+                @agent.send_closed_letter(st, true)
               rescue Exception => e
                 BayLog.fatal_e(e)
                 @agent.shutdown
@@ -209,10 +210,10 @@ module Baykit
                   st.read_buf.clear
                 end
 
-                @agent.send_read_letter(st, n, nil, nil, true)
+                @agent.send_read_letter(st, n, nil, true)
 
               rescue Exception => e
-                @agent.send_read_letter(st, -1, nil, e, true)
+                @agent.send_error_letter(st, e, true)
               end
             end
           end
@@ -236,11 +237,11 @@ module Baykit
                   u.buf.slice!(0, n)
                 end
               rescue Exception => e
-                @agent.send_wrote_letter(st, -1, e, true)
+                @agent.send_error_letter(st, e, true)
                 next
               end
 
-              @agent.send_wrote_letter(st, n, nil, true)
+              @agent.send_wrote_letter(st, n, true)
             end
           end
 

@@ -409,7 +409,7 @@ module Baykit
               end
               # Cannot handle Exception any more
               BayLog.error_e(e)
-              next_action = NextSocketAction::CLOSE
+              @agent.send_error_letter(st, e, false)
             end
 
             st.access()
@@ -430,7 +430,7 @@ module Baykit
             client_rd.set_non_blocking
             #client_skt.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
 
-            @agent.send_accepted_letter(st, client_rd, nil, false)
+            @agent.send_accepted_letter(st, client_rd, false)
 
           end
 
@@ -443,11 +443,11 @@ module Baykit
               st.rudder.io.syswrite(buf)
             rescue => e
               BayLog.error("Connect failed: %s", e)
-              @agent.send_connected_letter(st, e, false)
+              @agent.send_error_letter(st, e, false)
               return
             end
 
-            @agent.send_connected_letter(st, nil, false)
+            @agent.send_connected_letter(st, false)
           end
 
           def on_readable(st)
@@ -478,7 +478,7 @@ module Baykit
                   return NextSocketAction::CONTINUE
                 rescue IO::WaitWritable => e
                   BayLog.debug("%s Handshake status: write more st=%s", self, st)
-                  req_write(st.rudder, "", nil, nil, nil)
+                  req_write(st.rudder, "", nil, nil)
                   return NextSocketAction::CONTINUE
                 end
               end
@@ -498,11 +498,11 @@ module Baykit
               end
 
               BayLog.debug("%s read %d bytes", self, len)
-              @agent.send_read_letter(st, len, nil, nil, false)
+              @agent.send_read_letter(st, len, nil, false)
 
             rescue Exception => e
               BayLog.debug_e(e, "%s Unhandled error", self)
-              @agent.send_read_letter(st, -1, nil, e, false)
+              @agent.send_error_letter(st, e, false)
               return
             end
           end
@@ -522,17 +522,18 @@ module Baykit
               n = st.rudder.write(wunit.buf)
               #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
               wunit.buf.slice!(0, n)
-              @agent.send_wrote_letter(st, n, nil, false)
+              @agent.send_wrote_letter(st, n, false)
 
             rescue SystemCallError, IOError => e
               BayLog.debug_e(e, "%s IO error", self)
-              @agent.send_wrote_letter(st, -1, e, false)
+              @agent.send_error_letter(st, e, false)
             end
           end
 
           def on_close_req(st)
             BayLog.debug("%s onCloseReq: rd=%s", self, st.rudder)
-            @agent.send_close_req_letter(st, false)
+            st.multiplexer.close_rudder(st)
+            @agent.send_closed_letter(st, false)
           end
 
           def on_waked_up

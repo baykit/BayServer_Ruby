@@ -17,7 +17,7 @@ module Baykit
           def initialize: (Common::Multiplexer mpx, Ships::Ship sip, bool server_mode, Integer bufsiz, bool trace_ssl) -> void
           def to_s: -> String
           def init: -> void
-          def on_connect: (Rudders::Rudder rd) -> Integer
+          def on_connected: (Rudders::Rudder rd) -> Integer
           def on_read: (Rudders::Rudder rd, String buf, Integer len, Addrinfo adr) -> Integer
           def on_error: (Rudders::Rudder rd, Exception e) -> void
           def on_closed: (Rudders::Rudder rd) -> void

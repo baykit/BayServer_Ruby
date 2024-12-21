@@ -6,12 +6,15 @@ module Baykit
     module Common
       module Multiplexer
         def add_rudder_state: (Rudders::Rudder rd, Agent::Multiplexer::RudderState st) -> void
+        def remove_rudder_state: (Rudders::Rudder rd) -> nil
         def get_rudder_state: (Rudders::Rudder rd) -> Agent::Multiplexer::RudderState
         def get_transporter: (Rudders::Rudder rd) -> Agent::Multiplexer::Transporter
+
+
         def req_accept: (Rudders::Rudder rd) -> void
         def req_connect: (Rudders::Rudder rd, untyped adr) -> void
         def req_read: (Rudders::Rudder rd) -> void
-        def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag, untyped lis) -> void
+        def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) { () -> void } -> void
         def req_end: (Rudders::Rudder rd) -> void
         def req_close: (Rudders::Rudder rd) -> void
         def cancel_read: (untyped st) -> void

@@ -78,12 +78,11 @@ module Baykit
                   end
                 end
 
-                @agent.send_read_letter(@state, @state.read_buf.length, nil, nil, false)
+                @agent.send_read_letter(@state, @state.read_buf.length, nil, false)
                 return false
 
               rescue Exception => e
-                BayLog.error_e(e, "%s Error", @agent)
-                @agent.send_close_req_letter(@state, false)
+                @agent.send_error_letter(@state, e, false)
                 return false
               end
             end
@@ -175,7 +174,8 @@ module Baykit
           def req_close(rd)
             st = get_rudder_state(rd)
             st.closing = true
-            @agent.send_close_req_letter(st, false)
+            close_rudder(st)
+            @agent.send_closed_letter(st, false)
           end
 
 

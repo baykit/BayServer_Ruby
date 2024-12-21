@@ -9,6 +9,10 @@ module Baykit
           raise NotImplementedError.new
         end
 
+        def remove_rudder_state(rd)
+          raise NotImplementedError.new
+        end
+
         def get_rudder_state(rd)
           raise NotImplementedError.new
         end
@@ -29,7 +33,7 @@ module Baykit
           raise NotImplementedError.new
         end
 
-        def req_write(rd, buf, adr, tag, lis)
+        def req_write(rd, buf, adr, tag, &lis)
           raise NotImplementedError.new
         end
 

@@ -36,6 +36,13 @@ module Baykit
             st.access()
           end
 
+          def remove_rudder_state(rd)
+            @rudders_lock.synchronize do
+              @rudders.delete(rd.key())
+            end
+            @channel_count -= 1
+          end
+
           def get_rudder_state(rd)
             return find_rudder_state_by_key(rd.key)
           end
@@ -59,28 +66,12 @@ module Baykit
           def close_rudder(st)
             BayLog.debug("%s closeRd %s state=%s closed=%s", agent, st.rudder, st, st.closed)
 
-            @lock.synchronize do
-              if st.closed
-                return
-              end
-              st.closed = true
-            end
-
-            remove_rudder_state(st.rudder)
-
             begin
               st.rudder.close()
             rescue IOError => e
               Baylog.error_e(e)
             end
 
-            while consume_oldest_unit(st) do
-
-            end
-
-            if st.transporter != nil
-              st.transporter.on_closed(st.rudder)
-            end
           end
 
           def is_busy()
@@ -96,13 +87,6 @@ module Baykit
             @rudders_lock.synchronize do
               return @rudders[key]
             end
-          end
-
-          def remove_rudder_state(rd)
-            @rudders_lock.synchronize do
-              @rudders.delete(rd.key())
-            end
-            @channel_count -= 1
           end
 
           def close_timeout_sockets

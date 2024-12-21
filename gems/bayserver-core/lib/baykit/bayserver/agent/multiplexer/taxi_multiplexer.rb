@@ -117,6 +117,7 @@ module Baykit
             st = get_rudder_state(rd)
             BayLog.debug("%s reqClose st=%s", @agent, st);
             close_rudder(st)
+            @agent.send_closed_letter(st, false)
             st.access
           end
 
@@ -161,10 +162,10 @@ module Baykit
               if len <= 0
                 len = 0
               end
-              @agent.send_read_letter(st, len, nil, nil, true)
+              @agent.send_read_letter(st, len, nil, true)
 
             rescue Exception => e
-              @agent.send_read_letter(st, -1, nil, e, true)
+              @agent.send_error_letter(st, e, true)
             end
           end
 
@@ -182,10 +183,10 @@ module Baykit
                 len = st.rudder.write(u.buf)
                 u.buf.slice!(0, len)
               end
-              @agent.send_wrote_letter(st, len, nil, true)
+              @agent.send_wrote_letter(st, len, true)
 
             rescue Exception => e
-              @agent.send_wrote_letter(st, -1, e, true)
+              @agent.send_error_letter(st, e, true)
             end
           end
         end
