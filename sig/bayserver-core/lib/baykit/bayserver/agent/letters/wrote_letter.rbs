@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Letters
+        class WroteLetter
+          @n_bytes: Integer
+
+          def initialize: (Multiplexer::RudderState st, Integer n) -> void
+        end
+      end
+    end
+  end
+end

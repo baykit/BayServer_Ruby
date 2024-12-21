@@ -1,0 +1,14 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Letters
+        class ConnectedLetter
+          def initialize: (Multiplexer::RudderState st) -> void
+        end
+      end
+    end
+  end
+end

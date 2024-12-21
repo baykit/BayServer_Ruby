@@ -1,0 +1,17 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Letters
+        class ReadLetter
+          @n_bytes: Integer
+          @address: String
+
+          def initialize: (Multiplexer::RudderState st, Integer n, ?String adr) -> void
+        end
+      end
+    end
+  end
+end

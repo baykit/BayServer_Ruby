@@ -1,0 +1,16 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Letters
+        class AcceptedLetter
+          @client_rudder: Rudders::Rudder
+
+          def initialize: (Multiplexer::RudderState st, Rudders::Rudder client_rd) -> void
+        end
+      end
+    end
+  end
+end
