@@ -117,7 +117,7 @@ module Baykit
               end_res_header(tur)
             end
 
-            end_res_content(tur)
+            end_res_content(tur, cmd.reuse)
             if cmd.reuse
               return NextSocketAction::CONTINUE
             else
@@ -206,8 +206,8 @@ module Baykit
             change_state(STATE_READ_CONTENT)
           end
 
-          def end_res_content(tur)
-            ship.end_warp_tour(tur)
+          def end_res_content(tur, keep)
+            ship.end_warp_tour(tur, keep)
             tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
             reset_state()
           end

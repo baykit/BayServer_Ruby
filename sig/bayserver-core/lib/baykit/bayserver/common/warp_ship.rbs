@@ -28,7 +28,7 @@ module Baykit
         def check_timeout: (Integer duration_sec) -> bool
         def warp_handler: -> WarpHandler
         def start_warp_tour: (Tours::Tour tur) -> void
-        def end_warp_tour: (Tours::Tour tur) -> void
+        def end_warp_tour: (Tours::Tour tur, bool keep) -> void
         def notify_service_unavailable: (String msg) -> void
         def get_tour: (Integer warp_id, ?bool must) -> Tours::Tour
         def notify_error_to_owner_tour: (Integer status, String msg) -> void

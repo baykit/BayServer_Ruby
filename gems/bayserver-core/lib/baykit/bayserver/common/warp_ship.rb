@@ -170,7 +170,7 @@ module Baykit
             end
           end
 
-          def end_warp_tour(tur)
+          def end_warp_tour(tur, keep)
             wdat = WarpData.get(tur)
             BayLog.debug("%s end warp tour: started=%s ended=%s", tur, wdat.started, wdat.ended)
 
@@ -179,7 +179,11 @@ module Baykit
             else
               @tour_map.delete wdat.warp_id
             end
-            @docker.keep(self)
+
+            if keep
+              BayLog.debug("%s keep warp ship", self)
+              @docker.keep(self)
+            end
           end
 
           def notify_service_unavailable(msg)

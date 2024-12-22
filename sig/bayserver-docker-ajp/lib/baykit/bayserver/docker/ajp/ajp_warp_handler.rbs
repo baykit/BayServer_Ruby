@@ -35,7 +35,7 @@ module Baykit
 
           private
           def end_res_header: (Tours::Tour tur) -> void
-          def end_res_content: (Tours::Tour tur) -> void
+          def end_res_content: (Tours::Tour tur, bool keep) -> void
           def change_state: (Integer new_state) -> void
           def reset_state: -> void
           def send_forward_request: (Tours::Tour tur) -> void

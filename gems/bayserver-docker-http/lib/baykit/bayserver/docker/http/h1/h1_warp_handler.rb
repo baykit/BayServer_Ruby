@@ -234,7 +234,7 @@ module Baykit
             end
 
             def end_res_content(tur)
-              ship.end_warp_tour(tur)
+              ship.end_warp_tour(tur, true)
               tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
               reset_state
               ship.keeping = true

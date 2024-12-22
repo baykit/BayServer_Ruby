@@ -218,7 +218,7 @@ module Baykit
           end
 
           def read_content(tur)
-            tur.res.send_content(Tour::TOUR_ID_NOCHECK, @data, @pos, @last - @pos)
+            tur.res.send_res_content(Tour::TOUR_ID_NOCHECK, @data, @pos, @last - @pos)
           end
 
           def parse_header(headers)
@@ -266,7 +266,7 @@ module Baykit
           end
 
           def end_req_content(tur)
-            ship.end_warp_tour(tur)
+            ship.end_warp_tour(tur, true)
             tur.res.end_res_content(Tour::TOUR_ID_NOCHECK)
             reset_state()
           end
