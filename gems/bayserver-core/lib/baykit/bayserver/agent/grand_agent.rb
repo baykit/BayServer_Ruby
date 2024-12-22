@@ -523,7 +523,7 @@ module Baykit
 
         def on_closed(let)
           st = let.state
-          BayLog.debug("%s onCloseReq rd=%s", self, st.rudder)
+          BayLog.debug("%s on closed rd=%s", self, st.rudder)
           if st.closed
             BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder)
             return

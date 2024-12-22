@@ -306,7 +306,7 @@ module Baykit
 
                   elsif rd_op.to_close
                     if st == nil
-                      BayLog.warn("%s chState=%s register close but ChannelState", self.agent);
+                      BayLog.warn("%s chState=%s register close but ChannelState is null", self.agent);
                     else
                       st.closing = true
                     end
