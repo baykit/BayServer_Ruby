@@ -8,6 +8,7 @@ module Baykit
       class TourReq
         include Baykit::BayServer::Util::Reusable # implements
 
+        include Baykit::BayServer
         include Baykit::BayServer::Protocol
         include Baykit::BayServer::Util
 
@@ -123,18 +124,18 @@ module Baykit
           @tour.check_tour_id(check_id)
 
           data_passed = false
-          if !@tour.running?
-            BayLog.debug("%s tour is not running.", @tour)
+          if  @tour.error != nil
+            # If has error, only read content. (Do not call content handler)
+            BayLog.debug("%s tour has error.", @tour)
+
+          elsif !@tour.reading?
+            raise HttpException.new(HttpStatus.BAD_REQUEST, "%s tour is not reading.", @tour)
 
           elsif @content_handler == nil
             BayLog.warn("%s content read, but no content handler", tour)
 
           elsif @bytes_posted + len > @bytes_limit
             raise ProtocolException.new("Read data exceed content-length: %d/%d", @bytes_posted + len, @bytes_limit)
-
-          elsif  @tour.error != nil
-            # If has error, only read content. (Do not call content handler)
-            BayLog.debug("%s tour has error.", @tour)
 
           else
             @content_handler.on_read_req_content(@tour, data, start, len, &callback)
