@@ -42,6 +42,7 @@ module Baykit
 
           def on_connected(rd)
             BayLog.trace("%s onConnect", self)
+            check_rudder rd
 
             return @ship.notify_connect
             ;
@@ -49,6 +50,7 @@ module Baykit
 
           def on_read(rd, buf, adr)
             BayLog.debug("%s onRead", self)
+            check_rudder rd
 
             if buf.length == 0
               return @ship.notify_eof
@@ -78,31 +80,38 @@ module Baykit
           end
 
           def on_error(rd, e)
+            check_rudder rd
             @ship.notify_error(e)
           end
 
           def on_closed(rd)
+            check_rudder rd
             @ship.notify_close
           end
 
           def req_connect(rd, adr)
+            check_rudder rd
             @multiplexer.req_connect(rd, adr)
           end
 
           def req_read(rd)
+            check_rudder rd
             @multiplexer.req_read(rd)
           end
 
           def req_write(rd, buf, adr, tag, &lis)
+            check_rudder rd
             @multiplexer.req_write(rd, buf, adr, tag, &lis)
           end
 
           def req_close(rd)
+            check_rudder rd
             @closed = true
             @multiplexer.req_close(rd)
           end
 
           def check_timeout(rd, duration_sec)
+            check_rudder rd
             return @ship.check_timeout(duration_sec)
           end
 
@@ -119,6 +128,13 @@ module Baykit
           #########################################
           def secure()
             return false
+          end
+
+          private
+          def check_rudder(rd)
+            if rd != @ship.rudder
+              raise Sink.new("Invalid rudder: %s", rd)
+            end
           end
         end
       end
