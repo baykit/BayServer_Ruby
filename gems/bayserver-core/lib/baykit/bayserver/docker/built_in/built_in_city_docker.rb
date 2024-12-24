@@ -155,7 +155,7 @@ module Baykit
             @log_list.each do |dkr|
               begin
                 dkr.log(tur)
-              rescue => e
+              rescue IOError => e
                 BayLog.error_e(e)
               end
             end

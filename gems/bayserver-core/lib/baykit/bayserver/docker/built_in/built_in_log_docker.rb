@@ -95,10 +95,6 @@ module Baykit
             attr :file_prefix
             attr :file_ext
 
-            # Logger for each agent.
-            #    Map of Agent ID => LogBoat
-            attr :loggers
-
             # Log format
             attr :format
 
@@ -111,7 +107,6 @@ module Baykit
             attr :multiplexers
 
             def initialize
-              @loggers = {}
               @format = nil
               @log_items = []
               @rudders = {}
@@ -136,8 +131,6 @@ module Baykit
               if !File.absolute_path?(@file_prefix)
                 @file_prefix = BayServer.get_location @file_prefix
               end
-
-              @loggers = Array.new(BayServer.harbor.grand_agents)
 
               log_dir = File.dirname(@file_prefix)
               if !File.directory?(log_dir)
@@ -178,8 +171,7 @@ module Baykit
                   @rudders[tour.ship.agent_id],
                   sb,
                   nil,
-                  "log",
-                  nil
+                  "log"
                 )
               end
             end
