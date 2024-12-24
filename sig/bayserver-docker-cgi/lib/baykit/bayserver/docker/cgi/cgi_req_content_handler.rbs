@@ -19,10 +19,11 @@ module Baykit
           @std_out_rd: Rudders::Rudder
           @std_err_rd: Rudders::Rudder
           @env: Hash[String, String]
+          @buffers: [[]]
 
           attr_accessor multiplexer: Common::Multiplexer
           def initialize: (CgiDocker cgi_docker, Tours::Tour tur, Hash[String, String] env) -> void
-          def on_read_req_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
+          def on_read_req_content: (Tours::Tour tur, String buf, Integer start, Integer len) { () -> void } -> void
           def on_end_req_content: (Tours::Tour tur) -> void
           def on_abort_req: (Tours::Tour tur) -> bool
           def req_start_tour: -> void
@@ -30,8 +31,10 @@ module Baykit
           def std_err_closed: -> bool
           def access: -> void
           def timed_out: -> bool
+          def write_to_std_in: (Tours::Tour tur, String buf, Integer start, Integer len) { () -> void }-> void
           def process_finished: -> void
           def run: -> void
+
         end
       end
     end

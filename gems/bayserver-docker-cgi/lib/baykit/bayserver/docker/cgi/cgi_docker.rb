@@ -164,11 +164,11 @@ module Baykit
           end
 
           def sub_process_count
-            return @process_count -= 1
+            @process_count -= 1
           end
 
           def sub_wait_count
-            return @wait_count -= 1
+            @wait_count -= 1
           end
         end
       end

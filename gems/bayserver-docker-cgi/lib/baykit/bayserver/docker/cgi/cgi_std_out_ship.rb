@@ -57,7 +57,7 @@ module Baykit
 
           def notify_read(buf)
             @file_wrote_len += buf.length
-            BayLog.trace("%s read file %d bytes: total=%d", self, buf.length, @file_wrote_len)
+            BayLog.debug("%s on read (len=%d total=%d)", self, buf.length, @file_wrote_len)
 
             pos = 0
             if @header_reading
@@ -132,25 +132,25 @@ module Baykit
           end
 
           def notify_error(e)
-            BayLog.debug_e(e, "%s CGI notifyError", self)
+            BayLog.debug_e(e, "%s CGI notifyError tur=%s", self, @tour)
           end
 
           def notify_eof()
-            BayLog.debug("%s stdout EOF(^o^)", @tour)
+            BayLog.debug("%s stdout EOF(^o^) tur=%s", self, @tour)
             return NextSocketAction::CLOSE
           end
 
           def notify_close()
-            BayLog.debug("%s stdout notifyClose", @tour)
+            BayLog.debug("%s stdout notifyClose tur=%s", self, @tour)
             @handler.std_out_closed()
           end
 
           def check_timeout(duration_sec)
-            BayLog.debug("%s Check StdOut timeout: dur=%d", @tour, duration_sec)
+            BayLog.debug("%s Check StdOut timeout: tur=%s dur=%d", self, @tour, duration_sec)
 
             if @handler.timed_out()
               # Kill cgi process instead of handing timeout
-              BayLog.warn("%s Kill process!: %d", @tour, @handler.pid)
+              BayLog.warn("%s Process timed out! Kill process!: tur=%s pid=%d", self, @tour, @handler.pid)
               Process.kill("KILL", @handler.pid)
               return true
             end

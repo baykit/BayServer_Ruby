@@ -38,14 +38,20 @@ module Baykit
           attr :last_access
           attr_accessor :multiplexer
           attr :env
+          attr :buffers
 
           def initialize(cgi_docker, tur, env)
             @cgi_docker = cgi_docker
             @tour = tur
             @tour_id = tur.tour_id
             @env = env
+            @pid = 0
+            @std_in_rd = nil
+            @std_out_rd = nil
+            @std_err_rd = nil
             @std_out_closed = true
             @std_err_closed = true
+            @buffers = []
           end
 
           ######################################################
@@ -64,9 +70,12 @@ module Baykit
           def on_read_req_content(tur, buf, start, len, &callback)
             BayLog.debug("%s CGI:onReadReqContent: len=%d", tur, len)
 
-            wrote_len = @std_in_rd.write(buf[start, len])
-            BayLog.debug("%s CGI:onReadReqContent: wrote=%d", tur, wrote_len)
-            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len, &callback)
+            if @pid != 0
+              write_to_std_in(tur, buf, start, len, &callback)
+            else
+              # postponed
+              @buffers << [buf[start, len].dup, callback]
+            end
             access()
           end
 
@@ -134,6 +143,11 @@ module Baykit
             @std_out_rd = IORudder.new(std_out[0])
             @std_err_rd = IORudder.new(std_err[0])
             BayLog.debug("#{@tour} PID: #{pid}")
+
+            @buffers.each do |pair|
+              BayLog.debug("%s write postponed data: len=%d", @tour, pair[0].length)
+              write_to_std_in(@tour, pair[0], 0, pair[0].length, &pair[1])
+            end
 
             @std_out_closed = false
             @std_err_closed = false
@@ -231,6 +245,12 @@ module Baykit
             duration_sec = Time.now.tv_sec - @last_access
             BayLog.debug("%s Check CGI timeout: dur=%d, timeout=%d", @tour, duration_sec, @cgi_docker.timeout_sec)
             return duration_sec > @cgi_docker.timeout_sec
+          end
+
+          def write_to_std_in(tur, buf, start, len, &callback)
+            wrote_len = @std_in_rd.write(buf[start, len])
+            BayLog.debug("%s CGI:onReadReqContent: wrote=%d", tur, wrote_len)
+            tur.req.consumed(Tour::TOUR_ID_NOCHECK, len, &callback)
           end
 
           def process_finished()

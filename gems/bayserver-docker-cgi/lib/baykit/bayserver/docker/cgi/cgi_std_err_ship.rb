@@ -57,17 +57,17 @@ module Baykit
           end
 
           def notify_eof()
-            BayLog.debug("agt#%d CGI stderr EOF\\(^o^)/", @agent_id)
+            BayLog.debug("%s CGI stderr EOF\\(^o^)/ tur=%s", self, @tour)
             return NextSocketAction::CLOSE
           end
 
           def notify_close()
-            BayLog.debug("agt#%d CGI stderr notifyClose", @agent_id)
+            BayLog.debug("%s CGI stderr notifyClose tur=%s", self, @tour)
             @handler.std_err_closed()
           end
 
           def check_timeout(duration_sec)
-            BayLog.debug("%s stderr Check timeout: dur=%d", @tour, duration_sec)
+            BayLog.debug("%s stderr Check timeout: tur=%s dur=%d", self, @tour, duration_sec)
             return @handler.timed_out()
           end
 
