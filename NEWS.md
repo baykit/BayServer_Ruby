@@ -1,5 +1,12 @@
 # BayServer for Ruby
 
+# 3.0.3
+
+- Fixes an issue where input data was not processed correctly when the execution of POST requests was postponed.
+- Fixes an issue where a new GrandAgent was not started when the previous GrandAgent terminated abnormally.
+- Fixes other minor issues.
+- Performs some refactoring.
+
 # 3.0.2
 
 - Fixes minor bugs of AJP Docker.
