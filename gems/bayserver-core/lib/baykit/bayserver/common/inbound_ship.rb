@@ -166,51 +166,11 @@ module Baykit
           def send_headers(check_id, tur)
             check_ship_id(check_id)
 
-            if tur.zombie? || tur.aborted?
-              # Don't send peer any data
-              BayLog.debug("%s zombie tur", tur)
-              return
+            @port_docker.additional_headers.each do |nv|
+              tur.res.headers.add(nv[0], nv[1])
             end
-
-            handled = false
-            if !tur.error_handling && tur.res.headers.status >= 400
-              trouble = BayServer.harbor.trouble
-              if trouble != nil
-                cmd = trouble.find(tur.res.headers.status)
-                if cmd != nil
-                  err_tour = get_error_tour
-                  err_tour.req.uri = cmd.target
-                  tur.req.headers.copy_to(err_tour.req.headers)
-                  tur.res.headers.copy_to(err_tour.res.headers)
-                  err_tour.req.remote_port = tur.req.remote_port
-                  err_tour.req.remote_address = tur.req.remote_address
-                  err_tour.req.server_address = tur.req.server_address
-                  err_tour.req.server_port = tur.req.server_port
-                  err_tour.req.server_name = tur.req.server_name
-                  err_tour.res.header_sent = tur.res.header_sent
-                  tur.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ZOMBIE)
-                  case cmd.method
-                  when :GUIDE
-                    err_tour.go
-                  when :TEXT
-                    @protocol_handler.send_headers(err_tour)
-                    data = cmd.target
-                    err_tour.res.send_content(Tour::TOUR_ID_NOCHECK, data, 0, data.length)
-                    err_tour.end_content(Tour::TOUR_ID_NOCHECK)
-                  when :REROUTE
-                    err_tour.res.send_http_exception(Tour::TOUR_ID_NOCHECK, HttpException.moved_temp(cmd.target))
-                  end
-                  handled = true
-                end
-              end
-            end
-            if !handled
-              @port_docker.additional_headers.each do |nv|
-                tur.res.headers.add(nv[0], nv[1])
-              end
-              BayLog.debug("%s send_res_headers", tur)
-              tour_handler.send_res_headers(tur)
-            end
+            BayLog.debug("%s send_res_headers", tur)
+            tour_handler.send_res_headers(tur)
           end
 
           def send_redirect(check_id, tur, status, location)

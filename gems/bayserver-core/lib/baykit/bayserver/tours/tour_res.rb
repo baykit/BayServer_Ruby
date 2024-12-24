@@ -124,7 +124,42 @@ module Baykit
           end
 
           begin
-            @tour.ship.send_headers(@tour.ship_id, @tour)
+            handled = false
+            if !@tour.error_handling && @tour.res.headers.status >= 400
+              trouble = BayServer.harbor.trouble
+              if trouble != nil
+                cmd = trouble.find(tur.res.headers.status)
+                if cmd != nil
+                  err_tour = get_error_tour
+                  err_tour.req.uri = cmd.target
+                  @tour.req.headers.copy_to(err_tour.req.headers)
+                  @tour.res.headers.copy_to(err_tour.res.headers)
+                  err_tour.req.remote_port = @tour.req.remote_port
+                  err_tour.req.remote_address = @tour.req.remote_address
+                  err_tour.req.server_address = @tour.req.server_address
+                  err_tour.req.server_port = @tour.req.server_port
+                  err_tour.req.server_name = @tour.req.server_name
+                  err_tour.res.header_sent = @tour.res.header_sent
+                  @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ZOMBIE)
+                  case cmd.method
+                  when :GUIDE
+                    err_tour.go
+                  when :TEXT
+                    @protocol_handler.send_headers(err_tour)
+                    data = cmd.target
+                    err_tour.res.send_res_content(Tour::TOUR_ID_NOCHECK, data, 0, data.length)
+                    err_tour.end_res_content(Tour::TOUR_ID_NOCHECK)
+                  when :REROUTE
+                    err_tour.res.send_http_exception(Tour::TOUR_ID_NOCHECK, HttpException.moved_temp(cmd.target))
+                  end
+                  handled = true
+                end
+              end
+            end
+
+            if !handled
+              @tour.ship.send_headers(@tour.ship_id, @tour)
+            end
           rescue IOError => e
             BayLog.debug_e(e, "%s abort: %s", @tour, e)
             @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
