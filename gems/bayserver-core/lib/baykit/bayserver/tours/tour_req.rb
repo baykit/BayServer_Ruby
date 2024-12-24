@@ -143,7 +143,7 @@ module Baykit
           end
 
           @bytes_posted += len
-          BayLog.debug("%s read content: len=%d posted=%d limit=%d consumed=%d",
+          BayLog.debug("%s post req content: len=%d posted=%d limit=%d consumed=%d",
                        @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
 
           if !data_passed
