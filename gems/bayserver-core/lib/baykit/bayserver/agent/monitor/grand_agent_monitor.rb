@@ -67,10 +67,12 @@ module Baykit
 
               end
             rescue EOFError, IOError => e
-              BayLog.fatal("Agent terminated")
+              BayLog.fatal("%s Agent terminated", self)
             rescue Exception => e
               BayLog.fatal_e(e)
             end
+
+            GrandAgentMonitor.agent_aborted @agent_id, @child_pid, @anchorable
           end
 
           def on_readable()
@@ -122,33 +124,6 @@ module Baykit
           end
           def req_catch_up()
 
-          end
-
-          def agent_aborted()
-            BayLog.info(BayMessage.get(:MSG_GRAND_AGENT_SHUTDOWN, @agent_id))
-
-            if @child_pid != nil
-              begin
-                Process.kill("TERM", @child_pid)
-              rescue => e
-                BayLog.debug_e(e, "Error on killing process")
-              end
-              Process.wait(@child_pid)
-            end
-            GrandAgentMonitor.monitors.delete(@agent_id)
-
-            if not GrandAgentMonitor.finale
-              if GrandAgentMonitor.monitors.length < GrandAgentMonitor.num_agents
-                begin
-                  if !BayServer.harbor.multi_core
-                    GrandAgent.add(-1, @anchorable)
-                  end
-                  GrandAgentMonitor.add(@anchorable)
-                rescue => e
-                  BayLog.error_e(e)
-                end
-              end
-            end
           end
 
           def start
@@ -241,11 +216,38 @@ module Baykit
 
           end
 
+          def self.agent_aborted(agt_id, pid, anchorable)
+            BayLog.info(BayMessage.get(:MSG_GRAND_AGENT_SHUTDOWN, agt_id))
+
+            if pid != nil
+              begin
+                Process.kill("TERM", pid)
+              rescue => e
+                BayLog.debug_e(e, "Error on killing process")
+              end
+              Process.wait(pid)
+            end
+            @monitors.delete(agt_id)
+
+            if not @finale
+              if @monitors.length < @num_agents
+                begin
+                  if !BayServer.harbor.multi_core
+                    GrandAgent.add(-1, @anchorable)
+                  end
+                  self.add(@anchorable)
+                rescue => e
+                  BayLog.error_e(e)
+                end
+              end
+            end
+          end
+
           def self.join
             while !@monitors.empty?
               @monitors.values.each do |mon|
                 mon.child_thread.join
-                mon.agent_aborted
+                sleep 5
               end
             end
           end

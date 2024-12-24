@@ -237,7 +237,7 @@ module Baykit
             end # while
 
           rescue Exception => e
-            BayLog.fatal_e(e)
+            BayLog.fatal_e(e, "Uncaught Error: %s", e)
           ensure
             BayLog.info("%s end", self)
             shutdown
