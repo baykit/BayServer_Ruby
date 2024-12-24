@@ -35,7 +35,7 @@ module Baykit
           def next_write: (RudderState st) -> void
 
           private
-          def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect, ?bool to_close) -> void
+          def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect, ?bool ) -> void
           def register_channel_ops: -> Integer
           def handle_channel: (IO ch, Integer op) -> void
           def on_acceptable: (RudderState st) -> void
@@ -51,8 +51,7 @@ module Baykit
 
             attr_accessor op: Integer
             attr_accessor to_connect: bool
-            attr_accessor to_close: bool
-            def initialize: (Rudders::Rudder rd, Integer op, bool to_connect, bool to_close) -> void
+            def initialize: (Rudders::Rudder rd, Integer op, bool to_connect) -> void
           end
         end
       end

@@ -112,7 +112,7 @@ module Baykit
             end
 
             close_list.each do |st|
-              close_rudder(st)
+              req_close(st.rudder)
             end
           end
 

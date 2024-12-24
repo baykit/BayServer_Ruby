@@ -173,7 +173,6 @@ module Baykit
 
           def req_close(rd)
             st = get_rudder_state(rd)
-            st.closing = true
             close_rudder(st)
             @agent.send_closed_letter(st, false)
           end

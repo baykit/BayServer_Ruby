@@ -23,14 +23,12 @@ module Baykit
             attr :rudder
             attr_accessor :op
             attr_accessor :to_connect
-            attr_accessor :to_close
 
 
-            def initialize(rd, op, to_connect, to_close)
+            def initialize(rd, op, to_connect)
               @rudder = rd
               @op = op
               @to_connect = to_connect
-              @to_close = to_close
             end
           end
 
@@ -134,8 +132,8 @@ module Baykit
               return
             end
 
-            st.closing = true
-            add_operation(rd, Selector::OP_WRITE, false, true)
+            close_rudder(st)
+            @agent.send_closed_letter(st, false)
 
             st.access
           end
@@ -247,23 +245,22 @@ module Baykit
           end
 
           private
-          def add_operation(rd, op, to_connect=false, to_close=false)
+          def add_operation(rd, op, to_connect=false)
             @operations_lock.synchronize do
               found = false
               @operations.each do |ch_op|
                 if ch_op.rudder == rd
                   ch_op.op |= op
-                  ch_op.to_close = (ch_op.to_close or to_close)
                   ch_op.to_connect = (ch_op.to_connect or to_connect)
                   found = true
-                  BayLog.trace("%s Update operation: %s con=%s close=%s ch=%s",
-                               @agent, self.class.op_mode(ch_op.op), ch_op.to_connect, ch_op.to_close, ch_op.rudder.inspect())
+                  BayLog.trace("%s Update operation: %s con=%s ch=%s",
+                               @agent, self.class.op_mode(ch_op.op), ch_op.to_connect, ch_op.rudder.inspect())
                 end
               end
 
               if not found
-                BayLog.trace("%s New operation: %d con=%s close=%s ch=%s", @agent, op, to_connect, to_close, rd.inspect)
-                @operations << ChannelOperation.new(rd, op, to_connect, to_close)
+                BayLog.trace("%s New operation: %d con=%s close=%s ch=%s", @agent, op, to_connect, rd.inspect)
+                @operations << ChannelOperation.new(rd, op, to_connect)
               end
             end
 
@@ -304,12 +301,6 @@ module Baykit
                       st.connecting = true
                     end
 
-                  elsif rd_op.to_close
-                    if st == nil
-                      BayLog.warn("%s chState=%s register close but ChannelState is null", self.agent);
-                    else
-                      st.closing = true
-                    end
                   end
 
                 rescue => e
@@ -335,10 +326,7 @@ module Baykit
 
             begin
 
-              if st.closing
-                on_close_req(st)
-
-              elsif st.connecting
+              if st.connecting
                 on_connectable(st)
 
                 st.connecting = false
@@ -528,12 +516,6 @@ module Baykit
               BayLog.debug_e(e, "%s IO error", self)
               @agent.send_error_letter(st, e, false)
             end
-          end
-
-          def on_close_req(st)
-            BayLog.debug("%s onCloseReq: rd=%s", self, st.rudder)
-            st.multiplexer.close_rudder(st)
-            @agent.send_closed_letter(st, false)
           end
 
           def on_waked_up

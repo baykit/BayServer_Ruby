@@ -9,7 +9,6 @@ module Baykit
           attr_accessor :multiplexer
 
           attr :last_access_time
-          attr_accessor :closing
 
           attr :read_buf
           attr :buf_size
@@ -46,7 +45,6 @@ module Baykit
 
             @accepting = false
             @connecting = false
-            @closing = false
             @write_queue = []
             @write_queue_lock = Mutex::new
             @reading_lock = Mutex::new
@@ -59,9 +57,6 @@ module Baykit
 
           def to_s
             str = "st(rd=#{@rudder} mpx=#{@multiplexer} tp=#{@transporter})"
-            if @closing
-              str += " closing";
-            end
             return str
           end
 
