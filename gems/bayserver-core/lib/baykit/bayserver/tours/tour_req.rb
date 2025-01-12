@@ -205,15 +205,11 @@ module Baykit
             #@tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
             return true
 
-          elsif @tour.running?
+          elsif @tour.reading?
             aborted = true
             if @content_handler != nil
               aborted = @content_handler.on_abort_req(@tour)
             end
-
-            #if aborted
-            #  @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
-            #end
 
             return aborted
           else

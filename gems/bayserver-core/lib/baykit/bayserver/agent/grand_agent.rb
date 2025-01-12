@@ -54,9 +54,7 @@ module Baykit
         attr :taxi_multiplexer
         attr :recipient
 
-        attr :send_wakeup_pipe
         attr :max_inbound_ships
-        attr :unanchorable_transporters
         attr :aborted
         attr :command_receiver
         attr :timer_handlers

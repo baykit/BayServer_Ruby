@@ -126,12 +126,7 @@ module Baykit
           if city == nil
             raise HttpException.new HttpStatus::NOT_FOUND, @req.uri
           else
-            begin
-              city.enter(self)
-            rescue HttpException => e
-              change_state(TOUR_ID_NOCHECK, TourState::ABORTED)
-              raise e
-            end
+            city.enter(self)
           end
         end
 

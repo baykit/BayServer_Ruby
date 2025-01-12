@@ -199,7 +199,7 @@ module Baykit
                 RudderState.new(@std_out_rd, out_tp)
               )
 
-              ship_id = @tour.ship.ship_id
+              ship_id = out_ship.ship_id
               @tour.res.set_consume_listener do |len, resume|
                 if resume
                   out_ship.resume_read(ship_id)
