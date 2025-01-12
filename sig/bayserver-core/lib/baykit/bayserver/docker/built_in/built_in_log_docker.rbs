@@ -1,0 +1,39 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInLogDocker
+          include Docker
+          self.@log_item_map: Hash[String, Class]
+          @format: String
+          @log_items: Array[LogItem]
+          @rudders: Hash[Integer, Rudders::Rudder]
+          @multiplexers: Hash[Integer, Agent::Multiplexer]
+          @file_prefix: String
+          @file_ext: String
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, BayServer::Docker parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def log: (Tours::Tour tour) -> void
+
+          private
+          def compile: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
+          def compile_ctl: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
+          def self.make_map: -> void
+
+          class AgentListener
+            @log_docker: BuiltInLogDocker
+
+            def initialize: (BuiltInLogDocker dkr) -> void
+            def add: (Integer agt_id) -> void
+            def remove: (Integer agt_id) -> void
+          end
+        end
+      end
+    end
+  end
+end

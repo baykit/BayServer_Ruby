@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class LogItem
+          def init: (String param) -> void
+          def get_item: (Tours::Tour tour) -> String
+        end
+      end
+    end
+  end
+end

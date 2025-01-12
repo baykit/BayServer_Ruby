@@ -34,6 +34,7 @@ module Baykit
         def go: -> untyped
         def valid?: -> bool
         def preparing?: -> bool
+        def reading?: -> bool
         def running?: -> bool
         def zombie?: -> bool
         def aborted?: -> bool

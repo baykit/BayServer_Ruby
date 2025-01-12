@@ -1,0 +1,116 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        module LogItems
+          class TextItem
+            @text: String
+
+            def initialize: (String text) -> void
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class NullItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RemoteIpItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class ServerIpItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RequestBytesItem1
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RequestBytesItem2
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class ConnectionStatusItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class FileNameItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RemoteHostItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RemoteLogItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class ProtocolItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RequestHeaderItem
+            @name: String
+
+            def init: (String param) -> String
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class MethodItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class ResponseHeaderItem
+            @name: String
+
+            def init: (String param) -> String
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class PortItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class QueryStringItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class StartLineItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class StatusItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class TimeItem
+            @format: String
+
+            def init: (String param) -> String
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class IntervalItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RemoteUserItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class RequestUrlItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+
+          class ServerNameItem
+            def get_item: (Tours::Tour tour) -> String
+          end
+        end
+      end
+    end
+  end
+end
