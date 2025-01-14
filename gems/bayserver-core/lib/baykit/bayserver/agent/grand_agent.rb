@@ -146,7 +146,6 @@ module Baykit
           BayLog.info(BayMessage.get(:MSG_RUNNING_GRAND_AGENT, self))
 
           if @net_multiplexer.is_non_blocking
-            BayLog.info("rec=%s", @command_receiver)
             @command_receiver.rudder.set_non_blocking
           end
 
