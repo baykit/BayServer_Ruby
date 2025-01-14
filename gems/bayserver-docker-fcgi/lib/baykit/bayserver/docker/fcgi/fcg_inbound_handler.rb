@@ -115,9 +115,10 @@ module Baykit
             cmd = CmdEndRequest.new(tur.req.key)
 
             ensure_func = lambda do
-              if !keep_alive
-                ship.post_close
-              end
+              # DO NOT close socket by FCGI server
+              #if !keep_alive
+              #  ship.post_close
+              #end
             end
 
             begin
@@ -307,7 +308,7 @@ module Baykit
               end
 
             rescue HttpException => e
-              tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, tur.error)
+              tur.req.abort
               tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, e)
               reset_state()
               return NextSocketAction::WRITE
