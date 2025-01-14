@@ -1,5 +1,9 @@
 # BayServer for Ruby
 
+# 3.0.4
+
+- Fixes minor bugs.
+
 # 3.0.3
 
 - Fixes an issue where input data was not processed correctly when the execution of POST requests was postponed.
