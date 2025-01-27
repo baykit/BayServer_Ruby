@@ -227,7 +227,7 @@ module Baykit
                   # Delay send
                   change_state(STATE_READ_STDIN)
                   tur.error = e
-                  tur.req.set_content_handler(ReqContentHandler.dev_null())
+                  tur.req.set_content_handler(ReqContentHandler::DEV_NULL)
                   return NextSocketAction::CONTINUE
                 end
               end

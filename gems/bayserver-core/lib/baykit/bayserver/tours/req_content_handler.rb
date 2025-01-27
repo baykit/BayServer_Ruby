@@ -15,26 +15,26 @@ module Baykit
           raise NotImplementedError.new
         end
 
-      end
+        #DEV_NULL = nil
 
-      class DevNullReqContentHandler
-        include ReqContentHandler  # implements
-        def on_read_req_content(tur, buf, start, len)
+        class DevNullReqContentHandler
+          include ReqContentHandler  # implements
+          def on_read_req_content(tur, buf, start, len)
+          end
+
+          def on_end_req_content(tur)
+          end
+
+          def on_abort_req(tur)
+            return false
+          end
+
         end
-
-        def on_end_req_content(tur)
-        end
-
-        def on_abort_req(tur)
-          return false
-        end
-      end
-
-      module ReqContentHandler
-        DEV_NULL = DevNullReqContentHandler.new()
       end
     end
   end
 end
+
+Baykit::BayServer::Tours::ReqContentHandler::DEV_NULL = Baykit::BayServer::Tours::ReqContentHandler::DevNullReqContentHandler.new
 
 
