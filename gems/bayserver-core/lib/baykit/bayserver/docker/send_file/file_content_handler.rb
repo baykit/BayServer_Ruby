@@ -52,9 +52,9 @@ module Baykit
           def send_file_async(tur, file, charset)
 
             if File.directory?(file)
-              raise HttpException.new HttpStatus::FORBIDDEN, file
+              raise HttpException.new(HttpStatus::FORBIDDEN, file)
             elsif !File.exist?(file)
-              raise HttpException.new HttpStatus::NOT_FOUND, file
+              raise HttpException.new(HttpStatus::NOT_FOUND, file)
             end
 
             mime_type = nil

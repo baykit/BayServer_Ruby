@@ -388,13 +388,7 @@ module Baykit
             def handle_rst_stream(cmd)
               BayLog.warn("%s received RstStream: stmid=%d code=%d desc=%s",
                            ship, cmd.stream_id, cmd.error_code, H2ErrorCode.msg.get(cmd.error_code.to_s.to_sym))
-              tur = get_tour(cmd.stream_id)
-              if tur == nil
-                BayLog.warn("%s stream not found id=%d", ship, cmd.stream_id)
-              else
-                tur.req.abort
-                return NextSocketAction::CONTINUE
-              end
+              return NextSocketAction::CONTINUE
             end
 
             private

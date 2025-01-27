@@ -339,7 +339,7 @@ module Baykit
 
 
         def reload_cert
-          GrandAgent.anchorable_port_map.values().each do |port|
+          BayServer.anchorable_port_map.values().each do |port|
             if port.secure()
               begin
                 port.secure_docker.reload_cert()
