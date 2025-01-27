@@ -1,5 +1,9 @@
 # BayServer for Ruby
 
+# 3.0.5
+
+- Fixes minor bugs.
+
 # 3.0.4
 
 - Fixes minor bugs.
