@@ -1,6 +1,5 @@
 require 'openssl'
 
-require 'baykit/bayserver/agent/transporter/package'
 require 'baykit/bayserver/docker/base/port_base'
 require 'baykit/bayserver/docker/base/warp_base'
 require 'baykit/bayserver/protocol/packet_store'

@@ -1,3 +1,4 @@
+require 'date'
 require 'baykit/bayserver/util/string_util'
 
 module Baykit

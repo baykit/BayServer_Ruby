@@ -1,6 +1,5 @@
 require 'baykit/bayserver/bcf/package'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
-require 'baykit/bayserver/agent/transporter/spin_read_transporter'
 require 'baykit/bayserver/tours/tour'
 require 'baykit/bayserver/tours/read_file_taxi'
 require 'baykit/bayserver/docker/base/club_base'

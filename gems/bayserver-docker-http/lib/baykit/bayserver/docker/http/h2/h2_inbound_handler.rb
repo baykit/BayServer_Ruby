@@ -45,7 +45,6 @@ module Baykit
 
             include Baykit::BayServer::Agent
             include Baykit::BayServer::Protocol
-            include Baykit::BayServer::WaterCraft
             include Baykit::BayServer::Tours
             include Baykit::BayServer::Util
             include Baykit::BayServer::Docker::Http::H2::Command

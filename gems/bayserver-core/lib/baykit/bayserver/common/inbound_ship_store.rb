@@ -11,7 +11,6 @@ module Baykit
   module BayServer
     module Common
         class InboundShipStore < Baykit::BayServer::Util::ObjectStore
-          include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Util
           include Baykit::BayServer::Agent
 

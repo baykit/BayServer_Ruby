@@ -14,14 +14,12 @@ module Baykit
           class << self
             attr :num_agents
             attr :cur_id
-            attr :anchored_port_map
             attr :monitors
             attr :finale
           end
 
           @num_agents = 0
           @cur_id = 0
-          @anchored_port_map = []
           @monitors = {}
           @finale = false
 
@@ -75,19 +73,6 @@ module Baykit
             GrandAgentMonitor.agent_aborted @agent_id, @child_pid, @anchorable
           end
 
-          def on_readable()
-            begin
-              res = IOUtil.read_int32(@communication_channel)
-              if res == nil || res == GrandAgent::CMD_CLOSE
-                close()
-              else
-                BayLog.debug("%s read OK: %d", self, res)
-              end
-            rescue IO::WaitReadable
-              #BayLog.debug("%s no data", self)
-            end
-          end
-
           def shutdown()
             BayLog.debug("%s send shutdown command", self)
             send(GrandAgent::CMD_SHUTDOWN)
@@ -136,9 +121,8 @@ module Baykit
           # Class methods
           ########################################
 
-          def self.init(num_agents, anchored_port_map)
+          def self.init(num_agents)
             @num_agents = num_agents
-            @anchored_port_map = anchored_port_map
             @num_agents.times do
               add(true)
             end
@@ -160,7 +144,7 @@ module Baykit
               ports = ""
 
               no_close_io = {}  # Port list not to close on spawned
-              @anchored_port_map.each_key do |ch|
+              BayServer.anchorable_port_map.each_key do |ch|
                 no_close_io[ch] = ch
                 if ports != ""
                   ports +=","

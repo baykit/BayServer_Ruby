@@ -10,7 +10,6 @@ module Baykit
           include Baykit::BayServer::Docker::Ajp::AjpDocker  # implements
 
           include Baykit::BayServer::Protocol
-          include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Docker::Base
 
           ######################################################

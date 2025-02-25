@@ -52,7 +52,6 @@ module Baykit
       include Baykit::BayServer::Agent::Signal
       include Baykit::BayServer::Agent::Monitor
       include Baykit::BayServer::Protocol
-      include Baykit::BayServer::WaterCraft
       include Baykit::BayServer::Tours
       include Baykit::BayServer::Docker
       include Baykit::BayServer::Docker::Base
@@ -281,7 +280,7 @@ module Baykit
         end
       end
 
-      def self.open_ports(anchored_port_map, unanchored_port_map)
+      def self.open_ports()
         @ports.each do |dkr|
           # open port
           adr = dkr.address()
@@ -312,8 +311,6 @@ module Baykit
 
             skt.listen(0)
 
-            #skt = port_dkr.new_server_socket skt
-            anchored_port_map[skt] = dkr
           else
             # Open UDP port
             BayLog.info(BayMessage.get(:MSG_OPENING_UDP_PORT, dkr.host, dkr.port, dkr.protocol()))
@@ -328,23 +325,20 @@ module Baykit
               BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
               raise e
             end
-            unanchored_port_map[skt] = dkr
+            @unanchored_port_map[IORudder.new(skt)] = dkr
 
           end
         end
       end
 
       def self.parent_start()
-        anchored_port_map = {}
-        unanchored_port_map = {}
-
 
         if @harbor.multi_core
           if !SysUtil.run_on_windows()
-            open_ports(anchored_port_map, unanchored_port_map)
+            open_ports()
           end
         else
-          open_ports(anchored_port_map, unanchored_port_map)
+          open_ports()
 
           # Thread mode
           GrandAgent.init(
@@ -355,7 +349,7 @@ module Baykit
         end
 
         SignalAgent.init(@harbor.control_port)
-        GrandAgentMonitor.init(@harbor.grand_agents, anchored_port_map)
+        GrandAgentMonitor.init(@harbor.grand_agents)
         create_pid_file(Process.pid)
         GrandAgentMonitor.join
       end
@@ -364,11 +358,8 @@ module Baykit
 
         invoke_runners()
 
-        @anchorable_port_map = {}
-        unanchored_port_map = {}
-
         if(SysUtil.run_on_windows())
-         open_ports(@anchorable_port_map, unanchored_port_map)
+         open_ports()
         else
           @derived_port_nos.each do |no|
             # Rebuild server socket

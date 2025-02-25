@@ -6,7 +6,6 @@ require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/docker/built_in/write_file_taxi'
 require 'baykit/bayserver/docker/log'
 require 'baykit/bayserver/docker/built_in/log_items'
-require 'baykit/bayserver/docker/built_in/log_boat'
 require 'baykit/bayserver/util/string_util'
 
 module Baykit
@@ -24,7 +23,6 @@ module Baykit
             class AgentListener
               include Baykit::BayServer::Agent::Multiplexer
               include Baykit::BayServer::Agent::LifecycleListener  # implements
-              include Baykit::BayServer::Agent::Transporter
               include Baykit::BayServer::Agent
               include Baykit::BayServer::Rudders
 

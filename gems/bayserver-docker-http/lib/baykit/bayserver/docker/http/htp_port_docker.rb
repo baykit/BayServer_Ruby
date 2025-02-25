@@ -1,4 +1,3 @@
-require 'baykit/bayserver/agent/transporter/package'
 require 'baykit/bayserver/protocol/packet_store'
 require 'baykit/bayserver/util/io_util'
 require 'baykit/bayserver/util/string_util'
@@ -17,7 +16,6 @@ module Baykit
 
           include Baykit::BayServer::Bcf
           include Baykit::BayServer::Protocol
-          include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Util
           include Baykit::BayServer::Docker::Base
           include Baykit::BayServer::Docker::Http

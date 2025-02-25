@@ -3,7 +3,6 @@ require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/docker/harbor'
-require 'baykit/bayserver/tours/send_file_yacht'
 require 'baykit/bayserver/tours/read_file_taxi'
 require 'baykit/bayserver/tours/content_consume_listener'
 
@@ -22,7 +21,6 @@ module Baykit
         include Baykit::BayServer::Docker
         include Baykit::BayServer::Tours
         include Baykit::BayServer::Taxi
-        include Baykit::BayServer::Agent::Transporter
 
         attr :tour
 
@@ -35,7 +33,6 @@ module Baykit
         attr :res_consume_listener
 
         attr_accessor :header_sent
-        attr :yacht
 
         ###########################
         #  Response Content info
@@ -55,7 +52,6 @@ module Baykit
         end
 
         def init()
-          @yacht = SendFileYacht.new()
         end
 
         def to_s()
@@ -69,9 +65,6 @@ module Baykit
         def reset()
           @charset = nil
           @header_sent = false
-          if @yacht != nil
-            @yacht.reset()
-          end
 
           @available = false
           @res_consume_listener = nil

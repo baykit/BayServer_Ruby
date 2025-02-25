@@ -21,7 +21,6 @@ module Baykit
           include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Docker
           include Baykit::BayServer::Docker::Base
-          include Baykit::BayServer::WaterCraft
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
