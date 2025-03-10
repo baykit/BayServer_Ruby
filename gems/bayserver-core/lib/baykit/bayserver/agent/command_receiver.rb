@@ -14,9 +14,11 @@ module Baykit
         include Baykit::BayServer::Agent::Monitor
         include Baykit::BayServer::Util
 
+        attr :closed
 
         def init(agt_id, rd, tp)
           super
+          @closed = false
         end
 
         def to_s()

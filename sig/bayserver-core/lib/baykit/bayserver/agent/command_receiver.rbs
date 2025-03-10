@@ -4,12 +4,7 @@
 module Baykit
   module BayServer
     module Agent
-      class CommandReceiver
-        include BayServer
-        @agent: GrandAgent
-        @aborted: bool
-        @agent_id: Integer
-        @rudder: Rudders::Rudder
+      class CommandReceiver < Ships::Ship
         @closed: bool
 
         def init: (Integer agt_id, Rudders::Rudder rd, Multiplexer::Transporter tp) -> void
