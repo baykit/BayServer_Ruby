@@ -266,7 +266,7 @@ module Baykit
               spun = lpr.lap
               st.access
 
-              all_spun = all_spun & spun
+              all_spun = all_spun && spun
             end
 
             if all_spun
