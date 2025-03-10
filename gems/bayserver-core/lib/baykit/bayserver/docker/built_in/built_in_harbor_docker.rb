@@ -182,8 +182,8 @@ module Baykit
               @log_multiplexer = DEFAULT_LOG_MULTIPLEXER
             end
 
-            if @log_multiplexer == MULTIPLEXER_TYPE_SPIN ||
-               @log_multiplexer == MULTIPLEXER_TYPE_PIGEON
+            if @cgi_multiplexer == MULTIPLEXER_TYPE_SPIN ||
+               @cgi_multiplexer == MULTIPLEXER_TYPE_PIGEON
               BayLog.warn(
                 BayMessage.get(
                   :CFG_CGI_MULTIPLEXER_NOT_SUPPORTED,
