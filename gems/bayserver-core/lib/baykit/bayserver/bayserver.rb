@@ -325,7 +325,7 @@ module Baykit
               BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
               raise e
             end
-            @unanchored_port_map[IORudder.new(skt)] = dkr
+            @unanchorable_port_map[IORudder.new(skt)] = dkr
 
           end
         end

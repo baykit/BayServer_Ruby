@@ -144,12 +144,12 @@ module Baykit
               ports = ""
 
               no_close_io = {}  # Port list not to close on spawned
-              BayServer.anchorable_port_map.each_key do |ch|
-                no_close_io[ch] = ch
+              BayServer.anchorable_port_map.each_key do |rd|
+                no_close_io[rd.key()] = rd.key()
                 if ports != ""
                   ports +=","
                 end
-                ports += ch.fileno.to_s
+                ports += rd.key().fileno.to_s
               end
               new_argv << "-ports=" + ports
 
