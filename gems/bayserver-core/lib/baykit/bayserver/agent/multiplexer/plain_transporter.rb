@@ -45,7 +45,6 @@ module Baykit
             check_rudder rd
 
             return @ship.notify_connect
-            ;
           end
 
           def on_read(rd, buf, adr)
