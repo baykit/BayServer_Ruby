@@ -29,7 +29,7 @@ module Baykit
         @timer_handlers: Array[TimerHandler]
         @select_timeout_sec: Integer
         @aborted: bool
-        @letter_queue: Array[Letter]
+        @letter_queue: Array[Letters::Letter]
         @letter_queue_lock: Thread::Mutex
         @postpone_queue: Array[Common::Postpone]
         @postpone_queue_lock: Thread::Mutex

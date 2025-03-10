@@ -36,7 +36,7 @@ module Baykit
       def self.get_lib: -> void
       def self.init: -> void
       def self.start: (Integer agt_id) -> void
-      def self.open_ports: (Hash[Rudders::Rudder, Docker::Port] anchored_port_map, Hash[Rudders::Rudder, Docker::Port] unanchored_port_map) -> void
+      def self.open_ports: -> void
       def self.parent_start: -> void
       def self.child_start: (Integer agt_id) -> void
       def self.find_city: (String city_name) -> Docker::City
