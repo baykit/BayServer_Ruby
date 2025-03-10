@@ -15,7 +15,6 @@ module Baykit
           include Baykit::BayServer::Docker::Http::HtpDocker # implements
 
           include OpenSSL
-          include Baykit::BayServer::Agent::Transporter
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Docker::Http::H1
           include Baykit::BayServer::Docker::Http::H2
