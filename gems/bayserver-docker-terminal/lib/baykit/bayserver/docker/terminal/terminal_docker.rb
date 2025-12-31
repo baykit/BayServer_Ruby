@@ -57,7 +57,7 @@ module Baykit
             require 'rack/handler/bayserver'
 
             if Rack::Handler::BayServer.app != nil
-              # rackup mode
+              # Application is already established on rackup mode
               @app = Rack::Handler::BayServer.app
             else
               if !StringUtil.set?(@config)
@@ -74,7 +74,26 @@ module Baykit
                 :environment => @environment,
                 :docker => self,
               }
-              Rack::Server.start options
+
+              if defined?(Rack::Server)
+                # use Rack::Server.start for Rack 2.x
+                require 'rack/server'
+                Rack::Server.start(options)
+              else
+                # for Rack 3.x
+                opts = options.dup
+                server_name = opts.delete(:server) || 'bayserver'
+                config_file = opts.delete(:config)
+
+                app, config_opts = Rack::Builder.parse_file(config_file)
+                if config_opts == nil
+                  config_opts = {}
+                end
+                opts = config_opts.merge(opts)
+                opts[:Port] ||= 9292
+
+                #Rack::Handler::BayServer.run(app, **opts)
+              end
             end
 
             @available = true

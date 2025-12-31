@@ -1,4 +1,3 @@
-require 'rack/handler'
 require 'baykit/bayserver/bayserver'
 require 'baykit/bayserver/util/string_util'
 
@@ -52,15 +51,26 @@ EOF
           ::File.write(bserv_plan, plan_str)
         end
 
-        Baykit::BayServer::BayServer.init bserv_home, bserv_plan
+        Baykit::BayServer::BayServer.get_home
+        Baykit::BayServer::BayServer.get_plan
+        Baykit::BayServer::BayServer.get_lib
+        Baykit::BayServer::BayServer.init
         Baykit::BayServer::BayServer.start
       end
 
     end
 
+    if Rack::Handler.respond_to?(:register)
+      # use register method for Rack 1.x
+      Rack::Handler.register(:bayserver, Rack::Handler::BayServer)
+    else
+      # use Handler for Rack 2.0
+      unless defined?(Rack::Handler::HANDLERS)
+        # HANDLERS 定数が未定義の場合は作成する
+        Rack::Handler.const_set(:HANDLERS, {})
+      end
+      Rack::Handler::HANDLERS[:bayserver] = __FILE__
+    end
 
-
-
-    register :bayserver, BayServer
   end
 end
