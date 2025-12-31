@@ -356,10 +356,6 @@ module Baykit
           end
         end
 
-        def count_postpone
-          return @postpone_queue.length
-        end
-
         def req_catch_up
           BayLog.debug("%s Req catchUp", self)
           if count_postpone > 0
@@ -597,6 +593,9 @@ module Baykit
           st.access
         end
 
+        def count_postpone
+          return @postpone_queue.length
+        end
 
         ######################################################
         # class methods
