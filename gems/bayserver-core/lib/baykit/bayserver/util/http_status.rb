@@ -29,6 +29,7 @@ module Baykit
         end
         @status = {}
         @initialized = false
+        @desc_ok = nil
 
         def self.init(bcf_file)
           if(@initialized)
@@ -42,10 +43,16 @@ module Baykit
               @status[kv.key.to_i] = kv.value
             end
           end
+
+          @desc_ok = @status[OK]
           @initialized = true
         end
 
         def self.description(status_code)
+          if status_code == OK
+            return @desc_ok
+          end
+
           desc = @status[status_code]
           if(desc == nil)
             BayLog.error("Status #{status_code} is invalid.")
