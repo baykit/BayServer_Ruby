@@ -3,7 +3,7 @@
 # Classes
 module Baykit
   module BayServer
-    module Util
+    module Common
       class Cities
         @any_city: Docker::City
         @cities: Array[Docker::City]

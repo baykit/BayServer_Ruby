@@ -1,6 +1,6 @@
 module Baykit
   module BayServer
-    module Util
+    module Common
       class Cities
 
         attr :any_city
