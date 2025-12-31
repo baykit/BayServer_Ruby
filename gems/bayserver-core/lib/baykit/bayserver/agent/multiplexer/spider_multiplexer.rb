@@ -501,16 +501,26 @@ module Baykit
                 raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
               end
 
-              wunit = st.write_queue[0]
+              st.write_queue.length.times do |i|
+                wunit = st.write_queue[i]
 
-              BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d closed=%s adr=%s",
-                           self, st.rudder, wunit.tag, wunit.buf.length, st.closed, wunit.adr);
-              #BayLog.debug(this + " " + new String(wUnit.buf.array(), 0, wUnit.buf.limit()));
+                BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d closed=%s adr=%s",
+                             self, st.rudder, wunit.tag, wunit.buf.length, st.closed, wunit.adr)
+                #BayLog.debug(this + " " + new String(wUnit.buf.array(), 0, wUnit.buf.limit()));
 
-              n = st.rudder.write(wunit.buf)
-              #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
-              wunit.buf.slice!(0, n)
-              @agent.send_wrote_letter(st, n, false)
+                n = st.rudder.write(wunit.buf)
+                #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
+                @agent.send_wrote_letter(st, n, false)
+
+                len = wunit.buf.length
+                wunit.buf.slice!(0, n)
+
+                if n < len
+                  BayLog.debug("%s Wrote %d bytes (Data remains)", self, n)
+                  break
+                end
+              end
+
 
             rescue SystemCallError, IOError => e
               BayLog.debug_e(e, "%s IO error", self)
