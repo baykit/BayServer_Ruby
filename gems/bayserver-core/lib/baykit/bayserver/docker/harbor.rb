@@ -121,6 +121,20 @@ module Baykit
           raise NotImplementedError
         end
 
+        # True if cache is enabled
+        def enable_cache
+          raise NotImplementedError
+        end
+
+        # Lifespan seconds of cache
+        def cache_lifespan_sec
+          raise NotImplementedError
+        end
+
+        # Cache size
+        def cache_size_mb
+          raise NotImplementedError
+        end
 
         def self.get_multiplexer_type_name(type)
           case type

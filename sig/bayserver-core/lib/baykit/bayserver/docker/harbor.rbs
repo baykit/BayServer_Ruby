@@ -16,7 +16,7 @@ module Baykit
         include Docker
 
         def charset: -> String
-        def locale: -> Locale
+        def locale: -> String
         def grand_agents: -> Integer
         def train_runners: -> Integer
         def taxi_runners: -> Integer
@@ -40,6 +40,9 @@ module Baykit
         def self.get_multiplexer_type: (String `type`) -> Integer
         def get_recipient_type_name: (Integer `type`) -> String?
         def get_recipient_type: (String `type`) -> Integer
+        def enable_cache: -> bool
+        def cache_lifespan_sec: -> Integer
+        def cache_size_mb: -> Integer
       end
     end
   end

@@ -8,6 +8,8 @@ module Baykit
           include Baykit::BayServer::Tours::ReqContentHandler   # implements
 
           attr :file_wrote_len
+
+          attr :file_content
           attr :tour
           attr :tour_id
 
@@ -19,11 +21,12 @@ module Baykit
           attr :path
           attr :abortable
 
-          def init(rd, tp, tur)
+          def init(rd, tp, tur, file_content)
             super(tur.ship.agent_id, rd, tp)
             @file_wrote_len = 0
             @tour = tur
             @tour_id = tur.tour_id
+            @file_content = file_content
           end
 
           ######################################################
@@ -47,6 +50,12 @@ module Baykit
 
             begin
               available = @tour.res.send_res_content(@tour_id, buf, 0, buf.length)
+
+              if @file_content != nil
+                BayLog.debug("buf=%s target=%s", buf, @file_content.content)
+                @file_content.content << buf
+                @file_content.bytes_loaded += buf.length
+              end
 
               if available
                 return NextSocketAction::CONTINUE

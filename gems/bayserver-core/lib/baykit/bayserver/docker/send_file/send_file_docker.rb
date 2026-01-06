@@ -3,6 +3,7 @@ require 'baykit/bayserver/tours/package'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/docker/send_file/file_content_handler'
 require 'baykit/bayserver/docker/send_file/directory_train'
+require 'baykit/bayserver/docker/send_file/file_store'
 
 require 'baykit/bayserver/util/string_util'
 
@@ -17,6 +18,7 @@ module Baykit
           include Baykit::BayServer::Tours
 
           attr :list_files
+          attr :file_store
 
           ######################################################
           # Implements DockerBase
@@ -57,14 +59,20 @@ module Baykit
 
               real = "#{tur.town.location}/#{rel_path}"
 
-              if File.directory?(real) && @list_files
-                train = DirectoryTrain.new(tur, real)
-                train.start_tour()
+              if File.directory?(real)
+                if @list_files
+                  train = DirectoryTrain.new(tur, real)
+                  train.start_tour()
+                else
+                  raise HttpException.new(HttpStatus::FORBIDDEN, "Directory scan is prohibited")
+                end
               else
-                handler = FileContentHandler.new(real)
+                if BayServer.harbor.enable_cache() && @file_store == nil
+                  @file_store = FileStore.new(BayServer.harbor.cache_lifespan_sec, BayServer.harbor.cache_size_mb * 1024 * 1024)
+                end
+                handler = FileContentHandler.new(tur, @file_store, real, tur.res.charset)
                 tur.req.set_content_handler(handler)
               end
-
             end
 
           end

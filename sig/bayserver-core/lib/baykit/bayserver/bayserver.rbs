@@ -18,7 +18,7 @@ module Baykit
       self.@ports: Array[Docker::Port]
       self.@harbor: Docker::Harbor
       self.@any_city: Docker::City
-      self.@cities: Util::Cities
+      self.@cities: Common::Cities
       self.@anchorable_port_map: Hash[Rudders::Rudder, Docker::Port]
       self.@unanchorable_port_map: Hash[Rudders::Rudder, Docker::Port]
       self.@commandline_args: Array[String]

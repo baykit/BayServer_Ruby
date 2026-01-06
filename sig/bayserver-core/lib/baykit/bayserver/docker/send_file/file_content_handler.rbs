@@ -6,14 +6,21 @@ module Baykit
     module Docker
       module SendFile
         class FileContentHandler
+          @tour: Tours::Tour
           @path: String
+          @charset: String
+          @mime_type: String
           @abortable: bool
+          @store: FileStore
+          @file_content: FileContent
 
-          def initialize: (String path) -> void
+          def initialize: (Tours::Tour tur, FileStore store, String path, String charset) -> void
           def on_read_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
           def on_end_req_content: (Tours::Tour tur) -> void
           def on_abort_req: (Tours::Tour tur) -> bool
-          def send_file_async: (Tours::Tour tur, String file, String charset) -> void
+          def req_start_tour: -> void
+          def send_file_async: -> void
+          def send_file_from_cache: -> void
         end
       end
     end

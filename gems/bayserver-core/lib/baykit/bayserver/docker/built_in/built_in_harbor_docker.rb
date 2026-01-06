@@ -40,6 +40,9 @@ module Baykit
           DEFAULT_CGI_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
           DEFAULT_RECIPIENT = RECIPIENT_TYPE_SPIDER
           DEFAULT_PID_FILE = "bayserver.pid"
+          DEFAULT_ENABLE_CACHE = false
+          DEFAULT_CACHE_LIFESPAN_SEC = 60
+          DEFAULT_CACHE_SIZE_MB = 32
 
           # Default charset
           attr :charset
@@ -107,6 +110,14 @@ module Baykit
           # PID file name
           attr :pid_file
 
+          # True if cache is enabled
+          attr :enable_cache
+
+          # Lifespan seconds of cache
+          attr :cache_lifespan_sec
+
+          # Cache size
+          attr :cache_size_mb
 
           def initialize
             @grand_agents = DEFAULT_SHIP_AGENTS
@@ -128,6 +139,8 @@ module Baykit
             @cgi_multiplexer = DEFAULT_CGI_MULTIPLEXER
             @recipient = DEFAULT_RECIPIENT
             @pid_file = DEFAULT_PID_FILE
+            @cache_lifespan_sec = DEFAULT_CACHE_LIFESPAN_SEC
+            @cache_size_mb = DEFAULT_CACHE_SIZE_MB
           end
 
           ######################
@@ -296,6 +309,16 @@ module Baykit
 
             when "pidfile"
               @pid_file = kv.value
+
+            when "enablecache"
+              @enable_cache = StringUtil.parse_bool(kv.value)
+
+            when "cachelifespan"
+              @cache_lifespan_sec = kv.value.to_i
+
+            when "cachesize"
+              @cache_size_mb = kv.value.to_i
+
             else
               return false
             end

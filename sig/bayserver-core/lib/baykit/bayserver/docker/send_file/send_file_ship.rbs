@@ -10,7 +10,7 @@ module Baykit
           @tour_id: Integer
           @file_wrote_len: Integer
 
-          def init: (Rudders::Rudder rd, Agent::Multiplexer::Transporter tp, Tours::Tour tur) -> void
+          def init: (Rudders::Rudder rd, Common::Transporter tp, Tours::Tour tur, FileContent file_content) -> void
           def reset: -> void
           def notify_read: (String buf) -> Integer
           def notify_error: (Exception e) -> Integer

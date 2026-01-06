@@ -7,6 +7,7 @@ module Baykit
       module SendFile
         class SendFileDocker
           @list_files: bool
+          @file_store: FileStore
 
           def init: (Bcf::BcfElement elm, BayServer::Docker parent) -> void
           def init_key_val: (Bcf::BcfKeyVal kv) -> bool
