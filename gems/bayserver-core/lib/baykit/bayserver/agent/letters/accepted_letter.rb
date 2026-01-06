@@ -5,8 +5,8 @@ module Baykit
         class AcceptedLetter < Letter
           attr :client_rudder
 
-          def initialize(st, client_rd)
-            super(st)
+          def initialize(state_id, rd, mpx, client_rd)
+            super(state_id, rd, mpx)
             @client_rudder = client_rd
           end
         end

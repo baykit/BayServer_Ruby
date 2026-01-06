@@ -16,6 +16,7 @@ module Baykit
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           attr :path
           attr :abortable
@@ -93,6 +94,9 @@ module Baykit
               when Harbor::MULTIPLEXER_TYPE_SPIDER
                 mpx = agt.spider_multiplexer
 
+              when Harbor::MULTIPLEXER_TYPE_JOB
+                mpx = agt.job_multiplexer
+
               when Harbor::MULTIPLEXER_TYPE_SPIN
                 mpx = agt.spin_multiplexer
 
@@ -120,7 +124,9 @@ module Baykit
                 end
               end
 
-              mpx.add_rudder_state(rd, RudderState.new(rd, tp))
+              st = RudderStateStore.get_store(agt.agent_id).rent()
+              st.init(rd, tp)
+              mpx.add_rudder_state(rd, st)
               mpx.req_read(rd)
 
             rescue IOError => e

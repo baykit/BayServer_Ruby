@@ -4,8 +4,8 @@ module Baykit
       module Letters
         class ErrorLetter < Letter
           attr :err
-          def initialize(st, err)
-            super st
+          def initialize(state_id, rd, mpx, err)
+            super state_id, rd, mpx
             @err = err
           end
         end

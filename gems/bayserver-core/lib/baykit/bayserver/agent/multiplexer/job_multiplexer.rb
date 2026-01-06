@@ -15,6 +15,7 @@ module Baykit
 
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           def initialize(agt, anchorable)
             super
@@ -35,6 +36,7 @@ module Baykit
             end
 
             st = get_rudder_state(rd)
+            id = st.id
 
             Thread.new do
               begin
@@ -45,7 +47,7 @@ module Baykit
                 begin
                   client_skt, adr = rd.io.accept
                 rescue Exception => e
-                  @agent.send_error_letter(st, e, true)
+                  @agent.send_error_letter(id, rd, self, e, true)
                   next
                 end
 
@@ -54,7 +56,7 @@ module Baykit
                   BayLog.error("%s Agent is not alive (close)", @agent);
                   client_skt.close
                 else
-                  @agent.send_accepted_letter(st, IORudder.new(client_skt), true)
+                  @agent.send_accepted_letter(id, rd, self, IORudder.new(client_skt), true)
                 end
 
               rescue Exception => e
@@ -67,20 +69,28 @@ module Baykit
 
 
           def req_connect(rd, adr)
-            st = get_rudder_state(rd)
-            BayLog.debug("%s reqConnect adr=%s rd=%s chState=%s", @agent, adr.canonname, rd, st)
+            BayLog.debug("%s reqConnect adr=%s rd=%s", @agent, adr.canonname, rd)
 
             Thread.new do
+              st = get_rudder_state(rd)
+              if st == nil
+                # rudder is already closed
+                BayLog.debug("%s Rudder is already closed: rd=%s", @agent, rd)
+                return
+              end
+
               begin
                 rd.io.connect(adr)
                 BayLog.debug("%s Connected rd=%s", @agent, rd)
-                @agent.send_connected_letter(st, false)
+                @agent.send_connected_letter(st.id, rd, self, false)
               rescue Exception => e
-                @agent.send_error_letter(st, e, false)
+                @agent.send_error_letter(st.id, rd, self, e, false)
                 return
               end
             end
 
+            st = get_rudder_state(rd)
+            st.access
             st.connecting = true
           end
 
@@ -110,10 +120,11 @@ module Baykit
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 
-            if st == nil || st.closed
-              BayLog.warn("%s Channel is closed(callback immediately): %s", @agent, rd)
-              lis.call()
-              return
+            if st == nil
+              raise IOError.new("Invalid rudder")
+              #BayLog.warn("%s Channel is closed(callback immediately): %s", @agent, rd)
+              #lis.call()
+              #return
             end
 
             unt = WriteUnit.new(buf, adr, tag, &lis)
@@ -145,7 +156,9 @@ module Baykit
               return
             end
 
-            Thread.new do
+            id = st.id
+
+              Thread.new do
               begin
                 st = get_rudder_state(rd)
                 if st == nil
@@ -153,8 +166,8 @@ module Baykit
                   next
                 end
 
-                close_rudder(st)
-                @agent.send_closed_letter(st, true)
+                close_rudder(rd)
+                @agent.send_closed_letter(id, rd, self, true)
               rescue Exception => e
                 BayLog.fatal_e(e)
                 @agent.shutdown
@@ -177,12 +190,9 @@ module Baykit
           end
 
           def next_read(st)
+            id = st.id
+
             Thread.new do
-              if st.closed
-                #channel is already closed
-                BayLog.debug("%s Rudder is already closed: rd=%s", @agent, st.rudder);
-                next
-              end
 
               begin
                 if st.handshaking
@@ -203,45 +213,48 @@ module Baykit
                 end
 
                 BayLog.debug("%s Try to Read (rd=%s)", @agent, st.rudder)
-                begin
-                  n = st.rudder.read(st.read_buf, st.buf_size)
-                rescue EOFError => e
-                  n = 0
-                  st.read_buf.clear
+                n = st.rudder.read(st.read_buf, st.buf_size)
+
+                if get_rudder_state(st.rudder) == nil
+                  #channel is already closed
+                  BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder);
+                  next
+                else
+                  @agent.send_read_letter(id, st.rudder, self, n, nil, true)
                 end
 
-                @agent.send_read_letter(st, n, nil, true)
-
               rescue Exception => e
-                @agent.send_error_letter(st, e, true)
+                @agent.send_error_letter(id, st.rudder, self, e, true)
               end
             end
           end
 
           def next_write(st)
+            id = st.id
+
             Thread.new do
               BayLog.debug("%s next write st=%s", @agent, st)
 
-              if st == nil || st.closed
+              if st == nil
                 BayLog.warn("%s Channel is closed: %s", @agent, st.rudder)
                 next
               end
 
               u = st.write_queue[0]
-              BayLog.debug("%s Try to write: pkt=%s buflen=%d closed=%s", self, u.tag, u.buf.length, st.closed);
+              BayLog.debug("%s Try to write: pkt=%s buflen=%d", self, u.tag, u.buf.length)
 
               n = 0
               begin
-                if !st.closed && u.buf.length > 0
+                if u.buf.length > 0
                   n = st.rudder.write(u.buf)
                   u.buf.slice!(0, n)
                 end
               rescue Exception => e
-                @agent.send_error_letter(st, e, true)
+                @agent.send_error_letter(id, st.rudder, self, e, true)
                 next
               end
 
-              @agent.send_wrote_letter(st, n, true)
+              @agent.send_wrote_letter(id, st.rudder, self, n, true)
             end
           end
 

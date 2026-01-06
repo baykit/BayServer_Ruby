@@ -1,15 +1,26 @@
+require 'baykit/bayserver/util/reusable'
+require 'baykit/bayserver/util/counter'
 
 module Baykit
   module BayServer
-    module Agent
-      module Multiplexer
+    module Common
         class RudderState
+          include Baykit::BayServer::Util::Reusable  # implements
+
+          include Baykit::BayServer::Util
+          class << self
+            attr :id_counter
+          end
+          @id_counter = Counter.new
+
+          attr :id
+
           attr :rudder
           attr :transporter
           attr_accessor :multiplexer
 
           attr :last_access_time
-
+          attr_accessor :closing
           attr :read_buf
           attr :buf_size
           attr :write_queue
@@ -21,17 +32,19 @@ module Baykit
           attr :write_queue_lock
           attr :reading_lock
           attr :writing_lock
-          attr_accessor :closed
           attr_accessor :finale
 
           attr_accessor :accepting
           attr_accessor :connecting
 
+          def initialize
 
-          def initialize(rd, tp = nil, timeout_sec = 0)
+          end
+
+          def init(rd, tp = nil, timeout_sec = 0)
+            @id = RudderState.id_counter.next
             @rudder = rd
             @transporter = tp
-            @closed = false
             @timeout_sec = timeout_sec
 
             if tp != nil
@@ -60,6 +73,30 @@ module Baykit
             return str
           end
 
+          #########################################
+          # Implements Reusable
+          #########################################
+          def reset()
+            @id = 0
+            @rudder = nil
+            @transporter = nil
+            @multiplexer = nil
+
+            @last_access_time = 0
+            @closing = false
+            @read_buf.clear
+            @write_queue = []
+            @bytes_read = 0
+            @bytes_wrote = 0
+            @finale = false
+            @reading = false
+            @writing = false
+            @timeout_sec = 0
+          end
+
+          #########################################
+          # Custom methods
+          #########################################
 
           def access
             @last_access_time = Time.now.tv_sec
@@ -69,7 +106,6 @@ module Baykit
             @finale = true
           end
 
-        end
       end
     end
   end

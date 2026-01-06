@@ -21,9 +21,9 @@ module Baykit
             end
             def depart
               if @for_read
-                @rudder_state.multiplexer.do_next_read(@rudder_state)
+                @rudder_state.multiplexer.do_next_read(@rudder_state.rudder)
               else
-                @rudder_state.multiplexer.do_next_write(@rudder_state)
+                @rudder_state.multiplexer.do_next_write(@rudder_state.rudder)
               end
             end
 
@@ -40,6 +40,7 @@ module Baykit
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
           include Baykit::BayServer::Taxi
+          include Baykit::BayServer::Common
 
           def initialize(agt)
             super
@@ -87,7 +88,7 @@ module Baykit
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 
-            if st == nil || st.closed
+            if st == nil
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
               lis.call
               return
@@ -114,10 +115,10 @@ module Baykit
           end
 
           def req_close(rd)
+            BayLog.debug("%s reqClose rd=%s", @agent, rd);
+            close_rudder(rd)
             st = get_rudder_state(rd)
-            BayLog.debug("%s reqClose st=%s", @agent, st);
-            close_rudder(st)
-            @agent.send_closed_letter(st, false)
+            @agent.send_closed_letter(st.id, rd, self, true)
             st.access
           end
 
@@ -155,22 +156,25 @@ module Baykit
             TaxiRunner.post(@agent.agent_id, TaxiForMpx.new(st, for_read))
           end
 
-          def do_next_read(st)
-            st.access
+          def do_next_read(rd)
+            st = get_rudder_state(rd)
+
             begin
               len = st.rudder.read(st.read_buf, st.buf_size)
               if len <= 0
                 len = 0
               end
-              @agent.send_read_letter(st, len, nil, true)
+              @agent.send_read_letter(st.id, rd, self, len, nil, true)
 
             rescue Exception => e
-              @agent.send_error_letter(st, e, true)
+              @agent.send_error_letter(st.id, rd, self, e, true)
             end
           end
 
-          def do_next_write(st)
+          def do_next_write(rd)
+            st = get_rudder_state(rd)
             st.access
+
             begin
               if st.write_queue.empty?
                 raise Sink("%s write queue is empty", self)
@@ -183,10 +187,10 @@ module Baykit
                 len = st.rudder.write(u.buf)
                 u.buf.slice!(0, len)
               end
-              @agent.send_wrote_letter(st, len, true)
+              @agent.send_wrote_letter(st.id, rd, self, len, true)
 
             rescue Exception => e
-              @agent.send_error_letter(st, e, true)
+              @agent.send_error_letter(st.id, rd, self, e, true)
             end
           end
         end

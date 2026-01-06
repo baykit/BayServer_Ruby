@@ -153,7 +153,7 @@ module Baykit
 
             check_req_id(cmd.req_id)
 
-            @req_id = cmd.req_id
+            #@req_id = cmd.req_id
             BayLog.debug("%s begin_req get_tour req_id=%d", sip, cmd.req_id)
             tur = sip.get_tour(cmd.req_id)
             if tur == nil
@@ -258,6 +258,7 @@ module Baykit
               end
 
               tur.req.uri = @env["REQUEST_URI"]
+              HttpUtil.check_uri(tur.req.uri)
               tur.req.protocol  = @env["SERVER_PROTOCOL"]
               tur.req.method = @env["REQUEST_METHOD"]
 
@@ -330,12 +331,12 @@ module Baykit
               raise ProtocolException.new("Invalid request id: %d", received_id)
             end
 
-            if @req_id == FcgPacket::FCGI_NULL_REQUEST_ID
+            if req_id == FcgPacket::FCGI_NULL_REQUEST_ID
               @req_id = received_id
             end
 
             if @req_id != received_id
-              BayLog.error("%s invalid request id: received=%d reqId=%d", sip, received_id, req_id)
+              BayLog.error("%s invalid request id: received=%d reqId=%d", ship, received_id, @req_id)
               raise ProtocolException.new("Invalid request id: %d", received_id)
             end
           end

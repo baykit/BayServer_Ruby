@@ -3,7 +3,7 @@ require 'baykit/bayserver/rudders/rudder'
 require 'baykit/bayserver/rudders/io_rudder'
 
 require 'baykit/bayserver/agent/multiplexer/multiplexer_base'
-require 'baykit/bayserver/agent/multiplexer/write_unit'
+require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/agent/timer_handler'
 
 module Baykit
@@ -17,6 +17,7 @@ module Baykit
 
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           class ChannelOperation
 
@@ -97,7 +98,7 @@ module Baykit
             st = get_rudder_state(rd)
             BayLog.debug("%s req write st=%s tag=%s", @agent, st, tag)
 
-            if st == nil || st.closed
+            if st == nil
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
               lis.call()
               return
@@ -132,8 +133,8 @@ module Baykit
               return
             end
 
-            close_rudder(st)
-            @agent.send_closed_letter(st, false)
+            close_rudder(rd)
+            @agent.send_closed_letter(st.id, rd, self, false)
 
             st.access
           end
@@ -175,8 +176,8 @@ module Baykit
           def next_write(st)
           end
 
-          def close_rudder(st)
-            @selector.unregister(st.rudder.io)
+          def close_rudder(rd)
+            @selector.unregister(rd.io)
             super
           end
 
@@ -383,9 +384,7 @@ module Baykit
               raise e
 
             rescue => e
-              if e.kind_of? EOFError
-                BayLog.debug("%s Socket closed by peer: skt=%s", @agent, st.rudder.inspect)
-              elsif e.kind_of? SystemCallError
+              if e.kind_of? SystemCallError
                 BayLog.debug("%s O/S error: %s (skt=%s)", @agent, e.message, st.rudder.inspect)
               elsif e.kind_of? IOError
                 BayLog.debug("%s IO error: %s (skt=%s)", @agent, e.message, st.rudder.inspect)
@@ -397,7 +396,7 @@ module Baykit
               end
               # Cannot handle Exception any more
               BayLog.error_e(e)
-              @agent.send_error_letter(st, e, false)
+              @agent.send_error_letter(st.id, st.rudder, self, e, false)
             end
 
             st.access()
@@ -418,7 +417,7 @@ module Baykit
             client_rd.set_non_blocking
             #client_skt.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
 
-            @agent.send_accepted_letter(st, client_rd, false)
+            @agent.send_accepted_letter(st.id, st.rudder, self, client_rd, false)
 
           end
 
@@ -431,11 +430,11 @@ module Baykit
               st.rudder.io.syswrite(buf)
             rescue => e
               BayLog.error("Connect failed: %s", e)
-              @agent.send_error_letter(st, e, false)
+              @agent.send_error_letter(st.id, st.rudder, self, e, false)
               return
             end
 
-            @agent.send_connected_letter(st, false)
+            @agent.send_connected_letter(st.id, st.rudder, self, false)
           end
 
           def on_readable(st)
@@ -480,17 +479,14 @@ module Baykit
                 BayLog.debug("%s Read status: write more", self)
                 @channel_handler.ask_to_write(@ch)
                 return NextSocketAction::CONTINUE
-              rescue EOFError => e
-                BayLog.debug("%s EOF", self)
-                len = 0
               end
 
               BayLog.debug("%s read %d bytes", self, len)
-              @agent.send_read_letter(st, len, nil, false)
+              @agent.send_read_letter(st.id, st.rudder, self, len, nil, false)
 
             rescue Exception => e
               BayLog.debug_e(e, "%s Unhandled error", self)
-              @agent.send_error_letter(st, e, false)
+              @agent.send_error_letter(st.id, st.rudder, self, e, false)
               return
             end
           end
@@ -498,19 +494,28 @@ module Baykit
           def on_writable(st)
             begin
               if st.write_queue.empty?
-                raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
+                #raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
+                BayLog.debug("%s No data to write", self)
+                @agent.send_wrote_letter(st.id, st.rudder, self, 0, false)
+                return
               end
 
               st.write_queue.length.times do |i|
                 wunit = st.write_queue[i]
 
-                BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d closed=%s adr=%s",
-                             self, st.rudder, wunit.tag, wunit.buf.length, st.closed, wunit.adr)
+                BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d adr=%s",
+                             self, st.rudder, wunit.tag, wunit.buf.length, wunit.adr)
                 #BayLog.debug(this + " " + new String(wUnit.buf.array(), 0, wUnit.buf.limit()));
 
-                n = st.rudder.write(wunit.buf)
+                begin
+                  n = st.rudder.write(wunit.buf)
+                rescue OpenSSL::SSL::SSLErrorWaitWritable => e
+                  BayLog.debug_e(e, "%s Cannot write data", self)
+                  n = 0
+                end
+
                 #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
-                @agent.send_wrote_letter(st, n, false)
+                @agent.send_wrote_letter(st.id, st.rudder, self, n, false)
 
                 len = wunit.buf.length
                 wunit.buf.slice!(0, n)
@@ -521,10 +526,9 @@ module Baykit
                 end
               end
 
-
             rescue SystemCallError, IOError => e
               BayLog.debug_e(e, "%s IO error", self)
-              @agent.send_error_letter(st, e, false)
+              @agent.send_error_letter(st.id, st.rudder, self, e, false)
             end
           end
 

@@ -5,6 +5,7 @@ require 'baykit/bayserver/protocol/protocol_handler_store'
 require 'baykit/bayserver/protocol/packet_store'
 require 'baykit/bayserver/tours/tour_store'
 require 'baykit/bayserver/common/inbound_ship_store'
+require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/docker/base/warp_base'
 
 require 'baykit/bayserver/util/string_util'
@@ -52,6 +53,7 @@ module Baykit
         PacketStore.get_stores(@agent_id).each do |store|
           store.print_usage(indent+1)
         end
+        RudderStateStore.get_store(@agent_id).print_usage(indent+1)
         TourStore.get_store(@agent_id).print_usage(indent+1);
         BayServer.cities.cities.each do |city|
           print_city_usage(nil, city, indent)

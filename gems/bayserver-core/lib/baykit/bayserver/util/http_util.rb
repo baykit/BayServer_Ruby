@@ -5,12 +5,14 @@ require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/char_util'
 require 'baykit/bayserver/util/headers'
 require 'baykit/bayserver/util/http_util'
+require 'baykit/bayserver/protocol/protocol_exception'
 
 module Baykit
   module BayServer
     module Util
       class HttpUtil
         include Baykit::BayServer::Util
+        include Baykit::BayServer::Protocol
 
         MAX_LINE_LEN = 5000
 
@@ -149,6 +151,16 @@ module Baykit
           rescue => e
             BayLog.warn_e(e, "Cannot get remote host name: %s", e)
             return nil
+          end
+        end
+
+        def HttpUtil.check_uri(uri)
+          if uri.include?("\x00")
+            raise ProtocolException, "path contains null byte"
+          end
+
+          if uri.each_char.any? { |ch| (ch.ord < 0x20) || (ch.ord == 0x7f) }
+            raise ProtocolException, "path contains control character"
           end
         end
       end

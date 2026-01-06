@@ -2,11 +2,11 @@ require 'uri'
 
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/lifecycle_listener'
-require 'baykit/bayserver/agent/multiplexer/rudder_state'
 require 'baykit/bayserver/docker/warp'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/common/warp_data'
 require 'baykit/bayserver/common/warp_ship_store'
+require 'baykit/bayserver/common/rudder_state'
 
 module Baykit
   module BayServer
@@ -20,6 +20,7 @@ module Baykit
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Util
           include Baykit::BayServer::Rudders
+          include Baykit::BayServer::Common
 
           class AgentListener
             include Baykit::BayServer::Agent::LifecycleListener # implements
@@ -214,7 +215,9 @@ module Baykit
               wsip.start_warp_tour(tur)
 
               if need_connect
-                agt.net_multiplexer.add_rudder_state(wsip.rudder, RudderState.new(wsip.rudder, tp))
+                st = RudderStateStore.get_store(agt.agent_id).rent()
+                st.init(wsip.rudder, tp)
+                agt.net_multiplexer.add_rudder_state(wsip.rudder, st)
                 agt.net_multiplexer.get_transporter(wsip.rudder).req_connect(wsip.rudder, @host_addr[1])
               end
 

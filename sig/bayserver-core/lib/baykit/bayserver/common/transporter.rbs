@@ -3,8 +3,7 @@
 # Classes
 module Baykit
   module BayServer
-    module Agent
-      module Multiplexer
+    module Common
         class Transporter
           def init: -> void
           def on_connected: (Rudders::Rudder rd) -> void
@@ -18,7 +17,6 @@ module Baykit
           def check_timeout: (Rudders::Rudder rd, Integer duretion_sec) -> bool
           def get_read_buffer_size: -> Integer
           def print_usage: (Integer indent) -> void
-        end
       end
     end
   end

@@ -6,7 +6,7 @@ module Baykit
     module Agent
       module Multiplexer
         class TaxiMultiplexer
-          include BayServer
+          include Baykit::BayServer
           include Multiplexer
 
           def initialize: (GrandAgent agt) -> void
@@ -18,20 +18,20 @@ module Baykit
           def req_close: (Rudders::Rudder rd) -> void
           def is_non_blocking: -> bool
           def use_async_api: -> bool
-          def cancel_read: (RudderState st) -> void
-          def cancel_write: (RudderState st) -> void
-          def next_accept: (RudderState st) -> void
-          def next_read: (RudderState st) -> void
-          def next_write: (RudderState st) -> void
-          def next_run: (RudderState st, bool for_read) -> void
-          def do_next_read: (RudderState st) -> void
-          def do_next_write: (RudderState st) -> void
+          def cancel_read: (Common::RudderState st) -> void
+          def cancel_write: (Common::RudderState st) -> void
+          def next_accept: (Common::RudderState st) -> void
+          def next_read: (Rudders::Rudder rd) -> void
+          def next_write: (Rudders::Rudder rd) -> void
+          def next_run: (Common::RudderState st, bool for_read) -> void
+          def do_next_read: (Rudders::Rudder rd) -> void
+          def do_next_write: (Rudders::Rudder rd) -> void
 
           class TaxiForMpx
-            @rudder_state: RudderState
+            @rudder_state: Common::RudderState
             @for_read: bool
 
-            def initialize: (RudderState st, bool for_read) -> void
+            def initialize: (Common::RudderState st, bool for_read) -> void
             def depart: -> void
             def on_timer: -> void
           end

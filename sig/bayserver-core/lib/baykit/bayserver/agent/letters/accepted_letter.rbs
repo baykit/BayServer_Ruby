@@ -1,4 +1,4 @@
-# TypeProf 0.21.11
+# TypeProf 0.21.3
 
 # Classes
 module Baykit
@@ -8,7 +8,7 @@ module Baykit
         class AcceptedLetter
           @client_rudder: Rudders::Rudder
 
-          def initialize: (Multiplexer::RudderState st, Rudders::Rudder client_rd) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd) -> void
         end
       end
     end

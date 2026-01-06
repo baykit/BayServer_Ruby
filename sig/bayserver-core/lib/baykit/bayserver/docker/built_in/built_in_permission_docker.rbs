@@ -6,9 +6,9 @@ module Baykit
     module Docker
       module BuiltIn
         class BuiltInPermissionDocker
-          include BayServer
+          include Baykit::BayServer
           @check_list: Array[CheckItem]
-          @groups: Array[Util::Groups::Group]
+          @groups: Array[Common::Groups::Group]
 
           def initialize: -> void
           def init: (untyped elm, untyped parent) -> untyped

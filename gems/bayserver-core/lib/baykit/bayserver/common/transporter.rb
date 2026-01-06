@@ -2,8 +2,7 @@ require 'baykit/bayserver/util/reusable'
 
 module Baykit
   module BayServer
-    module Agent
-      module Multiplexer
+    module Common
         module Transporter # interface
           include Baykit::BayServer::Util::Reusable # implements
 
@@ -55,7 +54,6 @@ module Baykit
             raise NotImplementedError.new
           end
         end
-      end
     end
   end
 end

@@ -7,8 +7,8 @@ module Baykit
           attr :n_bytes
           attr :address
 
-          def initialize(st, n, adr = "")
-            super st
+          def initialize(state_id, rd, mpx, n, adr = "")
+            super state_id, rd, mpx
             @n_bytes = n
             @address = adr
           end

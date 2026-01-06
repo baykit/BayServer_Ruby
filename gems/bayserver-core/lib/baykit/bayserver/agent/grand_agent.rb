@@ -8,10 +8,10 @@ require 'baykit/bayserver/agent/multiplexer/spider_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/spin_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/job_multiplexer'
 require 'baykit/bayserver/agent/multiplexer/taxi_multiplexer'
-require 'baykit/bayserver/agent/multiplexer/rudder_state'
 require 'baykit/bayserver/agent/monitor/grand_agent_monitor'
 require 'baykit/bayserver/agent/signal/signal_agent'
 
+require 'baykit/bayserver/common/rudder_state'
 require 'baykit/bayserver/docker/harbor'
 
 require 'baykit/bayserver/train/train_runner'
@@ -32,6 +32,7 @@ module Baykit
         include Baykit::BayServer::Agent::Multiplexer
         include Baykit::BayServer::Docker
         include Baykit::BayServer::Util
+        include Baykit::BayServer::Common
 
         SELECT_TIMEOUT_SEC = 10
 
@@ -157,7 +158,9 @@ module Baykit
               if @net_multiplexer.is_non_blocking
                 rd.set_non_blocking
               end
-              @net_multiplexer.add_rudder_state(rd, RudderState.new(rd))
+              st = RudderStateStore.get_store(@agent_id).rent
+              st.init(rd)
+              @net_multiplexer.add_rudder_state(rd, st)
             end
           end
 
@@ -216,19 +219,25 @@ module Baykit
                   let = @letter_queue.shift
                 end
 
+                st = let.multiplexer.get_rudder_state(let.rudder)
+                if st == nil
+                  BayLog.debug("%s rudder is already returned: %s", self, let.rudder)
+                  next
+                end
+
                 case let
                 when AcceptedLetter
-                  on_accepted(let)
+                  on_accepted(let, st)
                 when ConnectedLetter
-                  on_connected(let)
+                  on_connected(let, st)
                 when ReadLetter
-                  on_read(let)
+                  on_read(let, st)
                 when WroteLetter
-                  on_wrote(let)
+                  on_wrote(let, st)
                 when ClosedLetter
-                  on_closed(let)
+                  on_closed(let, st)
                 when ErrorLetter
-                  on_error(let)
+                  on_error(let, st)
                 end
               end
             end # while
@@ -283,31 +292,51 @@ module Baykit
           @command_receiver = CommandReceiver.new()
           com_transporter = PlainTransporter.new(@net_multiplexer, @command_receiver, true, 8, false)
           @command_receiver.init(@agent_id, rd, com_transporter)
-          @net_multiplexer.add_rudder_state(@command_receiver.rudder, RudderState.new(@command_receiver.rudder, com_transporter))
-          BayLog.info("ComRec=%s", @command_receiver)
+
+          st = RudderStateStore.get_store(@agent_id).rent
+          st.init(@command_receiver.rudder, com_transporter)
+          @net_multiplexer.add_rudder_state(@command_receiver.rudder, st)
         end
 
-        def send_accepted_letter(st, client_rd, wakeup)
-          send_letter(AcceptedLetter.new(st, client_rd), wakeup)
+        def send_accepted_letter(state_id, rd, mpx, client_rd, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(AcceptedLetter.new(state_id, rd, mpx, client_rd), wakeup)
         end
 
-        def send_connected_letter(st, wakeup)
-          send_letter(ConnectedLetter.new(st), wakeup)
+        def send_connected_letter(state_id, rd, mpx, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(ConnectedLetter.new(state_id, rd, mpx), wakeup)
         end
-        def send_read_letter(st, n, adr, wakeup)
-          send_letter(ReadLetter.new(st, n, adr), wakeup)
-        end
-
-        def send_wrote_letter(st, n, wakeup)
-          send_letter(WroteLetter.new(st, n), wakeup)
-        end
-
-        def send_closed_letter(st, wakeup)
-          send_letter(ClosedLetter.new(st), wakeup)
+        def send_read_letter(state_id, rd, mpx, n, adr, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(ReadLetter.new(state_id, rd, mpx, n, adr), wakeup)
         end
 
-        def send_error_letter(st, err, wakeup)
-          send_letter(ErrorLetter.new(st, err), wakeup)
+        def send_wrote_letter(state_id, rd, mpx, n, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(WroteLetter.new(state_id, rd, mpx, n), wakeup)
+        end
+
+        def send_closed_letter(state_id, rd, mpx, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(ClosedLetter.new(state_id, rd, mpx), wakeup)
+        end
+
+        def send_error_letter(state_id, rd, mpx, err, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(ErrorLetter.new(state_id, rd, mpx, err), wakeup)
         end
 
         def shutdown
@@ -403,8 +432,7 @@ module Baykit
           end
         end
 
-        def on_accepted(let)
-          st = let.state
+        def on_accepted(let, st)
           begin
             p = BayServer::anchorable_port_map[st.rudder]
             p.on_connected(@agent_id, let.client_rudder)
@@ -415,16 +443,12 @@ module Baykit
 
           if !@net_multiplexer.is_busy
             st.multiplexer.next_accept(st)
+          else
+            BayLog.warn("%s net multiplexer is busy: %s", self, @net_multiplexer);
           end
         end
 
-        def on_connected(let)
-          st = let.state
-          if st.closed
-            BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder);
-            return;
-          end
-
+        def on_connected(let, st)
           BayLog.debug("%s connected rd=%s", self, st.rudder)
           next_act = nil
           begin
@@ -443,14 +467,7 @@ module Baykit
           next_action(st, next_act, false)
         end
 
-        def on_read(let)
-          st = let.state
-          if st.closed
-            BayLog.debug("
-            %s Rudder is already closed: rd=%s", self, st.rudder)
-            return
-          end
-
+        def on_read(let, st)
           begin
             BayLog.debug("%s read %d bytes (rd=%s)", self, let.n_bytes, st.rudder)
             st.bytes_read += let.n_bytes
@@ -470,13 +487,7 @@ module Baykit
           next_action(st, next_act, true)
         end
 
-        def on_wrote(let)
-          st = let.state
-          if st.closed
-            BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder)
-            return
-          end
-
+        def on_wrote(let, st)
           BayLog.debug("%s wrote %d bytes rd=%s qlen=%d", self, let.n_bytes, st.rudder, st.write_queue.length)
           st.bytes_wrote += let.n_bytes
 
@@ -514,14 +525,7 @@ module Baykit
           end
         end
 
-        def on_closed(let)
-          st = let.state
-          BayLog.debug("%s on closed rd=%s", self, st.rudder)
-          if st.closed
-            BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder)
-            return
-          end
-
+        def on_closed(let, st)
           st.multiplexer.remove_rudder_state(st.rudder)
 
           while st.multiplexer.consume_oldest_unit(st) do
@@ -532,16 +536,19 @@ module Baykit
             st.transporter.on_closed(st.rudder)
           end
 
-          st.closed = true
-          st.access
+          RudderStateStore.get_store(@agent_id).Return(st)
         end
 
-        def on_error(let)
+        def on_error(let, st)
           begin
             raise let.err
           rescue SystemCallError, IOError, OpenSSL::SSL::SSLError, HttpException => e
-            BayLog.error_e(e)
-            next_action(let.state, NextSocketAction::CLOSE, false)
+            if st.transporter != nil
+              st.transporter.on_error(st.rudder, e)
+            else
+              BayLog.error_e(e, "%s onError error=%s", self, e);
+            end
+            next_action(st, NextSocketAction::CLOSE, false)
           rescue => e
             BayLog.fatal_e(e, "Cannot handle error")
             raise e

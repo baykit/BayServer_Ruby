@@ -6,7 +6,7 @@ module Baykit
     module Agent
       module Letters
         class ConnectedLetter
-          def initialize: (Multiplexer::RudderState st) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx) -> void
         end
       end
     end

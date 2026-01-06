@@ -1,6 +1,7 @@
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/common/postpone'
+require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/train/train'
 require 'baykit/bayserver/tours/req_content_handler'
 
@@ -22,6 +23,7 @@ module Baykit
           include Baykit::BayServer::Tours
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           READ_CHUNK_SIZE = 8192
 
@@ -194,10 +196,9 @@ module Baykit
 
               out_ship.init_std_out(@std_out_rd, @tour.ship.agent_id, @tour, out_tp, self)
 
-              mpx.add_rudder_state(
-                @std_out_rd,
-                RudderState.new(@std_out_rd, out_tp)
-              )
+              out_st = RudderStateStore.get_store(agt.agent_id).rent()
+              out_st.init(@std_out_rd, out_tp)
+              mpx.add_rudder_state(@std_out_rd, out_st)
 
               ship_id = out_ship.ship_id
               @tour.res.set_consume_listener do |len, resume|
@@ -209,10 +210,10 @@ module Baykit
               err_ship = CgiStdErrShip.new
               err_tp = PlainTransporter.new(agt.net_multiplexer, err_ship, false, bufsize, false)
               err_ship.init_std_err(@std_err_rd, @tour.ship.agent_id, self)
-              mpx.add_rudder_state(
-                @std_err_rd,
-                RudderState.new(@std_err_rd, err_tp)
-              )
+
+              err_st = RudderStateStore.get_store(agt.agent_id).rent()
+              err_st.init(@std_err_rd, err_tp)
+              mpx.add_rudder_state(@std_err_rd, err_st)
 
               mpx.req_read(@std_out_rd)
               mpx.req_read(@std_err_rd)

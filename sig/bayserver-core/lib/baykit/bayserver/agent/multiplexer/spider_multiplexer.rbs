@@ -28,21 +28,21 @@ module Baykit
           def shutdown: -> void
           def is_non_blocking: -> bool
           def use_async_api: -> bool
-          def cancel_read: (RudderState st) -> void
-          def cancel_write: (RudderState st) -> void
-          def next_accept: (RudderState st) -> void
-          def next_read: (RudderState st) -> void
-          def next_write: (RudderState st) -> void
+          def cancel_read: (Common::RudderState st) -> void
+          def cancel_write: (Common::RudderState st) -> void
+          def next_accept: (Common::RudderState st) -> void
+          def next_read: (Common::RudderState st) -> void
+          def next_write: (Common::RudderState st) -> void
 
           private
           def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect, ?bool ) -> void
           def register_channel_ops: -> Integer
           def handle_channel: (IO ch, Integer op) -> void
-          def on_acceptable: (RudderState st) -> void
-          def on_connectable: (RudderState st) -> void
-          def on_readable: (RudderState st) -> void
-          def on_writable: (RudderState st) -> void
-          def on_close_req: (RudderState st) -> void
+          def on_acceptable: (Common::RudderState st) -> void
+          def on_connectable: (Common::RudderState st) -> void
+          def on_readable: (Common::RudderState st) -> void
+          def on_writable: (Common::RudderState st) -> void
+          def on_close_req: (Common::RudderState st) -> void
           def self.op_mode: (Integer mode) -> void
           def on_waked_up: () -> void
 

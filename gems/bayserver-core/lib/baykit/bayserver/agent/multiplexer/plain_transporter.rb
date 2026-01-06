@@ -1,4 +1,4 @@
-require 'baykit/bayserver/agent/multiplexer/transporter'
+require 'baykit/bayserver/common/transporter'
 require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/agent/next_socket_action'
 
@@ -7,7 +7,7 @@ module Baykit
     module Agent
       module Multiplexer
         class PlainTransporter
-          include Transporter   # Implements
+          include Baykit::BayServer::Common::Transporter   # Implements
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Util

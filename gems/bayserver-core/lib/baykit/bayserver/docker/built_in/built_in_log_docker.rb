@@ -1,7 +1,7 @@
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/lifecycle_listener'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
-require 'baykit/bayserver/agent/multiplexer/rudder_state'
+require 'baykit/bayserver/common/rudder_state'
 require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/docker/built_in/write_file_taxi'
 require 'baykit/bayserver/docker/log'
@@ -19,6 +19,15 @@ module Baykit
             include Baykit::BayServer::Util
             include Baykit::BayServer::Bcf
             include Baykit::BayServer::Agent
+            include Baykit::BayServer::Common
+
+            class LoggerInfo
+              attr_accessor :file_name
+              attr_accessor :file_size
+              attr_accessor :rudder
+              attr_accessor :multiplexer
+              attr_accessor :rudder_state
+            end
 
             class AgentListener
               include Baykit::BayServer::Agent::Multiplexer
@@ -33,17 +42,19 @@ module Baykit
               end
 
               def add(agt_id)
-                file_name = "#{@log_docker.file_prefix}_#{agt_id}.#{@log_docker.file_ext}"
-                size = 0
-                if ::File.exist?(file_name)
-                  size = ::File.size(file_name)
+                info = LoggerInfo.new()
+                info.file_name = "#{@log_docker.file_prefix}_#{agt_id}.#{@log_docker.file_ext}"
+                info.file_size = 0
+
+                if ::File.exist?(info.file_name)
+                  info.file_size = ::File.size(info.file_name)
                 end
                 agt = GrandAgent.get(agt_id)
 
                 begin
-                  f = File.open(file_name, "a")
+                  f = File.open(info.file_name, "a")
                 rescue => e
-                  BayLog.fatal(BayMessage.get(:INT_CANNOT_OPEN_LOG_FILE, file_name))
+                  BayLog.fatal(BayMessage.get(:INT_CANNOT_OPEN_LOG_FILE, info.file_name))
                   BayLog.fatal_e(e);
                 end
 
@@ -66,20 +77,18 @@ module Baykit
                   raise Sink.new
                 end
 
-                st = RudderState.new(rd)
-                st.bytes_wrote = size
-                mpx.add_rudder_state(rd, st)
+                info.multiplexer = mpx
+                info.rudder = rd
 
-                @log_docker.multiplexers[agt_id] = mpx
-                @log_docker.rudders[agt_id] = rd
+                @log_docker.loggers[agt_id] = info
               end
 
 
               def remove(agt_id)
-                rd = @log_docker.rudders[agt_id]
-                @log_docker.multiplexers[agt_id].req_close(rd)
-                @log_docker.multiplexers[agt_id] = nil
-                @log_docker.rudders[agt_id] = nil
+                info = @log_docker.loggers[agt_id]
+                rd = info.rudder
+                info.multiplexer.req_close(rd)
+                @log_docker.loggers[agt_id] = nil
               end
             end
 
@@ -99,16 +108,12 @@ module Baykit
             # Log items
             attr :log_items
 
-            attr :rudders
-
-            # Multiplexer to write to file
-            attr :multiplexers
+            attr :loggers
 
             def initialize
               @format = nil
               @log_items = []
-              @rudders = {}
-              @multiplexers = {}
+              @loggers = {}
             end
 
             def init(elm, parent)
@@ -165,8 +170,16 @@ module Baykit
 
               # If threre are message to write, write it
               if sb.length > 0
-                @multiplexers[tour.ship.agent_id].req_write(
-                  @rudders[tour.ship.agent_id],
+                info = @loggers[tour.ship.agent_id]
+                if info.rudder_state == nil
+                  info.rudder_state = RudderStateStore.get_store(tour.ship.agent_id).rent()
+                  info.rudder_state.init(info.rudder)
+                  info.rudder_state.bytes_wrote = info.file_size
+                  info.multiplexer.add_rudder_state(info.rudder, info.rudder_state)
+                end
+
+                info.multiplexer.req_write(
+                  info.rudder,
                   sb,
                   nil,
                   "log"

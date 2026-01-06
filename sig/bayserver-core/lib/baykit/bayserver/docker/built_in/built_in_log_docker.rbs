@@ -10,8 +10,7 @@ module Baykit
           self.@log_item_map: Hash[String, Class]
           @format: String
           @log_items: Array[LogItem]
-          @rudders: Hash[Integer, Rudders::Rudder]
-          @multiplexers: Hash[Integer, Agent::Multiplexer]
+          @loggers: Hash[Integer, LoggerInfo]
           @file_prefix: String
           @file_ext: String
 
@@ -20,10 +19,13 @@ module Baykit
           def init_key_val: (Bcf::BcfKeyVal kv) -> bool
           def log: (Tours::Tour tour) -> void
 
-          private
-          def compile: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
-          def compile_ctl: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
-          def self.make_map: -> void
+          class LoggerInfo
+            @file_name: String
+            @file_size: Integer
+            @rudder: Rudders::Rudder
+            @multiplexer: Common::Multiplexer
+            @rudder_state: Common::RudderState
+          end
 
           class AgentListener
             @log_docker: BuiltInLogDocker
@@ -32,6 +34,12 @@ module Baykit
             def add: (Integer agt_id) -> void
             def remove: (Integer agt_id) -> void
           end
+
+          private
+          def compile: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
+          def compile_ctl: (String str, Array[LogItem] items, String file_name, Integer line_no) -> void
+          def self.make_map: -> void
+
         end
       end
     end

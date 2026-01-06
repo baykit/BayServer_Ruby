@@ -50,12 +50,12 @@ module Baykit
         def add_timer_handler: (TimerHandler handler) -> void
         def remove_timer_handler: (TimerHandler handler) -> void
         def add_command_receiver: (Rudders::Rudder rd) -> void
-        def send_accepted_letter: (Multiplexer::RudderState st, Rudders::Rudder client_rd, bool wakeup) -> void
-        def send_connected_letter: (Multiplexer::RudderState st, bool wakeup) -> void
-        def send_read_letter: (Multiplexer::RudderState st, Integer n, untyped adr, bool wakeup) -> void
-        def send_wrote_letter: (Multiplexer::RudderState st, Integer n, bool wakeup) -> void
-        def send_closed_letter: (Multiplexer::RudderState st, bool wakeup) -> void
-        def send_error_letter: (Multiplexer::RudderState st, Exception err, bool wakeup) -> void
+        def send_accepted_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd, bool wakeup) -> void
+        def send_connected_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
+        def send_read_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, untyped adr, bool wakeup) -> void
+        def send_wrote_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, bool wakeup) -> void
+        def send_closed_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
+        def send_error_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Exception err, bool wakeup) -> void
         def shutdown: -> void
         def abort: -> void
         def reload_cert: -> void
@@ -67,13 +67,13 @@ module Baykit
         private
         def ring: -> Time
         def send_letter: (Letters::Letter let, bool wakeup) -> void
-        def on_accepted: (Letters::AcceptedLetter let) -> void
-        def on_connected: (Letters::ConnectedLetter let) -> void
-        def on_read: (Letters::ReadLetter let) -> void
-        def on_wrote: (Letters::WroteLetter let) -> void
-        def on_closed: (Letters::ClosedLetter let) -> void
-        def on_error: (Letters::ErrorLetter let) -> void
-        def next_action: (Multiplexer::RudderState st, Interrupt act, bool reading) -> void
+        def on_accepted: (Letters::AcceptedLetter let, Common::RudderState st) -> void
+        def on_connected: (Letters::ConnectedLetter let, Common::RudderState st) -> void
+        def on_read: (Letters::ReadLetter let, Common::RudderState st) -> void
+        def on_wrote: (Letters::WroteLetter let, Common::RudderState st) -> void
+        def on_closed: (Letters::ClosedLetter let, Common::RudderState st) -> void
+        def on_error: (Letters::ErrorLetter let, Common::RudderState st) -> void
+        def next_action: (Common::RudderState st, Integer act, bool reading) -> void
         def self.init: (Array[Integer] agt_ids, Integer max_ships) -> void
         def self.get: (Interrupt agt_id) -> GrandAgent
         def self.add: (Integer agt_id, bool anchorable) -> GrandAgent

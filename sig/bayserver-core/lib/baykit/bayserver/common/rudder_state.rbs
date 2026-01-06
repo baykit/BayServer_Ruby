@@ -3,11 +3,12 @@
 # Classes
 module Baykit
   module BayServer
-    module Agent
-      module Multiplexer
+    module Common
         class RudderState
-          @rudder: Rudders::Rudder
-          @transporter: Transporter
+          @id: Integer
+          @rudder: Rudders::Rudder | nil
+          @multiplexer: Common::Multiplexer | nil
+          @transporter: Common::Transporter | nil
           @timeout_sec: Integer
           @read_buf: String
           @buf_size: Integer
@@ -17,23 +18,21 @@ module Baykit
           @writing_lock: Thread::Mutex
           @last_access_time: Integer
 
-          attr_accessor multiplexer: Common::Multiplexer
           attr_accessor closing: bool
           attr_accessor handshaking: bool
           attr_accessor reading: bool
           attr_accessor writing: bool
           attr_accessor bytes_read: Integer
           attr_accessor bytes_wrote: Integer
-          attr_accessor closed: bool
           attr_accessor finale: bool
           attr_accessor accepting: bool
           attr_accessor connecting: bool
-          def initialize: (Rudders::Rudder rd, ?nil tp, ?Integer timeout_sec) -> void
+          def initialize: -> void
+          def init: (Rudders::Rudder rd, ?nil tp, ?Integer timeout_sec) -> void
           def access: -> void
           def end: -> void
           def to_s: -> String
         end
-      end
     end
   end
 end

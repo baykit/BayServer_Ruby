@@ -63,11 +63,11 @@ module Baykit
             return true
           end
 
-          def close_rudder(st)
-            BayLog.debug("%s closeRd %s state=%s closed=%s", agent, st.rudder, st, st.closed)
+          def close_rudder(rd)
+            BayLog.debug("%s closeRd %s", agent, rd)
 
             begin
-              st.rudder.close()
+              rd.close()
             rescue IOError => e
               Baylog.error_e(e)
             end
@@ -123,7 +123,7 @@ module Baykit
             end
             copied.each do |st|
               if st.rudder != @agent.command_receiver.rudder
-                close_rudder(st)
+                close_rudder(st.rudder)
               end
             end
           end

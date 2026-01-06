@@ -8,7 +8,7 @@ module Baykit
         class ErrorLetter
           @err: Exception
 
-          def initialize: (Multiplexer::RudderState st, Exception err) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx,  Exception err) -> void
         end
       end
     end

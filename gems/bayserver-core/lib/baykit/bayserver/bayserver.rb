@@ -28,6 +28,7 @@ require 'baykit/bayserver/protocol/protocol_handler_store'
 
 require 'baykit/bayserver/docker/package'
 require 'baykit/bayserver/common/inbound_ship_store'
+require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/common/warp_ship_store'
 
 require 'baykit/bayserver/util/locale'
@@ -248,6 +249,7 @@ module Baykit
 
           # Init stores, memory usage managers
           PacketStore.init()
+          RudderStateStore.init()
           InboundShipStore.init()
           ProtocolHandlerStore.init()
           TourStore.init(TourStore::MAX_TOURS)

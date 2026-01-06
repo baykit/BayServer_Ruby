@@ -1,6 +1,5 @@
 require 'baykit/bayserver/protocol/protocol_handler_store'
 require 'baykit/bayserver/bcf/package'
-require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/util/object_store'
 require 'baykit/bayserver/util/object_factory'
@@ -8,6 +7,7 @@ require 'baykit/bayserver/util/object_factory'
 require 'baykit/bayserver/docker/port'
 require 'baykit/bayserver/docker/base/docker_base'
 require 'baykit/bayserver/common/inbound_ship_store'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 
 module Baykit
   module BayServer
@@ -151,8 +151,8 @@ module Baykit
                 raise ConfigException.new(kv.file_name, kv.line_no, BayMessage.get(:CFG_INVALID_PARAMETER_VALUE, kv.value))
               end
 
-              name = kv.value[0 .. idx].strip()
-              value = kv.value[idx+1 .. -1].strip()
+              name  = kv.value[0, idx].strip
+              value = kv.value[idx+1, kv.value.length].strip
               @additional_headers << [name, value]
 
             else
@@ -217,7 +217,8 @@ module Baykit
             proto_hnd = PortBase.get_protocol_handler_store(protocol(), agt_id).rent()
             sip.init_inbound(rd, agt_id, tp, self, proto_hnd)
 
-            st = RudderState.new(rd, tp)
+            st = RudderStateStore.get_store(agt_id).rent()
+            st.init(rd, tp)
             agt.net_multiplexer.add_rudder_state(rd, st)
             agt.net_multiplexer.req_read(rd)
           end

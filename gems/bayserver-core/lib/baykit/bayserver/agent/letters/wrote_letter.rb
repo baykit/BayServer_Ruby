@@ -5,8 +5,8 @@ module Baykit
         class WroteLetter < Letter
           attr :n_bytes
 
-          def initialize(st, n)
-            super st
+          def initialize(state_id, rd, mpx, n)
+            super state_id, rd, mpx
             @n_bytes = n
           end
         end

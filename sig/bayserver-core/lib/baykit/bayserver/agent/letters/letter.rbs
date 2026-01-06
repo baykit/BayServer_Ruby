@@ -1,4 +1,4 @@
-# TypeProf 0.21.11
+# TypeProf 0.21.3
 
 # Classes
 module Baykit
@@ -6,9 +6,11 @@ module Baykit
     module Agent
       module Letters
         class Letter
-          @state: Multiplexer::RudderState
+          @state_id: Integer
+          @rudder: Rudders::Rudder
+          @multiplexer: Common::Multiplexer
 
-          def initialize: (Multiplexer::RudderState st) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx) -> void
         end
       end
     end

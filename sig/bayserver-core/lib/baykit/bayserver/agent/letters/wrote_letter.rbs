@@ -8,7 +8,7 @@ module Baykit
         class WroteLetter
           @n_bytes: Integer
 
-          def initialize: (Multiplexer::RudderState st, Integer n) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx,  Integer n) -> void
         end
       end
     end

@@ -2,8 +2,7 @@ require 'baykit/bayserver/util/reusable'
 
 module Baykit
   module BayServer
-    module Agent
-      module Multiplexer
+    module Common
         class WriteUnit
 
           attr :buf
@@ -24,7 +23,6 @@ module Baykit
             end
           end
         end
-      end
     end
   end
 end

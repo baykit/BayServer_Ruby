@@ -14,14 +14,19 @@ module Baykit
 
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
+          include Baykit::BayServer::Common
 
           class Lapper  # abstract class
 
+            attr :multiplexer
+            attr :state_id
             attr :state
             attr :last_access
 
-            def initialize(state)
+            def initialize(mpx, state)
+              @multiplexer = mpx
               @state = state
+              @state_id = state.id
               access
             end
 
@@ -46,8 +51,8 @@ module Baykit
 
             attr :agent
 
-            def initialize(agt, st)
-              super(st)
+            def initialize(mpx, agt, st)
+              super(mpx, st)
               @agent = agt
               st.rudder.set_non_blocking
             end
@@ -61,10 +66,9 @@ module Baykit
 
                 begin
                   n = @state.rudder.read(@state.read_buf, @state.buf_size)
-                  #infile.sysread(@state.buf_size, @state.read_buf)
-                rescue EOFError => e
-                  @state.read_buf.clear
-                  eof = true
+                  if n == 0
+                    eof = true
+                  end
                 rescue Errno::EAGAIN => e
                   BayLog.debug("%s %s", @agent, e)
                   return true
@@ -78,11 +82,11 @@ module Baykit
                   end
                 end
 
-                @agent.send_read_letter(@state, @state.read_buf.length, nil, false)
+                @agent.send_read_letter(@state_id, @state.rudder, @multiplexer, @state.read_buf.length, nil, false)
                 return false
 
               rescue Exception => e
-                @agent.send_error_letter(@state, e, false)
+                @agent.send_error_letter(@state_id, @state.rudder, @multiplexer, e, false)
                 return false
               end
             end
@@ -140,7 +144,7 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf, len, adr, tag, &lis)
+          def req_write(rd, buf, adr, tag, &lis)
             st = get_rudder_state(rd)
             if st == nil
               BayLog.warn("Invalid rudder")
@@ -173,8 +177,9 @@ module Baykit
 
           def req_close(rd)
             st = get_rudder_state(rd)
-            close_rudder(st)
-            @agent.send_closed_letter(st, false)
+            st.closing = true
+            close_rudder(rd)
+            @agent.send_closed_letter(st.id, st.rudder, self, false)
           end
 
 
@@ -206,7 +211,7 @@ module Baykit
           end
 
           def next_read(st)
-            lpr = ReadIOLapper.new(@agent, st)
+            lpr = ReadIOLapper.new(self, @agent, st)
             lpr.next
 
             add_to_running_list(lpr)
@@ -287,11 +292,11 @@ module Baykit
           #########################################
           private
 
-          def remove_from_running_list(st)
-            BayLog.debug("remove: %s", st.rudder)
+          def remove_from_running_list(rd)
+            BayLog.debug("remove: %s", rd)
             @running_list_lock.synchronize do
               @running_list.delete_if do |lpr |
-                lpr.state == st
+                lpr.state.rudder == rd
               end
             end
           end

@@ -154,7 +154,11 @@ module Baykit
               #BayLog.info("%s", self)
               acc = pkt.new_ajp_data_accessor()
               acc.put_byte(@type) # prefix code
-              acc.put_byte(CmdForwardRequest.get_method_code(@method))
+              code = CmdForwardRequest.get_method_code(@method)
+              if code <= 0
+                raise ProtocolException.new "Invalid method: #{@method}"
+              end
+              acc.put_byte(code)
               acc.put_string(@protocol)
               acc.put_string(@req_uri)
               acc.put_string(@remote_addr)
@@ -173,7 +177,11 @@ module Baykit
               super
               acc = pkt.new_ajp_data_accessor()
               acc.get_byte() # prefix code
-              @method = CmdForwardRequest.method_map[acc.get_byte]
+              code = acc.get_byte
+              @method = CmdForwardRequest.method_map[code]
+              if @method == nil
+                raise ProtocolException.new "Invalid method code: #{code}"
+              end
               @protocol = acc.get_string
               @req_uri = acc.get_string
               @remote_addr = acc.get_string

@@ -9,7 +9,7 @@ module Baykit
           @n_bytes: Integer
           @address: String
 
-          def initialize: (Multiplexer::RudderState st, Integer n, ?String adr) -> void
+          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, ?String adr) -> void
         end
       end
     end
