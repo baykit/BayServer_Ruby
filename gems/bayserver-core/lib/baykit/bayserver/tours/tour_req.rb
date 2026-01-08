@@ -223,9 +223,9 @@ module Baykit
           if hnd == nil
             raise Sink.new("nil")
           end
-          if @content_handler != nil
-            raise Sink.new("content handler already set")
-          end
+          #if @content_handler != nil
+          #  raise Sink.new("content handler already set")
+          #end
 
           @content_handler = hnd
         end
