@@ -26,7 +26,12 @@ module Baykit
             close_all()
           end
 
+          def on_busy()
+            BayLog.debug("%s onBusy (ignore)", self)
+          end
+
           def on_free()
+            BayLog.debug("%s onFree", self)
             if @agent.aborted
               return
             end

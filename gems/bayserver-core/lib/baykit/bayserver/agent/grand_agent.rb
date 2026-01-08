@@ -178,19 +178,10 @@ module Baykit
           end
 =end
 
-          busy = true
+
+          @net_multiplexer.on_free
           begin
             while true
-
-              test_busy = @net_multiplexer.is_busy
-              if test_busy != busy
-                busy = test_busy
-                if busy
-                  @net_multiplexer.on_busy
-                else
-                  @net_multiplexer.on_free
-                end
-              end
 
               if not @spin_multiplexer.is_empty
                 # If "SpinHandler" is running, the select function does not block.
@@ -202,7 +193,7 @@ module Baykit
 
               if @aborted
                 BayLog.info("%s aborted by another thread", self)
-                break;
+                break
               end
 
               if @spin_multiplexer.is_empty && @letter_queue.empty?
@@ -441,10 +432,12 @@ module Baykit
             next_action(st, NextSocketAction::CLOSE, false)
           end
 
-          if !@net_multiplexer.is_busy
-            st.multiplexer.next_accept(st)
+          if @net_multiplexer.is_busy
+            BayLog.warn("%s net multiplexer is busy: %s", self, @net_multiplexer)
+            @net_multiplexer.on_busy
+            @busy = true
           else
-            BayLog.warn("%s net multiplexer is busy: %s", self, @net_multiplexer);
+            st.multiplexer.next_accept(st)
           end
         end
 
@@ -537,6 +530,12 @@ module Baykit
           end
 
           RudderStateStore.get_store(@agent_id).Return(st)
+
+          if @busy && !@net_multiplexer.is_busy
+            BayLog.warn("%s net multiplexer is free: %s", self, @net_multiplexer)
+            @net_multiplexer.on_free
+            @busy = false
+          end
         end
 
         def on_error(let, st)

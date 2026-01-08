@@ -39,6 +39,7 @@ module Baykit
         @spin_multiplexer: Common::Multiplexer
         @recipient: Common::Recipient
         @last_timeout_check: Time
+        @busy: bool
 
         def initialize: (Integer agent_id, Integer max_ships, true anchorable) -> void
         def to_s: -> String
