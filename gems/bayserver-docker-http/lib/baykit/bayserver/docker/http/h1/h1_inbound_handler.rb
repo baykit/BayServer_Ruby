@@ -175,7 +175,7 @@ module Baykit
               end
 
               tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::BAD_REQUEST, err.message, err)
-              true
+              false
             end
 
             ######################################################
