@@ -1,0 +1,15 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Rudders
+      class RudderBase
+        @closed: bool
+
+        def close: -> void
+        def closed?: -> bool
+      end
+    end
+  end
+end

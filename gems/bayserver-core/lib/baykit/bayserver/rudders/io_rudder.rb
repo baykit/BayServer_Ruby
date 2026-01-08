@@ -1,10 +1,10 @@
 require 'baykit/bayserver/rudders/rudder'
+require 'baykit/bayserver/rudders/rudder_base'
 
 module Baykit
   module BayServer
     module Rudders
-      class IORudder
-        include Rudder
+      class IORudder < RudderBase
 
         attr :io
         attr :non_blocking

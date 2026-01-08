@@ -23,6 +23,10 @@ module Baykit
         def close
           raise NotImplementedError.new
         end
+
+        def closed?
+          raise NotImplementedError.new
+        end
       end
     end
   end

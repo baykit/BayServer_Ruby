@@ -488,19 +488,22 @@ module Baykit
             raise Sink("%s Write queue is empty: rd=%s", self, st.rudder)
           end
 
+          write_more = false
           unit = st.write_queue[0]
           if unit.buf.length > 0
             BayLog.debug("Could not write enough data buf_len=%d", unit.buf.length)
+            write_more = true
           else
+            # Removes write unit from writeQueue
             st.multiplexer.consume_oldest_unit(st)
-          end
 
-          write_more = true
-
-          st.writing_lock.synchronize do
-            if st.write_queue.empty?
-              write_more = false
-              st.writing = false
+            st.writing_lock.synchronize do
+              if st.write_queue.empty?
+                write_more = false
+                st.writing = false
+              else
+                write_more = true
+              end
             end
           end
 

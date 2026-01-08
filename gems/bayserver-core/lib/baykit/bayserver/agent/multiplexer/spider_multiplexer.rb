@@ -158,6 +158,10 @@ module Baykit
           end
 
           def cancel_write(st)
+            if st.rudder.closed?
+              return
+            end
+
             op = @selector.get_op(st.rudder.io) & ~Selector::OP_WRITE
             # Write OP off
             if op != Selector::OP_READ

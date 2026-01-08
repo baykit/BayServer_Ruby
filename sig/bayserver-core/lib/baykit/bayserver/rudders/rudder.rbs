@@ -10,6 +10,7 @@ module Baykit
         def read: (String buf, Integer len) -> Integer
         def write: (String buf) -> Integer
         def close: () -> void
+        def closed?: () -> bool
       end
     end
   end
