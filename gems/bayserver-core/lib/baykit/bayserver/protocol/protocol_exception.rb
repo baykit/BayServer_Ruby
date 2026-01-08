@@ -1,3 +1,9 @@
+#
+# ProtocolException is thrown when protocol-level violations are detected,
+# such as invalid packet framing or incorrect packet ordering.
+# (Invalid HTTP headers or content length values result in an HttpException,
+# which causes a 400 Bad Request response to be returned to the client.)
+#
 module Baykit
   module BayServer
     module Protocol
