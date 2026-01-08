@@ -255,9 +255,6 @@ module Baykit
               if tur == nil
                 raise RuntimeError.new("Invalid stream id: #{cmd.stream_id}")
               end
-              if tur.req.headers.content_length <= 0
-                raise ProtocolException.new("Post content not allowed")
-              end
 
               begin
                 success = false
