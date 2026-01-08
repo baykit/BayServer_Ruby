@@ -5,7 +5,7 @@ module Baykit
         def initialize(fmt = nil, *args)
           super(if fmt == nil
                   nil
-                elsif args == nil
+                elsif args.empty?
                   sprintf("%s", fmt)
                 else
                   sprintf(fmt, *args)
