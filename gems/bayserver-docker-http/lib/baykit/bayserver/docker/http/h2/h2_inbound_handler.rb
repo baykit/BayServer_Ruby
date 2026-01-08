@@ -420,7 +420,12 @@ module Baykit
                 tur.req.remote_address = client_adr
                 tur.req.remote_port = nil
               else
-                remote_addr = skt.getpeername()
+                begin
+                  remote_addr = skt.getpeername()
+                rescue SystemCallError => e
+                  BayLog.debug_e(e)
+                  remote_addr = ""
+                end
                 tur.req.remote_port, tur.req.remote_address = Socket.unpack_sockaddr_in(remote_addr)
               end
 
