@@ -10,6 +10,7 @@ module Baykit
           @limit_bytes: Integer
           @contents: Hash[String, FileContent]
           @total_bytes: Integer
+          @lock: Mutex
 
           def initialize: (Integer timeout_sec, Integer limit_bytes) -> void
           def get: (String file) -> FileContentStatus

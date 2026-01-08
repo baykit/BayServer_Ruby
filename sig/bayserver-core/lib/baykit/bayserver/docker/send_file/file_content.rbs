@@ -12,6 +12,7 @@ module Baykit
           @bytes_loaded: Integer
           @loaded_time: Integer
           @waiters: Array[Rudders::Rudder]
+          @lock: Mutex
 
           def initialize: (String path, Integer length) -> void
           def is_loaded: -> bool

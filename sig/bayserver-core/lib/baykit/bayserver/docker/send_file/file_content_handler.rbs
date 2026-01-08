@@ -13,6 +13,7 @@ module Baykit
           @abortable: bool
           @store: FileStore
           @file_content: FileContent
+          @lock: Mutex
 
           def initialize: (Tours::Tour tur, FileStore store, String path, String charset) -> void
           def on_read_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void

@@ -13,6 +13,7 @@ module Baykit
           attr_accessor :bytes_loaded
           attr :loaded_time
           attr :waiters
+          attr :lock
 
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
@@ -25,6 +26,7 @@ module Baykit
             @bytes_loaded = 0
             @loaded_time = Time.now.to_i
             @waiters = []
+            @lock = Mutex.new
           end
 
           def is_loaded()
@@ -32,18 +34,22 @@ module Baykit
           end
 
           def add_waiter(waiter)
-            if is_loaded
-              wakeup_waiter(waiter)
-            else
-              waiters << waiter
+            @lock.synchronize do
+              if is_loaded
+                wakeup_waiter(waiter)
+              else
+                waiters << waiter
+              end
             end
           end
 
           def complete()
-            @waiters.each do |waiter|
-              wakeup_waiter(waiter)
+            @lock.synchronize do
+              @waiters.each do |waiter|
+                wakeup_waiter(waiter)
+              end
+              waiters.clear
             end
-            waiters.clear
           end
 
           def wakeup_waiter(waiter)

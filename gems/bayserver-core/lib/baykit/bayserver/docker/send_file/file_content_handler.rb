@@ -26,6 +26,7 @@ module Baykit
           attr :abortable
           attr :store
           attr :file_content
+          attr :lock
 
           def initialize(tur, store, path, charset)
             @tour = tur
@@ -33,6 +34,7 @@ module Baykit
             @path = path
             @charset = charset
             @abortable = true
+            @lock = Mutex.new
 
             rname = File.basename(path)
             pos = rname.rindex('.')
@@ -76,57 +78,58 @@ module Baykit
 
           def req_start_tour
 
-            if @store == nil
-              status = FileStore::FileContentStatus.new(nil, FileStore::FileContentStatus::EXCEEDED)
-            else
-              status = @store.get(path)
-            end
-            @file_content = status.file_content
-
-            BayLog.debug("%s file content status: %d", @tour, status.status)
-            case status.status
-            when FileStore::FileContentStatus::STARTED, FileStore::FileContentStatus::EXCEEDED
-              send_file_async
-
-            when FileStore::FileContentStatus::READING
-              # Wait file loaded
-              BayLog.debug("%s Cannot start tour (file reading)", @tour)
-
-              agt = GrandAgent.get(@tour.ship.agent_id)
-              wait_file_ship = WaitFileShip.new()
-              tp = PlainTransporter.new(
-                agt.spider_multiplexer,
-                wait_file_ship,
-                true,
-                8192,
-                false)
-
-              begin
-                pipe = IO::pipe
-                source_rd = IORudder.new(pipe[0])
-                source_rd.set_non_blocking()
-                wait_rd = IORudder.new(pipe[1])
-              rescue IOError => e
-                raise Sink.new("Fatal error: %s", e)
+            @lock.synchronize do
+              if @store == nil
+                status = FileStore::FileContentStatus.new(nil, FileStore::FileContentStatus::EXCEEDED)
+              else
+                status = @store.get(path)
               end
+              @file_content = status.file_content
 
-              wait_file_ship.init(source_rd, tp, @tour, @file_content, self)
-              @tour.res.set_consume_listener(&ContentConsumeListener::DEV_NULL)
+              BayLog.debug("%s file content status: %d", @tour, status.status)
+              case status.status
+              when FileStore::FileContentStatus::STARTED, FileStore::FileContentStatus::EXCEEDED
+                send_file_async
 
-              st = RudderStateStore.get_store(agt.agent_id).rent()
-              st.init(source_rd, tp)
-              agt.spider_multiplexer.add_rudder_state(source_rd, st)
-              agt.spider_multiplexer.req_read(source_rd)
+              when FileStore::FileContentStatus::READING
+                # Wait file loaded
+                BayLog.debug("%s Cannot start tour (file reading)", @tour)
 
-              @file_content.add_waiter(wait_rd)
+                agt = GrandAgent.get(@tour.ship.agent_id)
+                wait_file_ship = WaitFileShip.new()
+                tp = PlainTransporter.new(
+                  agt.spider_multiplexer,
+                  wait_file_ship,
+                  true,
+                  8192,
+                  false)
 
-              when FileStore::FileContentStatus::COMPLETED
-                send_file_from_cache
+                begin
+                  pipe = IO::pipe
+                  source_rd = IORudder.new(pipe[0])
+                  source_rd.set_non_blocking()
+                  wait_rd = IORudder.new(pipe[1])
+                rescue IOError => e
+                  raise Sink.new("Fatal error: %s", e)
+                end
 
-            else
-              raise Sink.new("Unknown file content status: %d", status.status)
+                wait_file_ship.init(source_rd, tp, @tour, @file_content, self)
+                @tour.res.set_consume_listener(&ContentConsumeListener::DEV_NULL)
+
+                st = RudderStateStore.get_store(agt.agent_id).rent()
+                st.init(source_rd, tp)
+                agt.spider_multiplexer.add_rudder_state(source_rd, st)
+                agt.spider_multiplexer.req_read(source_rd)
+
+                @file_content.add_waiter(wait_rd)
+
+                when FileStore::FileContentStatus::COMPLETED
+                  send_file_from_cache
+
+              else
+                raise Sink.new("Unknown file content status: %d", status.status)
+              end
             end
-
           end
 
           def send_file_async()

@@ -28,59 +28,63 @@ module Baykit
           attr :limit_bytes
           attr :total_bytes
           attr :lifespan_seconds
+          attr :lock
 
           def initialize(timeout_sec, limit_bytes)
             @lifespan_seconds = timeout_sec
             @limit_bytes = limit_bytes
             @total_bytes = 0
             @contents = {}
+            @lock = Mutex.new
           end
 
           def get(path)
-            status = 0
-            file_content = @contents[path]
+            @lock.synchronize do
+              status = 0
+              file_content = @contents[path]
 
-            if file_content != nil
-              now =  Time.now.to_i
+              if file_content != nil
+                now =  Time.now.to_i
 
-              if file_content.loaded_time + @lifespan_seconds < Time.now.to_i
-                @total_bytes -= file_content.length
-                BayLog.debug("Remove expired content: %s", path)
-                @contents.delete(path)
-                file_content = nil
-              else
-                if file_content.is_loaded
-                  status = FileContentStatus::COMPLETED
+                if file_content.loaded_time + @lifespan_seconds < Time.now.to_i
+                  @total_bytes -= file_content.length
+                  BayLog.debug("Remove expired content: %s", path)
+                  @contents.delete(path)
+                  file_content = nil
                 else
-                  status = FileContentStatus::READING
-                end
-              end
-            end
-
-            if file_content == nil
-              length = File.size(path)
-              exceeded = false
-              if length <= @limit_bytes
-                if @total_bytes + length > @limit_bytes
-                  if !evict()
-                    exceeded = true
+                  if file_content.is_loaded
+                    status = FileContentStatus::COMPLETED
+                  else
+                    status = FileContentStatus::READING
                   end
                 end
-              else
-                exceeded = true
               end
 
-              if exceeded
-                status = FileContentStatus::EXCEEDED
-              else
-                file_content = FileContent.new(path, length)
-                @contents[path] = file_content
-                @total_bytes += length
-                status = FileContentStatus::STARTED
+              if file_content == nil
+                length = File.size(path)
+                exceeded = false
+                if length <= @limit_bytes
+                  if @total_bytes + length > @limit_bytes
+                    if !evict()
+                      exceeded = true
+                    end
+                  end
+                else
+                  exceeded = true
+                end
+
+                if exceeded
+                  status = FileContentStatus::EXCEEDED
+                else
+                  file_content = FileContent.new(path, length)
+                  @contents[path] = file_content
+                  @total_bytes += length
+                  status = FileContentStatus::STARTED
+                end
               end
+              return FileContentStatus.new(file_content, status)
+
             end
-
-            return FileContentStatus.new(file_content, status)
           end
 
           def evict()
