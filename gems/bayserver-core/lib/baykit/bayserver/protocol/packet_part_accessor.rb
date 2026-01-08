@@ -100,13 +100,13 @@ module Baykit
         def check_read(len)
           max_len = (@max_len >= 0) ? @max_len : (@packet.buf_len - @start)
           if @pos + len > max_len
-            raise Sink.new("Invalid array index")
+            raise IOError("Invalid array index")
           end
         end
 
         def check_write(len)
           if @max_len > 0 && @pos + len > @max_len
-            raise Sink.new("Buffer overflow")
+            raise IOError("Buffer overflow")
           end
         end
 
