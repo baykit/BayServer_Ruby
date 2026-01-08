@@ -1,0 +1,25 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class FileContent
+          @path: String
+          @content: String
+          @content_length: Integer
+          @bytes_loaded: Integer
+          @loaded_time: Integer
+          @waiters: Array[Rudders::Rudder]
+
+          def initialize: (String path, Integer length) -> void
+          def is_loaded: -> bool
+          def add_waiter: (Rudders::Rudder waiter) -> void
+          def complete: -> void
+          def wakeup_waiter: (Rudders::Rudder waiter) -> void
+        end
+      end
+    end
+  end
+end

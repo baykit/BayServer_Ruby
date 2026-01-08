@@ -1,0 +1,32 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class FileStore
+          @lifespan_seconds: Integer
+          @limit_bytes: Integer
+          @contents: Hash[String, FileContent]
+          @total_bytes: Integer
+
+          def initialize: (Integer timeout_sec, Integer limit_bytes) -> void
+          def get: (String file) -> FileContentStatus
+          def evict: -> bool
+
+          class FileContentStatus
+            STARTED: Integer
+            READING: Integer
+            COMPLETED: Integer
+            EXCEEDED: Integer
+            @file_content: FileContent
+            @status: Integer
+
+            def initialize: (FileContent file_content, Integer status) -> void
+          end
+        end
+      end
+    end
+  end
+end

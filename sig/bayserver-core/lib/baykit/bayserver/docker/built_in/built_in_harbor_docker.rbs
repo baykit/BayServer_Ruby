@@ -1,0 +1,65 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInHarborDocker
+          DEFAULT_MAX_SHIPS: Integer
+          DEFAULT_SHIP_AGENTS: Integer
+          DEFAULT_TRAIN_RUNNERS: Integer
+          DEFAULT_TAXI_RUNNERS: Integer
+          DEFAULT_WAIT_TIMEOUT_SEC: Integer
+          DEFAULT_KEEP_TIMEOUT_SEC: Integer
+          DEFAULT_TOUR_BUFFER_SIZE: Integer
+          DEFAULT_TRACE_HEADER: bool
+          DEFAULT_CHARSET: String
+          DEFAULT_CONTROL_PORT: Integer
+          DEFAULT_MULTI_CORE: bool
+          DEFAULT_GZIP_COMP: bool
+          DEFAULT_NET_MULTIPLEXER: Integer
+          DEFAULT_FILE_MULTIPLEXER: Integer
+          DEFAULT_LOG_MULTIPLEXER: Integer
+          DEFAULT_CGI_MULTIPLEXER: Integer
+          DEFAULT_RECIPIENT: Integer
+          DEFAULT_PID_FILE: String
+          DEFAULT_ENABLE_CACHE: bool
+          DEFAULT_CACHE_LIFESPAN_SEC: Integer
+          DEFAULT_CACHE_SIZE_MB: Integer
+          include Baykit::BayServer
+          @grand_agents: Integer
+          @train_runners: Integer
+          @taxi_runners: Integer
+          @max_ships: Integer
+          @groups: Common::Groups
+          @socket_timeout_sec: Integer
+          @keep_timeout_sec: Integer
+          @tour_buffer_size: Integer
+          @trace_header: bool
+          @charset: String
+          @control_port: Integer
+          @multi_core: bool
+          @gzip_comp: bool
+          @net_multiplexer: Integer
+          @file_multiplexer: Integer
+          @log_multiplexer: Integer
+          @cgi_multiplexer: Integer
+          @recipient: Integer
+          @pid_file: String
+          @trouble: Trouble
+          @locale: String
+          @redirect_file: String
+          @enable_cache: bool
+          @cache_lifespan_sec: Integer
+          @cache_size_mb: Integer
+
+          def initialize: -> void
+          def init: (untyped bcf, untyped parent) -> void
+          def init_docker: (untyped dkr) -> bool
+          def init_key_val: (untyped kv) -> bool
+        end
+      end
+    end
+  end
+end

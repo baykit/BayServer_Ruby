@@ -1,0 +1,32 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class JobMultiplexer
+          include Multiplexer
+          @agent: GrandAgent
+
+          def initialize: (GrandAgent agt, bool anchorable) -> void
+          def to_s: -> String
+          def req_accept: (Rudders::Rudder rd) -> void
+          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_read: (Rudders::Rudder rd) -> void
+          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) { () -> void }  -> void
+          def req_close: (Rudders::Rudder rd) -> void
+
+          def cancel_read: (Common::RudderState st) -> void
+          def cancel_write: (Common::RudderState st) -> void
+          def next_accept: (Common::RudderState st) -> void
+          def next_read: (Common::RudderState st) -> void
+          def next_write: (Common::RudderState st) -> void
+
+          def is_non_blocking: -> bool
+          def use_async_api: -> bool
+        end
+      end
+    end
+  end
+end

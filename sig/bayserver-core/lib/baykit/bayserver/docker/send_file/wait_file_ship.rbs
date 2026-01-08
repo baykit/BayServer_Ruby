@@ -1,0 +1,30 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class WaitFileShip
+          @file_content: FileContent
+          @handler: FileContentHandler
+          @tour: Tours::Tour
+          @tour_id: Integer
+          @agent_id: Integer
+          @ship_id: Integer
+          @object_id: Integer
+
+          def initialize: () -> void
+          def init: (Rudders::Rudder rd, Common::Transporter tp, Tours::Tour tur, FileContent file_content, FileContentHandler handler) -> void
+          def to_s: -> String
+          def reset: -> void
+          def notify_read: (String buf) -> Integer
+          def notify_error: (Exception e) -> Integer
+          def notify_eof: -> Integer
+          def notify_close: -> void
+          def check_timeout: (Integer duration_sec) -> false
+        end
+      end
+    end
+  end
+end

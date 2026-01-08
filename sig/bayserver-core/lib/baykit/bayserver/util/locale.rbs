@@ -1,0 +1,16 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Locale
+        @language: String?
+        @country: String?
+
+        def initialize: (String? language, String? country) -> void
+        def self.default: -> Locale
+      end
+    end
+  end
+end

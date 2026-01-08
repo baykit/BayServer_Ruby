@@ -1,0 +1,21 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Multiplexer
+        class JobMultiplexerBase
+          @anchorable: bool
+          @agent: GrandAgent
+          @pipe: [IO, IO]
+
+          def initialize: (GrandAgent agt, bool anchorable) -> void
+          def shutdown: -> void
+          def on_free: -> void
+          def on_timer: -> void
+        end
+      end
+    end
+  end
+end
