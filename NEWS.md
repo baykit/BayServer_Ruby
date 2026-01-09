@@ -1,5 +1,11 @@
 # BayServer for Ruby
 
+# 3.1.0
+
+- [Core] Improves performance
+- [Core] Supports enableCache parameter
+- [Core] Fixes minor bugs
+
 # 3.0.5
 
 - Fixes minor bugs.
