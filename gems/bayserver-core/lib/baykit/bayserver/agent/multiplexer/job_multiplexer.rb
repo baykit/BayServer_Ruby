@@ -82,9 +82,9 @@ module Baykit
               begin
                 rd.io.connect(adr)
                 BayLog.debug("%s Connected rd=%s", @agent, rd)
-                @agent.send_connected_letter(st.id, rd, self, false)
+                @agent.send_connected_letter(st.id, rd, self, true)
               rescue Exception => e
-                @agent.send_error_letter(st.id, rd, self, e, false)
+                @agent.send_error_letter(st.id, rd, self, e, true)
                 return
               end
             end
