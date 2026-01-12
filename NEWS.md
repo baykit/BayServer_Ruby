@@ -1,5 +1,9 @@
 # BayServer for Ruby
 
+# 3.1.1
+
+- Fixes minor bugs.
+
 # 3.1.0
 
 - [Core] Improves performance
