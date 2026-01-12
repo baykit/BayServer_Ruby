@@ -106,8 +106,12 @@ module Baykit
             end
           end
 
-          add_env(REMOTE_ADDR, tur.req.remote_address, &block)
-          add_env(REMOTE_PORT, tur.req.remote_port, &block)
+          if tur.req.remote_address
+            add_env(REMOTE_ADDR, tur.req.remote_address, &block)
+          end
+          if tur.req.remote_port
+            add_env(REMOTE_PORT, tur.req.remote_port, &block)
+          end
           #add_env(REMOTE_USER, "unknown")
 
           add_env(REQUEST_SCHEME, tur.is_secure ? "https": "http", &block)

@@ -421,9 +421,11 @@ module Baykit
                   remote_addr = skt.getpeername()
                 rescue SystemCallError => e
                   BayLog.debug_e(e)
-                  remote_addr = ""
+                  remote_addr = nil
                 end
-                tur.req.remote_port, tur.req.remote_address = Socket.unpack_sockaddr_in(remote_addr)
+                if remote_addr
+                  tur.req.remote_port, tur.req.remote_address = Socket.unpack_sockaddr_in(remote_addr)
+                end
               end
 
               tur.req.remote_host_func = lambda {  HttpUtil.resolve_remote_host(tur.req.remote_address) }
