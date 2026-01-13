@@ -177,7 +177,7 @@ module Baykit
               raise e
             ensure
               @header_sent = true
-              end_content(chk_tour_id)
+              end_res_content(chk_tour_id)
             end
           end
 
