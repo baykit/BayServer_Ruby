@@ -129,8 +129,10 @@ module Baykit
       end
 
       def self.print_exception err
-        for s in err.backtrace
-          puts "\t" + s
+        if err.backtrace != nil
+          for s in err.backtrace
+            puts "\t" + s
+          end
         end
         if err.cause
           puts "Caused by:"

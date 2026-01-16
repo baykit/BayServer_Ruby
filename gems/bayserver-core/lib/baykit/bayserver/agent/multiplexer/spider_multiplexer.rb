@@ -438,8 +438,11 @@ module Baykit
             err = st.rudder.io.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int
             if err != 0
               BayLog.error("Connect failed: errno=%d", err)
-              ex = SystemCallError.new("connect", err)
-              @agent.send_error_letter(st.id, st.rudder, self, ex, false)
+              begin
+                raise SystemCallError.new("connect", err)
+              rescue SystemCallError => e
+                @agent.send_error_letter(st.id, st.rudder, self, e, false)
+              end
             else
               @agent.send_connected_letter(st.id, st.rudder, self, false)
             end

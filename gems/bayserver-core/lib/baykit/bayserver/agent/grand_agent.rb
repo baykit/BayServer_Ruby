@@ -542,18 +542,21 @@ module Baykit
         end
 
         def on_error(let, st)
-          begin
-            raise let.err
-          rescue SystemCallError, IOError, OpenSSL::SSL::SSLError, HttpException => e
+
+          if let.err.is_a?(SystemCallError) ||
+            let.err.is_a?(IOError) ||
+            let.err.is_a?(OpenSSL::SSL::SSLError) ||
+            let.err.is_a?(HttpException)
+
             if st.transporter != nil
-              st.transporter.on_error(st.rudder, e)
+              st.transporter.on_error(st.rudder, let.err)
             else
-              BayLog.error_e(e, "%s onError error=%s", self, e);
+              BayLog.error_e(let.err, "%s onError error=%s", self, let.err);
             end
             next_action(st, NextSocketAction::CLOSE, false)
-          rescue => e
-            BayLog.fatal_e(e, "Cannot handle error")
-            raise e
+          else
+            BayLog.fatal_e(let.e, "Cannot handle error")
+            raise let.e
           end
         end
 
