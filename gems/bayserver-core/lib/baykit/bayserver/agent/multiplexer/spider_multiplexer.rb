@@ -74,9 +74,15 @@ module Baykit
             rd.set_non_blocking
 
             begin
-              rd.io.connect(adr)
+              rd.io.connect_nonblock(adr)
             rescue IO::WaitWritable => e
-              #BayLog.error_e(e)
+              # In non-blocking mode, connect_nonblock raises IO::WaitWritable by design
+              # to signal an in-progress connection (this is expected and not an error).
+            rescue Errno::EISCONN
+              # Connection has been successfully established
+            rescue SystemCallError => e
+              @agent.send_error_letter(st.id, rd, self, e, false)
+              return
             end
 
             st.connecting = true
@@ -429,16 +435,15 @@ module Baykit
             BayLog.trace("%s onConnectable", self)
 
             # check connected
-            begin
-              buf = ""
-              st.rudder.io.syswrite(buf)
-            rescue => e
-              BayLog.error("Connect failed: %s", e)
-              @agent.send_error_letter(st.id, st.rudder, self, e, false)
-              return
+            err = st.rudder.io.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int
+            if err != 0
+              BayLog.error("Connect failed: errno=%d", err)
+              ex = SystemCallError.new("connect", err)
+              @agent.send_error_letter(st.id, st.rudder, self, ex, false)
+            else
+              @agent.send_connected_letter(st.id, st.rudder, self, false)
             end
 
-            @agent.send_connected_letter(st.id, st.rudder, self, false)
           end
 
           def on_readable(st)
