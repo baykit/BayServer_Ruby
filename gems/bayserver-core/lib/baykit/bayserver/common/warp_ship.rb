@@ -172,10 +172,10 @@ module Baykit
 
           def end_warp_tour(tur, keep)
             wdat = WarpData.get(tur)
-            BayLog.debug("%s end warp tour: started=%s ended=%s", tur, wdat.started, wdat.ended)
+            BayLog.debug("%s end warp tour: wtur#%d started=%s ended=%s", tur, wdat.warp_id, wdat.started, wdat.ended)
 
             if(!@tour_map.include?(wdat.warp_id))
-              raise Sink.new("%s WarpId not in tourMap: %d", tur, wdat.warp_id);
+              raise Sink.new("%s WarpId not in tourMap: wture#%d", tur, wdat.warp_id);
             else
               @tour_map.delete wdat.warp_id
             end
@@ -214,8 +214,9 @@ module Baykit
           def notify_error_to_owner_tour(status, msg)
             @lock.synchronize do
               @tour_map.keys.each do |warp_id|
+                BayLog.debug("%s wtur#%d notify error to owner", self, warp_id)
                 tur = get_tour(warp_id)
-                BayLog.debug("%s send error to owner: %s running=%s", self, tur, tur.running?)
+                BayLog.debug("%s wtur#%d send error to owner: %s running=%s", self, warp_id, tur, tur.running?)
                 if tur.running? || tur.reading?
                   begin
                     tur.res.send_error(Tour::TOUR_ID_NOCHECK, status, msg)

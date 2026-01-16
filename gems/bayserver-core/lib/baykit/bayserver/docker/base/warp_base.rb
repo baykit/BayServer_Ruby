@@ -222,7 +222,7 @@ module Baykit
               end
 
             rescue SystemCallError => e
-              BayLog.error_e(e, "%s Start warp tour error", wsip)
+              BayLog.error_e(e, "%s Error on starting warp tour", wsip)
               raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, "%s", e)
             rescue HttpException => e
               raise e
