@@ -16,6 +16,7 @@ module Baykit
             def handle_go_away: (Command::CmdGoAway cmd) -> Integer
             def handle_ping: (Command::CmdPing cmd) -> Integer
             def handle_rst_stream: (Command::CmdRstStream cmd) -> Integer
+            def handle_continuation: (Command::CmdContinuation cmd) -> Integer
           end
         end
       end

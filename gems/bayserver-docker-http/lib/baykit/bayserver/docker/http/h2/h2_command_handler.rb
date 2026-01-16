@@ -41,6 +41,10 @@ module Baykit
             def handle_rst_stream(cmd)
               raise NotImplementedError.new
             end
+
+            def handle_continuation(cmd)
+              raise NotImplementedError.new
+            end
           end
         end
       end

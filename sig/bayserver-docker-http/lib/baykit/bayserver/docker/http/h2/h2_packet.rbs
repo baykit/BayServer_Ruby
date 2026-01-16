@@ -33,28 +33,12 @@ module Baykit
             def initialize: (Integer `type`) -> void
             def reset: -> void
             def pack_header: -> void
-            def new_h2_header_accessor: -> H2HeaderAccessor
-            def new_h2_data_accessor: -> H2DataAccessor
             def self.extract_int31: (Integer val) -> Integer
             def self.extract_flag: (Integer val) -> Integer
             def self.consolidate_flag_and_int32: (Integer flag, Integer val) -> Integer
             def self.make_stream_dependency32: (Integer excluded, Integer dep) -> Integer
+            def put_int24: (Protocol::PacketPartAccessor acc, Integer len) -> void
             def to_s: -> String
-
-            class H2HeaderAccessor
-              def initialize: (H2Packet pkt, Integer start, nil max_len) -> void
-              def put_int24: (Integer len) -> void
-            end
-
-            class H2DataAccessor
-              def initialize: (H2Packet pkt, Integer start, Integer max_len) -> void
-              def get_hpack_int: (Integer prefix, Array[Integer] head) -> Integer
-              def get_hpack_int_rest: -> Integer
-              def get_hpack_string: -> String
-              def put_hpack_int: (Integer val, Integer prefix, Integer head) -> void
-              def put_hpack_int_rest: (Integer val) -> void
-              def put_hpack_string: (String value, bool is_haffman) -> void
-            end
           end
         end
       end

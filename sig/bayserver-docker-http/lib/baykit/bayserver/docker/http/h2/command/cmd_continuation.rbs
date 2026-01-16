@@ -7,18 +7,12 @@ module Baykit
       module Http
         module H2
           module Command
-            class CmdHeaders
+            class CmdContinuation
               include H2
               @data: String
               @start: Integer
               @length: Integer
 
-              @pad_length: Integer
-              @stream_dependency: Integer
-              @weight: Integer
-              @header_blocks: Array[HeaderBlock]
-
-              attr_accessor excluded: bool
               def initialize: (Integer stream_id, ?Integer flags) -> void
               def unpack: (H2Packet pkt) -> void
               def pack: (H2Packet pkt) -> void

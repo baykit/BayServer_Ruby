@@ -17,6 +17,7 @@ module Baykit
             @req_cont_len: Integer
             @req_cont_read: Integer
             @http_protocol: String
+            @header_buffer: Util::SimpleBuffer
 
             def initialize: -> void
             def reset: -> Integer
@@ -34,12 +35,14 @@ module Baykit
             def handle_go_away: (Command::CmdGoAway cmd) -> Integer
             def handle_ping: (Command::CmdPing cmd) -> Integer
             def handle_rst_stream: (Command::CmdRstStream cmd) -> Integer
+            def handle_continuation: (Command::CmdContinuation cmd) -> Integer
 
             private
             def ship: -> Common::InboundShip
             def get_tour: (Integer key) -> Tours::Tour
             def end_req_content: (Integer check_id, Tours::Tour tur) -> void
             def start_tour: (Tours::Tour tur) -> void
+            def on_end_header: (Tours::Tour tur, String buf, Integer start, Integer len) -> Integer
 
             class InboundProtocolHandlerFactory
               def create_protocol_handler: (Protocol::PacketStore pkt_store) -> H2ProtocolHandler

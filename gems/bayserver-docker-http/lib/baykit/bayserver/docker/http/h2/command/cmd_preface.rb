@@ -33,7 +33,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_h2_data_accessor()
+                acc = pkt.new_data_accessor()
                 acc.put_bytes(PREFACE_BYTES)
               end
 

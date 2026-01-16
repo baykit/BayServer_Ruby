@@ -54,6 +54,9 @@ module Baykit
               when H2Type::RST_STREAM
                 cmd = CmdRstStream.new(pkt.stream_id, pkt.flags)
 
+              when H2Type::CONTINUATION
+                cmd = CmdContinuation.new(pkt.stream_id, pkt.flags)
+
               else
                 reset()
                 raise RuntimeError.new("Invalid Packet: #{pkt}")

@@ -25,6 +25,13 @@ module Baykit
             class CmdHeaders < Baykit::BayServer::Docker::Http::H2::H2Command
               include Baykit::BayServer::Docker::Http::H2
 
+              #
+              # This class refers external byte array, so this IS NOT mutable
+              #
+              attr_accessor :start
+              attr_accessor :length
+              attr_accessor :data
+
               attr :pad_length
               attr_accessor :excluded
               attr :stream_dependency
@@ -42,7 +49,7 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_h2_data_accessor
+                acc = pkt.new_data_accessor
 
                 if pkt.flags.padded?
                   @pad_length = acc.get_byte
@@ -53,11 +60,13 @@ module Baykit
                   @stream_dependency = H2Packet.extract_int31(val)
                   @weight = acc.get_byte
                 end
-                read_header_block(acc, pkt.data_len())
+                @data = pkt.buf
+                @start = pkt.header_len + acc.pos
+                @length = pkt.data_len - acc.pos
               end
 
               def pack(pkt)
-                acc = pkt.new_h2_data_accessor
+                acc = pkt.new_data_accessor
 
                 if @flags.padded?
                   acc.put_byte(@pad_length)
@@ -67,7 +76,8 @@ module Baykit
                   acc.put_int(H2Packet.make_stream_dependency32(@excluded, @stream_dependency))
                   acc.put_byte(@weight)
                 end
-                write_header_block(acc)
+
+                acc.put_bytes(@data, @start, @length)
                 super
               end
 
@@ -75,28 +85,6 @@ module Baykit
                 return cmd_handler.handle_headers(self)
               end
 
-              def read_header_block(acc, len)
-                while acc.pos < len
-                  blk = HeaderBlock.unpack(acc)
-                  #if(BayLog.trace_mode?)
-                  #  BayLog.trace "h2: Read header block: #{blk}"
-                  #end
-                  @header_blocks << blk
-                end
-              end
-
-              def write_header_block(acc)
-                @header_blocks.each do |blk|
-                  #if(BayLog.trace_mode?)
-                  #  BayLog.trace "h2: Write header block: #{blk}"
-                  #end
-                  HeaderBlock.pack(blk, acc)
-                end
-              end
-
-              def add_header_block(blk)
-                @header_blocks.append(blk)
-              end
             end
           end
         end

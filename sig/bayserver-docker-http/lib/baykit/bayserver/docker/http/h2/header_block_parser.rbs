@@ -1,0 +1,30 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderBlock
+            @buf: String
+            @start: Integer
+            @pos: Integer
+            @length: Integer
+
+            def initialize: (String buf, Integer start, Integer length) -> void
+            def parse_header_blocks: -> Array[HeaderBlock]
+
+            private
+            def parse_header_block: -> HeaderBlock
+            def get_hpack_int: (Integer prefix, Array[Integer] head) -> Integer
+            def get_hpack_int_rest: -> Integer
+            def get_hpack_string: -> String
+            def get_byte: -> Integer
+            def get_bytes: (String buf) -> void
+          end
+        end
+      end
+    end
+  end
+end

@@ -59,6 +59,7 @@ module Baykit
             attr :http_protocol
             attr :req_header_tbl
             attr :res_header_tbl
+            attr :header_buffer
 
             def initialize
               @window_size = BayServer.harbor.tour_buffer_size
@@ -66,6 +67,7 @@ module Baykit
               @analyzer = HeaderBlockAnalyzer.new
               @req_header_tbl = HeaderTable.create_dynamic_table()
               @res_header_tbl = HeaderTable.create_dynamic_table()
+              @header_buffer = SimpleBuffer.new
             end
 
             ######################################################
@@ -76,6 +78,7 @@ module Baykit
               @header_read = false
               @req_cont_len = 0
               @req_cont_read = 0
+              @header_buffer.reset
             end
 
             def init(proto_handler)
@@ -87,10 +90,12 @@ module Baykit
             ######################################################
 
             def send_res_headers(tur)
-              cmd = CmdHeaders.new(tur.req.key)
               bld = HeaderBlockBuilder.new()
+
+              header_blocks = []
+
               blk = bld.build_header_block(":status", tur.res.headers.status.to_s, @res_header_tbl)
-              cmd.header_blocks << blk
+              header_blocks << blk
 
               # headers
               if BayServer.harbor.trace_header
@@ -105,15 +110,46 @@ module Baykit
                       BayLog.info("%s H2 res header: %s=%s", tur, name, value)
                     end
                     blk = bld.build_header_block(name, value, @res_header_tbl)
-                    cmd.header_blocks.append(blk)
+                    header_blocks.append(blk)
                   end
                 end
               end
 
-              cmd.flags.set_end_headers(true)
-              cmd.excluded = true
-              cmd.flags.set_padded(false)
-              @protocol_handler.post(cmd)
+              buf = SimpleBuffer.new
+              HeaderBlockRenderer.new(buf).render_header_blocks(header_blocks)
+
+              pos = 0
+              len = buf.length
+              while len > 0
+                chunk_len = [len, H2Packet::DEFAULT_PAYLOAD_MAXLEN].min
+
+                if pos == 0
+                  hcmd = CmdHeaders.new(tur.req.key)
+                  hcmd.excluded = false
+                  hcmd.data = buf.bytes
+                  hcmd.start = pos
+                  hcmd.length = len
+                  cmd = hcmd
+
+                else
+                  ccmd = CmdContinuation.new(tur.req.key)
+                  ccmd.data = buf.bytes
+                  ccmd.start = pos
+                  ccmd.length = len
+                  cmd = ccmd
+
+                end
+
+                cmd.flags.set_padded(false)
+
+                pos += chunk_len
+                len -= chunk_len
+                if len == 0
+                    cmd.flags.set_end_headers(true)
+                end
+
+                @protocol_handler.post(cmd)
+              end
             end
 
             def send_res_content(tur, bytes, ofs, len, &callback)
@@ -180,69 +216,10 @@ module Baykit
                 return NextSocketAction::CONTINUE
               end
 
-              cmd.header_blocks.each do |blk|
-                if blk.op == HeaderBlock::UPDATE_DYNAMIC_TABLE_SIZE
-                  BayLog.trace("%s header block update table size: %d", tur, blk.size)
-                  @req_header_tbl.set_size(blk.size)
-                  next
-                end
-                @analyzer.analyze_header_block(blk, @req_header_tbl)
-                if BayServer.harbor.trace_header
-                  BayLog.info("%s req header: %s=%s :%s", tur, @analyzer.name, @analyzer.value, blk);
-                end
-
-                if @analyzer.name == nil
-                  next
-
-                elsif @analyzer.name[0] != ":"
-                  tur.req.headers.add(@analyzer.name, @analyzer.value)
-
-                elsif @analyzer.method != nil
-                  tur.req.method = @analyzer.method
-
-                elsif @analyzer.path != nil
-                  tur.req.uri = @analyzer.path
-
-                elsif @analyzer.scheme != nil
-
-                elsif @analyzer.status != nil
-                  raise RuntimeError.new("Illegal State")
-                end
-              end
-
               if cmd.flags.end_headers?
-                tur.req.protocol = "HTTP/2.0"
-                BayLog.debug("%s H2 read header method=%s protocol=%s uri=%s contlen=%d",
-                             ship, tur.req.method, tur.req.protocol, tur.req.uri, tur.req.headers.content_length)
-
-                req_cont_len = tur.req.headers.content_length()
-
-                if req_cont_len > 0
-                  tur.req.set_limit(req_cont_len)
-                end
-
-                begin
-                  start_tour tur
-
-                  if tur.req.headers.content_length <= 0
-                    end_req_content(Tour::TOUR_ID_NOCHECK, tur)
-                  end
-                rescue HttpException => e
-                  BayLog.debug("%s Http error occurred: %s", self, e);
-                  if req_cont_len <= 0
-                    # no post data
-                    tur.req.abort
-                    tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, e)
-
-                    return NextSocketAction::CONTINUE
-                  else
-                    # Delay send
-                    tur.error = e
-                    tur.req.set_content_handler(ReqContentHandler::DEV_NULL)
-                    return NextSocketAction::CONTINUE
-                  end
-                end
-
+                return on_end_header(tur, cmd.data, cmd.start, cmd.length)
+              else
+                @header_buffer.put(cmd.data, cmd.start, cmd.length)
               end
 
               NextSocketAction::CONTINUE
@@ -387,6 +364,21 @@ module Baykit
               return NextSocketAction::CONTINUE
             end
 
+            def handle_continuation(cmd)
+              BayLog.debug("%s handle_continuation: stm=%d", ship, cmd.stream_id)
+              tur = get_tour(cmd.stream_id)
+              if tur == nil
+                raise ArgumentError("Invalid stream id: " + cmd.stream_id)
+              end
+
+              @header_buffer.put(cmd.data, cmd.start, cmd.length)
+              if cmd.flags.end_headers?
+                return on_end_header(tur, @header_buffer.bytes, 0, @header_buffer.length)
+              end
+
+              return NextSocketAction::CONTINUE
+            end
+
             private
 
             def ship
@@ -448,6 +440,74 @@ module Baykit
               tur.go
             end
 
+            def on_end_header(tur, buf, start, len)
+
+              header_blocks = HeaderBlockParser.new(buf, start, len).parse_header_blocks()
+
+              header_blocks.each do |blk|
+                if blk.op == HeaderBlock::UPDATE_DYNAMIC_TABLE_SIZE
+                  BayLog.trace("%s header block update table size: %d", tur, blk.size)
+                  @req_header_tbl.set_size(blk.size)
+                  next
+                end
+                @analyzer.analyze_header_block(blk, @req_header_tbl)
+                if BayServer.harbor.trace_header
+                  BayLog.info("%s req header: %s=%s :%s", tur, @analyzer.name, @analyzer.value, blk);
+                end
+
+                if @analyzer.name == nil
+                  next
+
+                elsif @analyzer.name[0] != ":"
+                  tur.req.headers.add(@analyzer.name, @analyzer.value)
+
+                elsif @analyzer.method != nil
+                  tur.req.method = @analyzer.method
+
+                elsif @analyzer.path != nil
+                  tur.req.uri = @analyzer.path
+
+                elsif @analyzer.scheme != nil
+
+                elsif @analyzer.status != nil
+                  raise RuntimeError.new("Illegal State")
+                end
+              end
+
+              tur.req.protocol = "HTTP/2.0"
+              BayLog.debug("%s H2 read header method=%s protocol=%s uri=%s contlen=%d",
+                           ship, tur.req.method, tur.req.protocol, tur.req.uri, tur.req.headers.content_length)
+
+              req_cont_len = tur.req.headers.content_length
+
+              if req_cont_len > 0
+                tur.req.set_limit(req_cont_len)
+              end
+
+              begin
+                start_tour tur
+
+                if tur.req.headers.content_length <= 0
+                  end_req_content(Tour::TOUR_ID_NOCHECK, tur)
+                end
+              rescue HttpException => e
+                BayLog.debug("%s Http error occurred: %s", self, e);
+                if req_cont_len <= 0
+                  # no post data
+                  tur.req.abort
+                  tur.res.send_http_exception(Tour::TOUR_ID_NOCHECK, e)
+
+                  return NextSocketAction::CONTINUE
+                else
+                  # Delay send
+                  tur.error = e
+                  tur.req.set_content_handler(ReqContentHandler::DEV_NULL)
+                  return NextSocketAction::CONTINUE
+                end
+              end
+
+              return NextSocketAction::CONTINUE
+            end
           end
         end
       end
