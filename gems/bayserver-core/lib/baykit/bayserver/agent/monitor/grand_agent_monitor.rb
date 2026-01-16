@@ -229,9 +229,23 @@ module Baykit
 
           def self.join
             while !@monitors.empty?
+              err = nil
               @monitors.values.each do |mon|
-                mon.child_thread.join
-                sleep 5
+                begin
+                  mon.child_thread.join
+                  sleep 5
+                rescue Interrupt => e
+                  err = e
+                  BayLog.error("%s Interrupted! Kill child: %d", mon, mon.child_pid)
+                  begin
+                    Process.kill("INT", mon.child_pid)
+                  rescue SystemCallError => e
+                    BayLog.error("%s Failed to kill child: %s", mon, e)
+                  end
+                end
+              end
+              if err
+                raise err
               end
             end
           end
