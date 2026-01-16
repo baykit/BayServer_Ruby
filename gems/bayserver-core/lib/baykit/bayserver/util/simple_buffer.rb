@@ -29,7 +29,7 @@ module Baykit
         end
 
         def put_byte(b)
-          put([b], 0, 1);
+          put(b.chr, 0, 1);
         end
 
         def put(bytes, pos=0, len=bytes.length)
