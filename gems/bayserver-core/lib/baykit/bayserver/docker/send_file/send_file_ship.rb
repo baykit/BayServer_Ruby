@@ -82,7 +82,7 @@ module Baykit
             begin
               @tour.res.end_res_content(@tour_id)
             rescue IOError => e
-              BayLog.debug_e(ex)
+              BayLog.debug_e(e)
             end
             return NextSocketAction::CLOSE
           end
