@@ -52,7 +52,7 @@ module Baykit
               available = @tour.res.send_res_content(@tour_id, buf, 0, buf.length)
 
               if @file_content != nil
-                BayLog.debug("buf=%s target=%s", buf, @file_content.content)
+                #BayLog.debug("buf=%s target=%s", buf, @file_content.content)
                 @file_content.content << buf
                 @file_content.bytes_loaded += buf.length
               end
