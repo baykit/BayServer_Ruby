@@ -174,7 +174,7 @@ module Baykit
               cmd.debug_data = "Thank you!"
               begin
                 @protocol_handler.post(cmd)
-                @protocol_handler.end(ship)
+                @protocol_handler.ship.post_close()
               rescue IOError => e
                 BayLog.error_e(e)
               end
@@ -215,6 +215,9 @@ module Baykit
                 tur.res.send_error(Tour::TOUR_ID_NOCHECK, HttpStatus::SERVICE_UNAVAILABLE, "No available tours")
                 return NextSocketAction::CONTINUE
               end
+              if !tur.preparing?
+                raise ProtocolException.new("%s Tour is not preparing.", tur)
+              end
 
               if cmd.flags.end_headers?
                 return on_end_header(tur, cmd.data, cmd.start, cmd.length)
@@ -231,6 +234,9 @@ module Baykit
               tur = get_tour(cmd.stream_id)
               if tur == nil
                 raise RuntimeError.new("Invalid stream id: #{cmd.stream_id}")
+              end
+              if !tur.reading?
+                raise ProtocolException.new("%s Tour is not reading.", tur)
               end
 
               begin
