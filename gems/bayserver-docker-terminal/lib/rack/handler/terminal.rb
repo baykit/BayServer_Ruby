@@ -1,4 +1,11 @@
-require 'rack/handler'
+# Rack 2.x handler (Rack::Handler)
+begin
+  require "rack/handler"
+rescue LoadError
+  # Rack 3.x: Rack::Handler is not available. Provide a no-op here and rely on rackup handler.
+  return
+end
+
 
 
 module Rack

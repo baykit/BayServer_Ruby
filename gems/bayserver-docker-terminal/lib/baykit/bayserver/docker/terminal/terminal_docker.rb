@@ -3,6 +3,7 @@ require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/docker/base/port_base'
 require 'baykit/bayserver/tours/content_consume_listener'
+require 'baykit/bayserver/common/rudder_state_store'
 
 require 'baykit/bayserver/docker/terminal/fully_hijackers_ship'
 require 'baykit/bayserver/docker/terminal/terminal_train'
@@ -18,6 +19,7 @@ module Baykit
           include Baykit::BayServer::Agent::Multiplexer
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Tours
+          include Baykit::BayServer::Common
 
           RACK_TERMINAL_PIPE = "rack.terminal.pipe"
           DEFAULT_POST_CACHE_THRESHOLD = 1024 * 128   # 128 KB
@@ -69,30 +71,54 @@ module Baykit
                 @environment = "deployment"
               end
               options = {
-                :server => "terminal",
-                :config => @config,
-                :environment => @environment,
-                :docker => self,
+                server: "terminal",        # Server/handler name (used by rack or rackup)
+                config: @config,           # Path to config.ru
+                environment: @environment, # Rack environment (development, production, etc.)
+                docker: self,              # Custom option passed to the server
               }
 
-              if defined?(Rack::Server)
-                # use Rack::Server.start for Rack 2.x
-                require 'rack/server'
+              # Rack 3.x moved Server/Handler to the `rackup` gem.
+              begin
+                require "rackup"           # Rack 3.x (or environments with rackup installed)
+                require "rackup/handler/terminal"
+                use_rackup = true
+              rescue LoadError
+                require "rack"
+                require "rack/server"     # Rack 2.x
+                use_rackup = false
+              end
+
+              if !use_rackup
+                # Rack 2.x: start server via Rack::Server
                 Rack::Server.start(options)
               else
-                # for Rack 3.x
+                # Rack 3.x: start server via rackup
+
                 opts = options.dup
+
+                # Extract server/handler name (e.g. "puma", "webrick", "bayserver")
                 server_name = opts.delete(:server) || 'bayserver'
+
+                # Extract config.ru path
                 config_file = opts.delete(:config)
 
+                # Load Rack application and options from config.ru
                 app, config_opts = Rack::Builder.parse_file(config_file)
                 if config_opts == nil
                   config_opts = {}
                 end
+
+                # Merge options from config.ru with runtime options
                 opts = config_opts.merge(opts)
+
+                # Set default port if not specified
                 opts[:Port] ||= 9292
 
-                #Rack::Handler::BayServer.run(app, **opts)
+                # Resolve handler via rackup
+                handler =Rackup::Handler.get(server_name.to_s)
+
+                # Run the Rack application using the selected handler
+                handler.run(app, **opts)
               end
             end
 
@@ -221,7 +247,9 @@ module Baykit
                 end
               end
 
-              mpx.add_rudder_state(rd_read, RudderState.new(rd_read, tp))
+              st = RudderStateStore.get_store(tur.ship.agent_id).rent
+              st.init(rd_read, tp)
+              mpx.add_rudder_state(rd_read, st)
               mpx.req_read(rd_read)
 
               w_pipe

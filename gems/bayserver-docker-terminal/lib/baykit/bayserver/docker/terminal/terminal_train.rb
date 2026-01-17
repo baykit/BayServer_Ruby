@@ -25,6 +25,7 @@ module Baykit
           include Baykit::BayServer::Util
           include Baykit::BayServer::Train
           include Baykit::BayServer::Tours
+          include Baykit::BayServer::Common
 
           attr :terminal_docker
           attr :tour
@@ -131,7 +132,9 @@ module Baykit
                     end
                   end
 
-                  mpx.add_rudder_state(rd_read, RudderState.new(rd_read, tp))
+                  st = RudderStateStore.get_store(@tour.ship.agent_id).rent
+                  st.init(rd_read, tp)
+                  mpx.add_rudder_state(rd_read, st)
                   mpx.req_read(rd_read)
 
                   hijack.call pip[1]

@@ -51,8 +51,8 @@ EOF
           ::File.write(bserv_plan, plan_str)
         end
 
-        Baykit::BayServer::BayServer.get_home
-        Baykit::BayServer::BayServer.get_plan
+        Baykit::BayServer::BayServer.get_home bserv_home
+        Baykit::BayServer::BayServer.get_plan bserv_plan
         Baykit::BayServer::BayServer.get_lib
         Baykit::BayServer::BayServer.init
         Baykit::BayServer::BayServer.start
