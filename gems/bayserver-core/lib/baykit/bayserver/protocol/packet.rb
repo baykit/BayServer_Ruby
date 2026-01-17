@@ -43,7 +43,8 @@ module Baykit
         end
 
         def expand
-          @buf = StringUtil.realloc(@buf, @buf.length * 2)
+          new_len = if @buf.length == 0 then 128 else @buf.length * 2 end
+          @buf << "\0" * new_len
         end
 
         def new_header_accessor()

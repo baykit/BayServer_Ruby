@@ -29,9 +29,9 @@ module Baykit
         def put_bytes(buf, ofs=0, len=buf.length)
           if len > 0
             check_write(len)
-            #while(@start + @pos + len > @packet.buf.length)
-            #  packet.expand()
-            #end
+            while @start + @pos + len > @packet.buf.length
+              packet.expand
+            end
             begin
               @packet.buf[@start + @pos, len] = buf[ofs, len]
             rescue IndexError => e
