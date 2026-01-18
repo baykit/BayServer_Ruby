@@ -1,5 +1,10 @@
 # BayServer for Ruby
 
+# 3.2.1
+
+ - [terminal] Adds support for Rack 3.x.
+ - [core][http] Fixes minor bugs.
+
 # 3.2.0
 
 - [H2] Adds support for HTTP/2 CONTINUATION frames
