@@ -508,7 +508,6 @@ module Baykit
               if st.write_queue.empty?
                 #raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
                 BayLog.debug("%s No data to write", self)
-                @agent.send_wrote_letter(st.id, st.rudder, self, 0, false)
                 return
               end
 
