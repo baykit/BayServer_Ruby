@@ -27,6 +27,7 @@ module Baykit
               attr_accessor :rudder
               attr_accessor :multiplexer
               attr_accessor :rudder_state
+              attr_accessor :registered
             end
 
             class AgentListener
@@ -79,6 +80,7 @@ module Baykit
 
                 info.multiplexer = mpx
                 info.rudder = rd
+                info.registered = false
 
                 @log_docker.loggers[agt_id] = info
               end
@@ -87,7 +89,9 @@ module Baykit
               def remove(agt_id)
                 info = @log_docker.loggers[agt_id]
                 rd = info.rudder
-                info.multiplexer.req_close(rd)
+                if info.registered
+                  info.multiplexer.req_close(rd)
+                end
                 @log_docker.loggers[agt_id] = nil
               end
             end
@@ -176,6 +180,7 @@ module Baykit
                   info.rudder_state.init(info.rudder)
                   info.rudder_state.bytes_wrote = info.file_size
                   info.multiplexer.add_rudder_state(info.rudder, info.rudder_state)
+                  info.registered = true
                 end
 
                 info.multiplexer.req_write(
