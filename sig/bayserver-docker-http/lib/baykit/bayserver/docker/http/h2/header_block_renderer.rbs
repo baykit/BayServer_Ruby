@@ -1,0 +1,27 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderBlockRenderer
+            @buf: Util::SimpleBuffer
+
+            def initialize: (Util::SimpleBuffer buf) -> void
+            def render_header_blocks: (Array[HeaderBlock] header_blocks) -> void
+
+            private
+            def render_heder_block: (HeaderBlock blk) -> void
+            def put_hpack_int: (Integer val, Integer prefix, Integer head) -> void
+            def put_hpack_int_rest: (Integer val) -> void
+            def put_hpack_string: (String value, bool is_haffman) -> void
+            def put_byte: (Integer val) -> void
+            def put_bytes: (String data) -> void
+          end
+        end
+      end
+    end
+  end
+end
