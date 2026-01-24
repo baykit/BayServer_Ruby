@@ -1,10 +1,12 @@
 require 'baykit/bayserver/common/recipient'
+require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/rudders/rudder'
+
 require 'baykit/bayserver/rudders/io_rudder'
 
 require 'baykit/bayserver/agent/multiplexer/multiplexer_base'
-require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/agent/timer_handler'
+
 
 module Baykit
   module BayServer
@@ -45,7 +47,18 @@ module Baykit
             @anchorable = anchorable
             @operations = []
             @operations_lock = Mutex.new
-            @selector = Selector.new
+
+            begin
+              require "nio4r"  # gem: nio4r
+              require 'baykit/bayserver/util/nio_selector'
+              @selector = NioSelector.new
+            rescue LoadError => e
+              BayLog.debug_e(e, "nio4r gem is not installed. Use Selector instead.")
+              require 'baykit/bayserver/util/rb_selector'
+              @selector = RbSelector.new
+            end
+
+
             @select_wakeup_pipe = IO.pipe
             @selector.register(@select_wakeup_pipe[0], Selector::OP_READ)
 
@@ -102,7 +115,7 @@ module Baykit
 
           def req_write(rd, buf,adr, tag, &lis)
             st = get_rudder_state(rd)
-            BayLog.debug("%s req write st=%s tag=%s", @agent, st, tag)
+            BayLog.debug("%s reqWrite st=%s tag=%s", @agent, st, tag)
 
             if st == nil
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
@@ -507,7 +520,7 @@ module Baykit
             begin
               if st.write_queue.empty?
                 #raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
-                BayLog.debug("%s No data to write", self)
+                BayLog.debug("%s No data to write: tp=%s rd=%s", self, st.transporter, st.rudder)
                 return
               end
 

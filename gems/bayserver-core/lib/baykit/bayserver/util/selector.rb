@@ -9,150 +9,113 @@ module Baykit
         OP_READ = 1
         OP_WRITE = 2
 
-        attr :channels
+        attr :io_op_map
         attr :lock
 
         def initialize
-          @channels = {}
+          @io_op_map = {}
           @lock = Mutex.new()
         end
 
         def register(ch, op)
-          #BayLog.debug("register io=%s", ch)
-          if not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
-            raise ArgumentError
-          end
+          validate_channel(ch)
           if op & OP_READ != 0
-            register_read(ch, @channels)
+            register_read(ch, @io_op_map)
           end
           if op & OP_WRITE != 0
-            register_write(ch, @channels)
+            register_write(ch, @io_op_map)
           end
         end
 
         def unregister(ch)
-          #BayLog.debug("unregister io=%s", ch)
-          if  not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
-            raise ArgumentError
-          end
-          unregister_read(ch, @channels)
-          unregister_write(ch, @channels)
+          validate_channel(ch)
+          unregister_read(ch, @io_op_map)
+          unregister_write(ch, @io_op_map)
         end
 
         def modify(ch, op)
-          if  not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
-            raise ArgumentError
-          end
+          validate_channel(ch)
           if op & OP_READ != 0
-            register_read(ch, @channels)
+            register_read(ch, @io_op_map)
           else
-            unregister_read(ch, @channels)
+            unregister_read(ch, @io_op_map)
           end
 
           if op & OP_WRITE != 0
-            register_write(ch, @channels)
+            register_write(ch, @io_op_map)
           else
-            unregister_write(ch, @channels)
+            unregister_write(ch, @io_op_map)
           end
         end
 
         def get_op(ch)
-          if not ((ch.kind_of? IO) || (ch.kind_of? OpenSSL::SSL::SSLSocket))
-            raise ArgumentError
-          end
-          return @channels[ch]
-        end
-
-        def select(timeout_sec = nil)
-          if timeout_sec == nil
-            timeout_sec = 0
-          end
-          except_list = []
-
-          read_list = []
-          write_list = []
-          @lock.synchronize do
-            @channels.keys().each do |ch|
-              if (@channels[ch] & OP_READ) != 0
-                read_list << ch
-              end
-              if (@channels[ch] & OP_WRITE) != 0
-                write_list << ch
-              end
-            end
-          end
-          #BayLog.debug("Select read_list=%s", read_list)
-          #BayLog.debug("Select write_list=%s", write_list)
-          selected_read_list, selected_write_list = Kernel.select(read_list, write_list, except_list, timeout_sec)
-
-          result = {}
-          if selected_read_list != nil
-            selected_read_list.each do |ch|
-              register_read(ch, result)
-            end
-          end
-
-          if selected_write_list != nil
-            selected_write_list.each do |ch|
-              register_write(ch, result)
-            end
-          end
-
-          return result
+          validate_channel(ch)
+          return @io_op_map[ch]
         end
 
         def count
           @lock.synchronize do
-            return @channels.length
+            return @io_op_map.length
+          end
+        end
+
+        def select(timeout_sec = nil)
+          raise NotImplementedError
+        end
+
+        def validate_channel(ch)
+          unless ch.is_a?(IO) || (defined?(OpenSSL::SSL::SSLSocket) && ch.is_a?(OpenSSL::SSL::SSLSocket))
+            raise ArgumentError
           end
         end
 
         private
-
-        def register_read(ch, ch_list)
+        def register_read(io, io_op)
           @lock.synchronize do
-            if ch_list.include?(ch)
-              ch_list[ch] = (ch_list[ch] | OP_READ)
+            if io_op.key?(io)
+              io_op[io] = (io_op[io] | OP_READ)
             else
-              ch_list[ch] = OP_READ
+              io_op[io] = OP_READ
             end
           end
         end
 
-        def register_write(ch, ch_list)
+        def register_write(io, io_op)
           @lock.synchronize do
-            if ch_list.include?(ch)
-              ch_list[ch] = (ch_list[ch] | OP_WRITE)
+            if io_op.key?(io)
+              io_op[io] = (io_op[io] | OP_WRITE)
             else
-              ch_list[ch] = OP_WRITE
+              io_op[io] = OP_WRITE
             end
           end
         end
 
-        def unregister_read(ch, ch_list)
+        def unregister_read(io, io_op)
           @lock.synchronize do
-            if ch_list.include?(ch)
-              if ch_list[ch] == OP_READ
-                ch_list.delete(ch)
+            if io_op.include?(io)
+              if io_op[io] == OP_READ
+                io_op.delete(io)
               else
-                ch_list[ch] = OP_WRITE
+                io_op[io] = OP_WRITE
               end
             end
           end
         end
 
 
-        def unregister_write(ch, ch_list)
+        def unregister_write(io, io_op)
           @lock.synchronize do
-            if ch_list.include?(ch)
-              if ch_list[ch] == OP_WRITE
-                ch_list.delete(ch)
+            if io_op.include?(io)
+              if io_op[io] == OP_WRITE
+                io_op.delete(io)
               else
-                ch_list[ch] = OP_READ
+                io_op[io] = OP_READ
               end
             end
           end
         end
+
+
       end
     end
   end

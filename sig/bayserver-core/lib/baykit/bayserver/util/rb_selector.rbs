@@ -1,0 +1,15 @@
+# TypeProf 0.21.11
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class RbSelector
+
+        def initialize: -> void
+        def select: (?(Integer | nil) timeout_sec) -> Hash[IO, Integer]
+
+      end
+    end
+  end
+end

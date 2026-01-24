@@ -4,20 +4,11 @@
 module Baykit
   module BayServer
     module Util
-      class Selector
-        OP_READ: Integer
-        OP_WRITE: Integer
-
-        @io_op_map: Hash[IO, Integer]
-        @lock: Thread::Mutex
+      class NioSelector
+        @selector: NIO::Selector
+        @io_monitor_map: Hash[IO, NIO::Monitor]
 
         def initialize: -> void
-        def register: (IO ch, Integer op) -> void
-        def unregister: (IO ch) -> void
-        def modify: (IO ch, Integer op) -> void
-        def get_op: (IO ch) -> Integer
-        def count: -> Integer
-        def validate_channel: (IO ch) -> void
         def select: (?(Integer | nil) timeout_sec) -> Hash[IO, Integer]
 
         private
@@ -25,7 +16,6 @@ module Baykit
         def register_write: (IO ch, Hash[IO, Integer] rd_list) -> void
         def unregister_read: (IO ch, Hash[IO, Integer] rd_list) -> void
         def unregister_write: (IO ch, Hash[IO, Integer] rd_list) -> void
-
       end
     end
   end
