@@ -1,5 +1,10 @@
 # BayServer for Ruby
 
+# 3.3.0
+
+ - [Core] Add nio4r support
+ - [core] Fixes minor bugs.
+
 # 3.2.1
 
  - [terminal] Adds support for Rack 3.x.
