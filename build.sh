@@ -60,5 +60,5 @@ sed -i -e '1s%.*%#!/usr/bin/ruby%' gems/bin/bayserver_rb
 rm gems/bin/bayserver_rb-e
 
 cd /tmp
-tar czf ${target_name}.tgz ${target_name}
+tar --no-xattrs -czf ${target_name}.tgz ${target_name}
 
