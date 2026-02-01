@@ -81,6 +81,10 @@ module Baykit
       end
 
       def self.log(lvl, stack_idx, err, fmt, args)
+        if lvl < @log_level
+          return
+        end
+
         #pos = caller[1].split("/")[-1]
         apos = parse_caller(caller[1])
         if(!@full_path)
@@ -90,22 +94,20 @@ module Baykit
         #pos = caller[1]
 
         if fmt != nil
-          if lvl >= @log_level
-            begin
-              if args == nil || args.length == 0
-                msg = sprintf("%s", fmt)
-              else
-                msg = sprintf(fmt, *args)
-              end
-            rescue => e
-              puts(e.class)
-              puts(e.message + " " + pos)
-              print_exception(e)
-              msg = fmt
+          begin
+            if args == nil || args.length == 0
+              msg = sprintf("%s", fmt)
+            else
+              msg = sprintf(fmt, *args)
             end
-
-            print("[#{Time.now}] #{LOG_LEVEL_NAME[lvl]}. #{msg} (at #{pos})\n")
+          rescue => e
+            puts(e.class)
+            puts(e.message + " " + pos)
+            print_exception(e)
+            msg = fmt
           end
+
+          print("[#{Time.now}] #{LOG_LEVEL_NAME[lvl]}. #{msg} (at #{pos})\n")
         end
 
         if err != nil
