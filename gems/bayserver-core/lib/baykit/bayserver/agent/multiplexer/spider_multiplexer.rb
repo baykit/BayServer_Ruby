@@ -469,28 +469,9 @@ module Baykit
 
             begin
               if st.handshaking
-                begin
-                  # Calls accept API for client socket
-                  st.rudder.io.accept_nonblock
+                if handshake(st)
                   st.handshaking = false
-
-                  BayLog.debug("%s Handshake done (rd=%s)", self, st.rudder)
-                  app_protocols = st.rudder.io.context.alpn_protocols
-
-                  # HELP ME
-                  #   This code does not work!
-                  #   We cannot get application protocol name
-                  proto = nil
-                  if app_protocols != nil && app_protocols.length > 0
-                    proto = app_protocols[0]
-                  end
-
-                rescue IO::WaitReadable => e
-                  BayLog.debug("%s Handshake status: read more st=%s", self, st)
-                  return NextSocketAction::CONTINUE
-                rescue IO::WaitWritable => e
-                  BayLog.debug("%s Handshake status: write more st=%s", self, st)
-                  req_write(st.rudder, "", nil, nil)
+                else
                   return NextSocketAction::CONTINUE
                 end
               end
@@ -518,6 +499,14 @@ module Baykit
 
           def on_writable(st)
             begin
+              if st.handshaking
+                if handshake(st)
+                  st.handshaking = false
+                else
+                  return NextSocketAction::CONTINUE
+                end
+              end
+
               if st.write_queue.empty?
                 #raise IOError.new(@agent.to_s + " No data to write: " + st.rudder.to_s)
                 BayLog.debug("%s No data to write: tp=%s rd=%s", self, st.transporter, st.rudder)
@@ -533,7 +522,7 @@ module Baykit
 
                 begin
                   n = st.rudder.write(wunit.buf)
-                rescue OpenSSL::SSL::SSLErrorWaitWritable => e
+                rescue OpenSSL::SSL::SSLErrorWaitWritable, IO::WaitWritable => e
                   BayLog.debug_e(e, "%s Cannot write data", self)
                   n = 0
                 end
@@ -575,6 +564,33 @@ module Baykit
             end
 
             return mode_str
+          end
+
+          def handshake(st)
+            begin
+              # Calls accept API for client socket
+              st.rudder.io.accept_nonblock
+
+              BayLog.debug("%s Handshake done (rd=%s)", self, st.rudder)
+              app_protocols = st.rudder.io.context.alpn_protocols
+
+              # HELP ME
+              #   This code does not work!
+              #   We cannot get application protocol name
+              proto = nil
+              if app_protocols != nil && app_protocols.length > 0
+                proto = app_protocols[0]
+              end
+
+              return true
+            rescue IO::WaitReadable => e
+              BayLog.debug("%s Handshake status: read more st=%s", self, st)
+              return false
+            rescue IO::WaitWritable => e
+              BayLog.debug("%s Handshake status: write more st=%s", self, st)
+              req_write(st.rudder, "", nil, nil)
+              return false
+            end
           end
         end
       end
