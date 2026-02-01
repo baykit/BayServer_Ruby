@@ -155,6 +155,10 @@ module Baykit
         end
 
         def HttpUtil.check_uri(uri)
+          if uri == nil
+            raise ProtocolException, "path is null"
+          end
+
           if uri.include?("\x00")
             raise ProtocolException, "path contains null byte"
           end
