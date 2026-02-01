@@ -484,6 +484,7 @@ module Baykit
               BayLog.debug("%s H2 read header method=%s protocol=%s uri=%s contlen=%d",
                            ship, tur.req.method, tur.req.protocol, tur.req.uri, tur.req.headers.content_length)
 
+              HttpUtil.check_uri(tur.req.uri)
               req_cont_len = tur.req.headers.content_length
 
               if req_cont_len > 0
