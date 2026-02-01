@@ -36,7 +36,7 @@ module Baykit
         CONNECTION_CLOSE = 1
         CONNECTION_KEEP_ALIVE = 2
         CONNECTION_UPGRADE = 3
-        CONNECTION_UNKOWN = 4
+        CONNECTION_UNKNOWN = 4
 
         attr :status
         attr :headers
@@ -185,7 +185,7 @@ module Baykit
           when "upgrade" then
             return CONNECTION_UPGRADE
           else
-            return CONNECTION_UNKOWN
+            return CONNECTION_UNKNOWN
           end
         end
       end

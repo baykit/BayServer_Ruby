@@ -99,13 +99,13 @@ module Baykit
             def send_res_headers(tur)
 
               # determine Connection header value
-              if tur.req.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE
+              if tur.req.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE && tur.req.headers.get_connection() != Headers::CONNECTION_UNKNOWN
                 # If client doesn't support "Keep-Alive", set "Close"
                 res_con = "Close"
               else
                 res_con = "Keep-Alive"
                 # Client supports "Keep-Alive"
-                if tur.res.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE
+                if tur.res.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE && tur.res.headers.get_connection() != Headers::CONNECTION_UNKNOWN
                   # If tours doesn't need "Keep-Alive"
                   if tur.res.headers.content_length() == -1
                     # If content-length not specified

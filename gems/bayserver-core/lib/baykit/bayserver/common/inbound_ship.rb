@@ -214,7 +214,7 @@ module Baykit
                 if keep_alive
                   res_conn = tur.res.headers.get_connection()
                   keep_alive = (res_conn == Headers::CONNECTION_KEEP_ALIVE) ||
-                    (res_conn == Headers::CONNECTION_UNKOWN)
+                    (res_conn == Headers::CONNECTION_UNKNOWN)
                 end
                 if keep_alive
                   if tur.res.headers.content_length() < 0
