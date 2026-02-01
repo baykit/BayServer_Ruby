@@ -1,5 +1,11 @@
 # BayServer for Ruby
 
+# 3.3.1
+
+ - [Core] Improves performance
+ - [core] Fixes an issue during the handshake
+ - [h1] Default to Keep-Alive when the Connection header value is unknown for performance reasons
+
 # 3.3.0
 
  - [Core] Add nio4r support
