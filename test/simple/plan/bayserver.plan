@@ -2,11 +2,8 @@
     charset UTF-8
     groups plan/groups.plan
     grandAgents 4
-    #gzipComp on
-    logLevel debug
+    gzipComp on
 
-    # For windows
-    controlPort 2222    
 
 #
 #  Port settings
@@ -14,22 +11,22 @@
 [port 2020]
      docker http
      #[permission]
-     #     admit ip 127.0.0.1/255.0.0.0
-     #     admit ip ::1/::ffff:ffff
+     #     admit ip 127.0.0.1/32
+     #     admit ip ::1/128
      #     refuse ip *
 
 [port 2024]
     [secure]
-        #keyStore  cert/oreore.p12
         cert      cert/oreore.crt
-        key       cert/oreore_key.p8
+        key       cert/oreore.key
         keyStorePass orepas
+    supportH2  on
 
 [port 2025]
     docker ajp
     [permission]
-         admit ip 127.0.0.1/255.0.0.0
-         admit ip ::1/::ffff:ffff
+         admit ip 127.0.0.1/32
+         admit ip ::1/128
          refuse ip *
 
 [port 2029]
@@ -64,7 +61,7 @@
           environment production
 
     [log log/access.log]
-        format %h %l %u %t "%r" %>s %b
+        format %a %l %u %t "%r" %>s %b
 
     [log log/agent.log]
         format %{User-Agent}i
@@ -74,7 +71,7 @@
 
 
    # [permission]
-    #       admit ip 127.0.0.1/255.255.255.255
-           #refuse ip 127.0.0.0/255.0.0.0
+    #       admit ip 127.0.0.1/32
+           #refuse ip 127.0.0.0/8
 
  
