@@ -90,25 +90,25 @@ module Baykit
             @protocol_handler.post(cmd, &lis);
           end
 
-          def send_end_tour(tur, keep_alive, &callback)
-            BayLog.debug("%s endTour: tur=%s keep=%s", ship, tur, keep_alive)
+          def send_end_tour(tur, &callback)
+            BayLog.debug("%s endTour: tur=%s", ship, tur)
             cmd = CmdEndResponse.new()
-            cmd.reuse = keep_alive
+            cmd.reuse = true  # Always reuse connection
 
             ensure_func = lambda do
-              if !keep_alive
+              if !cmd.reuse
                 ship.post_close
               end
             end
 
             begin
               @protocol_handler.post(cmd) do
-                BayLog.debug("%s call back in sendEndTour: tur=%s keep=%s", self, tur, keep_alive)
+                BayLog.debug("%s call back in sendEndTour: tur=%s", self, tur)
                 ensure_func.call()
                 callback.call()
               end
             rescue IOError => e
-              BayLog.debug("%s post failed in sendEndTour: tur=%s keep=%s", self, tur, keep_alive)
+              BayLog.debug("%s post failed in sendEndTour: tur=%s", self, tur)
               ensure_func.call()
               raise e
             end

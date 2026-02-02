@@ -21,7 +21,7 @@ module Baykit
         end
 
         # Send end of contents to client.
-        def send_end_tour(tur, keep_alive, &lis)
+        def send_end_tour(tur, &lis)
           raise NotImplementedError.new
         end
 

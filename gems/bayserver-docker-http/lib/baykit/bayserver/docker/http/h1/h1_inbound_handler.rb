@@ -139,7 +139,8 @@ module Baykit
               @protocol_handler.post(cmd, &callback)
             end
 
-            def send_end_tour(tur, keep_alive, &callback)
+            def send_end_tour(tur, &callback)
+              keep_alive = tur.res.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
               BayLog.trace("%s sendEndTour: tur=%s keep=%s", ship, tur, keep_alive)
 
               # Send dummy end request command

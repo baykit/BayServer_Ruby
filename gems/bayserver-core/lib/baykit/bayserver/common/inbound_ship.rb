@@ -208,22 +208,8 @@ module Baykit
               if !tur.valid?
                 raise Sink.new("Tour is not valid")
               end
-              keep_alive = false
-              if tur.req.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
-                keep_alive = true
-                if keep_alive
-                  res_conn = tur.res.headers.get_connection()
-                  keep_alive = (res_conn == Headers::CONNECTION_KEEP_ALIVE) ||
-                    (res_conn == Headers::CONNECTION_UNKNOWN)
-                end
-                if keep_alive
-                  if tur.res.headers.content_length() < 0
-                    keep_alive = false
-                  end
-                end
-              end
 
-              tour_handler.send_end_tour(tur, keep_alive, &callback)
+              tour_handler.send_end_tour(tur, &callback)
             end
           end
 
