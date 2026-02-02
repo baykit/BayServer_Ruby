@@ -14,7 +14,7 @@ module Baykit
           @selector: Util::Selector
           @agent: GrandAgent
           @operations_lock: Thread::Mutex
-          @operations: Array[ChannelOperation]
+          @operations: Hash[Rudders::Rudder, ChannelOperation]
           @select_wakeup_pipe: [IO, IO]
 
           def initialize: (GrandAgent agt, bool anchorable) -> void

@@ -1,0 +1,22 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class ObjectStore
+        include Reusable
+
+        @free_list: Hash[Reusable, bool]
+        @active_list: Hash[Reusable, bool]
+        @factory: ObjectFactory
+
+        def initialize: (?ObjectFactory factory) -> void
+        def reset: -> void
+        def rent: -> Reusable
+        def Return: (Reusable obj, ?bool reuse) -> void
+        def print_usage: (Integer indent) -> void
+      end
+    end
+  end
+end

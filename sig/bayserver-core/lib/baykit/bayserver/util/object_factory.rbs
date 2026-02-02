@@ -1,0 +1,12 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      module ObjectFactory
+        def create_object: -> Object
+      end
+    end
+  end
+end

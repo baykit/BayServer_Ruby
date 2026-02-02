@@ -4,7 +4,7 @@
 module Baykit
   module BayServer
     module Util
-      class NioSelector
+      class NioSelector < Selector
         @selector: NIO::Selector
         @io_monitor_map: Hash[IO, NIO::Monitor]
 

@@ -1,0 +1,12 @@
+# TypeProf 0.21.3
+
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      module Reusable
+        def reset: -> void
+      end
+    end
+  end
+end
