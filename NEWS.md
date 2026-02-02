@@ -1,5 +1,10 @@
 # BayServer for Ruby
 
+# 3.3.2
+
+- [Core] Improves performance
+- [Core] Fix an issue when using the file cache
+
 # 3.3.1
 
  - [Core] Improves performance
