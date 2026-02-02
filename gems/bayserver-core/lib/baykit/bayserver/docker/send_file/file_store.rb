@@ -47,7 +47,7 @@ module Baykit
                 now =  Time.now.to_i
 
                 if file_content.loaded_time + @lifespan_seconds < Time.now.to_i
-                  @total_bytes -= file_content.length
+                  @total_bytes -= file_content.content_length
                   BayLog.debug("Remove expired content: %s", path)
                   @contents.delete(path)
                   file_content = nil
