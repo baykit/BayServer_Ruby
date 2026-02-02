@@ -18,9 +18,7 @@ module Baykit
         end
 
         def IOUtil.write_int32(io, i)
-          data = [i >> 24, i >> 16 & 0xFF, i >> 8 & 0xFF, i & 0xFF]
-          #print("IOwrite->" + data.to_s)
-          io.write(data.pack("C*"))
+          io.write([i].pack("N"))
         end
 
         def IOUtil.get_sock_recv_buf_size(skt)

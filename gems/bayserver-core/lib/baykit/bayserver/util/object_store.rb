@@ -10,8 +10,8 @@ module Baykit
         attr :factory
 
         def initialize(factory=nil)
-          @free_list = []
-          @active_list = []
+          @free_list = {}
+          @active_list = {}
           @factory = factory
         end
 
@@ -34,12 +34,12 @@ module Baykit
               obj = @factory.call()
             end
           else
-            obj = @free_list.delete_at(@free_list.length - 1)
+            obj = @free_list.shift()[0]
           end
           if obj == nil
             raise Sink.new()
           end
-          @active_list.append(obj)
+          @active_list[obj] = true
           return obj
         end
 
@@ -54,7 +54,7 @@ module Baykit
 
           @active_list.delete(obj)
           if reuse
-            @free_list.append(obj)
+            @free_list[obj] = true
             obj.reset()
           end
         end

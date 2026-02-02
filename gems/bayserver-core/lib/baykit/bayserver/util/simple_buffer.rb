@@ -37,9 +37,7 @@ module Baykit
             extend_buf
           end
 
-          len.times do |i|
-            @buf[@length + i] = bytes[pos + i]
-          end
+          @buf[@length, len] = bytes[pos, len]
           @length += len
         end
 

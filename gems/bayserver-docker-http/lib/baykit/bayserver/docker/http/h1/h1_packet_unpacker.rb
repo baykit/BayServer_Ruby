@@ -68,50 +68,45 @@ module Baykit
               suspend = false
 
               if @state == STATE_READ_HEADERS
-                while pos < buf.length
-                  b = buf[pos]
-                  @tmp_buf.put_byte(b)
-                  pos += 1
-                  #@BayServer.info b + " " + b.codepoints[0].to_s + " pos=" + pos.to_s
-                  if b == CharUtil::CR
-                    next
-                  elsif b == CharUtil::LF
-                    if line_len == 0
-                      # empty line (all headers are read)
-                      pkt = @pkt_store.rent(H1Type::HEADER)
-                      pkt.new_data_accessor.put_bytes(@tmp_buf.bytes, 0, @tmp_buf.length)
 
-                      begin
-                        next_act = @cmd_upacker.packet_received(pkt)
-                      ensure
-                        @pkt_store.Return pkt
-                      end
+                # Find end of headers (empty line)
+                # Look for \n\n (LF+LF) or \n\r\n (LF+CR+LF)
+                header_end_pos = buf.index("\n\r\n", pos) || buf.index("\n\n", pos)
 
-                      case next_act
-                      when NextSocketAction::CONTINUE, NextSocketAction::SUSPEND
-                        if @cmd_upacker.finished()
-                          change_state(STATE_END)
-                        else
-                          change_state(STATE_READ_CONTENT)
-                        end
-                      when NextSocketAction::CLOSE
-                        # Maybe error
-                        reset_state()
-                        return next_act
-                      else
-                        raise RuntimeError.new("Invalid next action: #{next_act}")
-                      end
+                if header_end_pos
+                  # Calculate total header length
+                  header_len = (buf[header_end_pos + 1] == "\r") ? header_end_pos + 3 : header_end_pos + 2
 
-                      suspend = (next_act == NextSocketAction::SUSPEND)
-                      break
+                  # Batch copy all header bytes at once
+                  @tmp_buf.put(buf, pos, header_len - pos)
+                  pos = header_len
+
+                  # Move to packet processing
+                  pkt = @pkt_store.rent(H1Type::HEADER)
+                  pkt.new_data_accessor.put_bytes(@tmp_buf.bytes, 0, @tmp_buf.length)
+
+                  begin
+                    next_act = @cmd_upacker.packet_received(pkt)
+                  ensure
+                    @pkt_store.Return pkt
+                  end
+
+                  case next_act
+                  when NextSocketAction::CONTINUE, NextSocketAction::SUSPEND
+                    if @cmd_upacker.finished()
+                      change_state(STATE_END)
+                    else
+                      change_state(STATE_READ_CONTENT)
                     end
-                    line_len = 0
+                  when NextSocketAction::CLOSE
+                    # Maybe error
+                    reset_state()
+                    return next_act
                   else
-                    line_len += 1
+                    raise RuntimeError.new("Invalid next action: #{next_act}")
                   end
-                  if line_len >= MAX_LINE_LEN
-                    raise ProtocolException.new("Http/1 Line is too long")
-                  end
+
+                  suspend = (next_act == NextSocketAction::SUSPEND)
                 end
               end
 

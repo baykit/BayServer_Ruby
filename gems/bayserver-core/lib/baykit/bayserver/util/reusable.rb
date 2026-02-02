@@ -5,8 +5,9 @@ module Baykit
         #
         # interface
         #
-        # reset()
-        #
+        def reset()
+          raise "Not implemented"
+        end
       end
     end
   end

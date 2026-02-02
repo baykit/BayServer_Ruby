@@ -45,7 +45,7 @@ module Baykit
           def initialize(agt, anchorable)
             super(agt)
             @anchorable = anchorable
-            @operations = []
+            @operations = {}
             @operations_lock = Mutex.new
 
             begin
@@ -272,19 +272,18 @@ module Baykit
           def add_operation(rd, op, to_connect=false)
             @operations_lock.synchronize do
               found = false
-              @operations.each do |ch_op|
-                if ch_op.rudder == rd
-                  ch_op.op |= op
-                  ch_op.to_connect = (ch_op.to_connect or to_connect)
-                  found = true
-                  BayLog.trace("%s Update operation: %s con=%s ch=%s",
-                               @agent, self.class.op_mode(ch_op.op), ch_op.to_connect, ch_op.rudder.inspect())
-                end
+              ch_op = @operations[rd]
+              if ch_op != nil
+                ch_op.op |= op
+                ch_op.to_connect = (ch_op.to_connect or to_connect)
+                found = true
+                #BayLog.debug("%s Update operation: %d con=%s rd=%s",
+                #             @agent, self.class.op_mode(ch_op.op), ch_op.to_connect, rd)
               end
 
               if not found
-                BayLog.trace("%s New operation: %d con=%s close=%s ch=%s", @agent, op, to_connect, rd.inspect)
-                @operations << ChannelOperation.new(rd, op, to_connect)
+                #BayLog.debug("%s New operation: %d con=%s close=%s rd=%s", @agent, op, to_connect, rd)
+                @operations[rd] =ChannelOperation.new(rd, op, to_connect)
               end
             end
 
@@ -298,16 +297,16 @@ module Baykit
 
             @operations_lock.synchronize do
               nch = @operations.length
-              @operations.each do |rd_op|
-                st = get_rudder_state(rd_op.rudder)
-                if rd_op.rudder.io.closed?
+              @operations.each do |rd, rd_op|
+                st = get_rudder_state(rd)
+                if rd.io.closed?
                   # Channel is closed before register operation
                   BayLog.debug("%s Try to register closed socket (Ignore)", @agent)
                   next
                 end
 
                 begin
-                  io = rd_op.rudder.io
+                  io = rd.io
                   BayLog.trace("%s register op=%s st=%s", @agent, self.class.op_mode(rd_op.op), st)
                   op = @selector.get_op(io)
                   if op == nil
@@ -328,7 +327,7 @@ module Baykit
                   end
 
                 rescue => e
-                  st = get_rudder_state(rd_op.rudder)
+                  st = get_rudder_state(rd)
                   BayLog.error_e(e, "%s Cannot register operation: %s", self.agent, st.rudder)
                 end
               end

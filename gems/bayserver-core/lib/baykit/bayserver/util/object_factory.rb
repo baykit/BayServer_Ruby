@@ -5,8 +5,11 @@ module Baykit
         #
         # interface
         #
-        # create_object()
-        #
+
+        def create_object()
+          raise "Not implemented"
+        end
+
       end
     end
   end

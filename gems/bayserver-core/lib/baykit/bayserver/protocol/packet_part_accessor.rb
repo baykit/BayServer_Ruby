@@ -68,9 +68,10 @@ module Baykit
         end
 
         def get_byte
-          buf = StringUtil.alloc(1)
-          get_bytes(buf, 0, 1)
-          buf[0].codepoints[0]
+          check_read(1)
+          b = @packet.buf[@start + @pos]
+          @pos += 1
+          return b.codepoints[0]
         end
 
         def get_bytes(buf, ofs=0, len=buf.length)

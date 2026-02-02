@@ -118,42 +118,48 @@ module Baykit
               end
 
               def unpack(pkt)
-                acc = pkt.new_data_accessor
                 data_len = pkt.data_len()
                 state = STATE_READ_FIRST_LINE
 
                 line_start_pos = 0
                 line_len = 0
 
-                data_len.times do |pos|
-                  b = acc.get_byte
-                  case b
-                  when CharUtil::CR_BYTE
-                    next
-
-                  when CharUtil::LF_BYTE
-                    if line_len == 0
-                      break
-                    end
-                    if state == STATE_READ_FIRST_LINE
-                      if @is_req_header
-                        unpack_request_line(pkt.buf, line_start_pos, line_len)
-                      else
-                        unpack_status_line(pkt.buf, line_start_pos, line_len)
-                      end
-
-                      state = STATE_READ_MESSAGE_HEADERS
-                    else
-                      unpack_message_header(pkt.buf, line_start_pos, line_len)
-                    end
-
-                    line_len = 0
-                    line_start_pos = pos + 1
-
-                  else
-                    line_len += 1
+                pos = 0
+                while pos < data_len
+                  next_nl = pkt.buf.index("\n", pos)
+                  if !next_nl
+                    # No more new lines
+                    break
                   end
 
+                  line_start_pos = pos
+
+                  # Calculate line length excluding \n
+                  # Also handle \r if it exists just before \n
+                  line_end = (next_nl > pos && pkt.buf[next_nl - 1] == "\r") ? next_nl - 1 : next_nl
+                  line_len = line_end - pos
+
+                  if line_len == 0
+                    # Empty line found (End of headers)
+                    # Move pos past the newline and exit
+                    pos = next_nl + 1
+                    break
+                  end
+
+                  if state == STATE_READ_FIRST_LINE
+                    if @is_req_header
+                      unpack_request_line(pkt.buf, pos, line_len)
+                    else
+                      unpack_status_line(pkt.buf, pos, line_len)
+                    end
+
+                    state = STATE_READ_MESSAGE_HEADERS
+                  else
+                    unpack_message_header(pkt.buf, pos, line_len)
+                  end
+
+                  # Move to the start of the next line
+                  pos = next_nl + 1
                 end
 
                 if state == STATE_READ_FIRST_LINE
@@ -257,11 +263,11 @@ module Baykit
               end
 
               def pack_request_line(acc)
-                acc.put_string(@method)
+                acc.put_bytes(@method)
                 acc.put_bytes(" ")
-                acc.put_string(@uri)
+                acc.put_bytes(@uri)
                 acc.put_bytes(" ")
-                acc.put_string(@version);
+                acc.put_bytes(@version)
                 acc.put_bytes(CharUtil::CRLF)
               end
 
@@ -276,9 +282,9 @@ module Baykit
 
                 # status
                 acc.put_bytes(" ")
-                acc.put_string(@status.to_s)
+                acc.put_bytes(@status.to_s)
                 acc.put_bytes(" ")
-                acc.put_string(desc)
+                acc.put_bytes(desc)
                 acc.put_bytes(CharUtil::CRLF)
               end
 
@@ -289,9 +295,9 @@ module Baykit
                 if !value.kind_of?(String)
                   raise RuntimeError.new("IllegalArgument: #{value}")
                 end
-                acc.put_string(name)
+                acc.put_bytes(name)
                 acc.put_bytes(":")
-                acc.put_string(value)
+                acc.put_bytes(value)
                 acc.put_bytes(CharUtil::CRLF)
               end
 
