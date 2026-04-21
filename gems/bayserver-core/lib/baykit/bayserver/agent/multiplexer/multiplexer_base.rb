@@ -95,6 +95,7 @@ module Baykit
             end
 
             close_list = []
+            remove_list = []
             copied = nil
             @rudders_lock.synchronize do
               copied = @rudders.values
@@ -102,6 +103,12 @@ module Baykit
             now = Time.now.tv_sec
 
             copied.each do |st|
+              # Drop rudders that were closed elsewhere without going through
+              # remove_rudder_state, so @rudders does not grow without bound.
+              if st.rudder.closed?
+                remove_list << st.rudder
+                next
+              end
               if st.transporter != nil
                 duration =  now - st.last_access_time
                 if st.transporter.check_timeout(st.rudder, duration)
@@ -109,6 +116,10 @@ module Baykit
                   close_list << st
                 end
               end
+            end
+
+            remove_list.each do |rd|
+              remove_rudder_state(rd)
             end
 
             close_list.each do |st|
