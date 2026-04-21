@@ -1,3 +1,5 @@
+require 'stringio'
+
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
 require 'baykit/bayserver/common/read_only_ship'
@@ -109,6 +111,17 @@ module Baykit
                   end
                 end
 
+                # If the app did not set Content-Length and the body is
+                # enumerable via #to_ary, compute it from the body bytes.
+                # Without this the client has no way to know where the
+                # response ends and hangs until keepTimeout.
+                buffered_body = nil
+                if hijack.nil? && @tour.res.headers.content_length == -1 && body.respond_to?(:to_ary)
+                  buffered_body = body.to_ary.map { |str| StringUtil.to_bytes(str) }
+                  total = buffered_body.sum(&:bytesize)
+                  @tour.res.headers.set_content_length(total)
+                end
+
                 # Send headers
                 @tour.res.send_headers @tour_id
 
@@ -149,13 +162,24 @@ module Baykit
                     end
                   end
 
-                  # Send contents
-                  body.each do | str |
-                    bstr = StringUtil.to_bytes(str)
-                    BayLog.trace("%s TerminalTask: read body: len=%d", @tour, bstr.length)
-                    @available = @tour.res.send_res_content(@tour_id, bstr, 0, bstr.length)
-                    while !@available
-                      sleep 0.1
+                  # Send contents (use pre-buffered bytes when we computed
+                  # Content-Length above; otherwise iterate body directly).
+                  if buffered_body
+                    buffered_body.each do |bstr|
+                      BayLog.trace("%s TerminalTask: read body: len=%d", @tour, bstr.bytesize)
+                      @available = @tour.res.send_res_content(@tour_id, bstr, 0, bstr.bytesize)
+                      while !@available
+                        sleep 0.1
+                      end
+                    end
+                  else
+                    body.each do | str |
+                      bstr = StringUtil.to_bytes(str)
+                      BayLog.trace("%s TerminalTask: read body: len=%d", @tour, bstr.length)
+                      @available = @tour.res.send_res_content(@tour_id, bstr, 0, bstr.length)
+                      while !@available
+                        sleep 0.1
+                      end
                     end
                   end
 
