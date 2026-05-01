@@ -4,6 +4,7 @@ require 'baykit/bayserver/docker/base/docker_base'
 require 'baykit/bayserver/constants'
 require 'baykit/bayserver/config_exception'
 
+require 'baykit/bayserver/common/barges'
 require 'baykit/bayserver/common/groups'
 require 'baykit/bayserver/util/sys_util'
 
@@ -40,9 +41,10 @@ module Baykit
           DEFAULT_CGI_MULTIPLEXER = MULTIPLEXER_TYPE_SPIDER
           DEFAULT_RECIPIENT = RECIPIENT_TYPE_SPIDER
           DEFAULT_PID_FILE = "bayserver.pid"
-          DEFAULT_ENABLE_CACHE = false
-          DEFAULT_CACHE_LIFESPAN_SEC = 60
-          DEFAULT_CACHE_SIZE_MB = 32
+          DEFAULT_DIRECT_BOARDING = false
+          DEFAULT_CARGO_LIFESPAN_SEC = 60
+          DEFAULT_DIRECT_BOARDINGS = 128
+          DEFAULT_MAX_CARGO_SIZE = 1 * 1024 * 1024
 
           # Default charset
           attr :charset
@@ -110,14 +112,20 @@ module Baykit
           # PID file name
           attr :pid_file
 
-          # True if cache is enabled
-          attr :enable_cache
+          # Whether to enable Direct Boarding (the sendfile API).
+          attr :direct_boarding
 
-          # Lifespan seconds of cache
-          attr :cache_lifespan_sec
+          # Lifespan seconds of cargo
+          attr :cargo_lifespan_sec
 
-          # Cache size
-          attr :cache_size_mb
+          # The maximum number of files cached for Direct Boarding (LRU eviction).
+          attr :max_direct_boardings
+
+          # The maximum file size to be cached.
+          attr :max_cargo_size
+
+          # Barge dockers
+          attr :barges
 
           def initialize
             @grand_agents = DEFAULT_SHIP_AGENTS
@@ -139,8 +147,11 @@ module Baykit
             @cgi_multiplexer = DEFAULT_CGI_MULTIPLEXER
             @recipient = DEFAULT_RECIPIENT
             @pid_file = DEFAULT_PID_FILE
-            @cache_lifespan_sec = DEFAULT_CACHE_LIFESPAN_SEC
-            @cache_size_mb = DEFAULT_CACHE_SIZE_MB
+            @direct_boarding = DEFAULT_DIRECT_BOARDING
+            @cargo_lifespan_sec = DEFAULT_CARGO_LIFESPAN_SEC
+            @max_direct_boardings = DEFAULT_DIRECT_BOARDINGS
+            @max_cargo_size = DEFAULT_MAX_CARGO_SIZE
+            @barges = Baykit::BayServer::Common::Barges.new
           end
 
           ######################
@@ -221,6 +232,8 @@ module Baykit
           def init_docker(dkr)
             if dkr.instance_of?(Trouble)
               @trouble = dkr
+            elsif dkr.kind_of?(Baykit::BayServer::Docker::Barge)
+              @barges.add(dkr)
             else
               return super
             end
@@ -310,14 +323,17 @@ module Baykit
             when "pidfile"
               @pid_file = kv.value
 
-            when "enablecache"
-              @enable_cache = StringUtil.parse_bool(kv.value)
+            when "directboarding"
+              @direct_boarding = StringUtil.parse_bool(kv.value)
 
-            when "cachelifespan"
-              @cache_lifespan_sec = kv.value.to_i
+            when "cargolifespan"
+              @cargo_lifespan_sec = kv.value.to_i
 
-            when "cachesize"
-              @cache_size_mb = kv.value.to_i
+            when "maxdirectboardings"
+              @max_direct_boardings = kv.value.to_i
+
+            when "maxcargosize"
+              @max_cargo_size = StringUtil.parse_size(kv.value)
 
             else
               return false
@@ -328,6 +344,10 @@ module Baykit
           #######################
           # Implements Harbor
           #######################
+
+          def find_barge(path)
+            return @barges.find_barge(path)
+          end
 
         end
       end

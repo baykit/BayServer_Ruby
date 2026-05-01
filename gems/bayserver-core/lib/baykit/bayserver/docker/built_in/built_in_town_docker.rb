@@ -2,7 +2,9 @@ require 'baykit/bayserver/docker/club'
 require 'baykit/bayserver/docker/town'
 require 'baykit/bayserver/docker/reroute'
 require 'baykit/bayserver/docker/permission'
+require 'baykit/bayserver/docker/barge'
 require 'baykit/bayserver/docker/base/docker_base'
+require 'baykit/bayserver/common/barges'
 
 module Baykit
   module BayServer
@@ -22,6 +24,9 @@ module Baykit
           attr :city
           attr :reroute_list
 
+          # Barge dockers
+          attr :barges
+
           def initialize
             @name = nil
             @location = nil
@@ -30,6 +35,7 @@ module Baykit
             @permission_list = []
             @city = nil
             @reroute_list = []
+            @barges = Baykit::BayServer::Common::Barges.new
           end
 
           ######################################################
@@ -58,6 +64,8 @@ module Baykit
               @permission_list.append(dkr)
             elsif dkr.kind_of?(Baykit::BayServer::Docker::Reroute)
               @reroute_list.append(dkr)
+            elsif dkr.kind_of?(Baykit::BayServer::Docker::Barge)
+              @barges.add(dkr)
             else
               return super
             end
@@ -87,6 +95,10 @@ module Baykit
           ######################################################
           # Implements Town
           ######################################################
+
+          def find_barge(path)
+            return @barges.find_barge(path)
+          end
 
           def reroute(uri)
             @reroute_list.each do |r|

@@ -1,9 +1,8 @@
+require 'cgi'
 require 'baykit/bayserver/bcf/package'
 require 'baykit/bayserver/tours/package'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/docker/send_file/file_content_handler'
-require 'baykit/bayserver/docker/send_file/directory_train'
-require 'baykit/bayserver/docker/send_file/file_store'
 
 require 'baykit/bayserver/util/string_util'
 
@@ -18,7 +17,6 @@ module Baykit
           include Baykit::BayServer::Tours
 
           attr :list_files
-          attr :file_store
 
           ######################################################
           # Implements DockerBase
@@ -42,39 +40,23 @@ module Baykit
             rel_path = tur.req.rewritten_uri != nil ? tur.req.rewritten_uri : tur.req.uri
             if StringUtil.set?(tur.town.name)
               rel_path = rel_path[tur.town.name.length .. -1]
-              pos = rel_path.index('?')
-              if pos != nil
-                rel_path = rel_path[0, pos]
-              end
-
-              begin
-                rel_path = CGI.unescape(rel_path)
-              rescue Encoding::CompatibilityError => e
-                BayLog.warn("%s Cannot decode request path: %s (encoding=%s)", tur, rel_path, tur.req.charset)
-              end
-
-              if StringUtil.set?(tur.req.charset) && tur.req.charset != "UTF-8"
-                rel_path = rel_path.force_encoding(tur.req.charset).encode("UTF-8")
-              end
-
-              real = "#{tur.town.location}/#{rel_path}"
-
-              if File.directory?(real)
-                if @list_files
-                  train = DirectoryTrain.new(tur, real)
-                  train.start_tour()
-                else
-                  raise HttpException.new(HttpStatus::FORBIDDEN, "Directory scan is prohibited")
-                end
-              else
-                if BayServer.harbor.enable_cache() && @file_store == nil
-                  @file_store = FileStore.new(BayServer.harbor.cache_lifespan_sec, BayServer.harbor.cache_size_mb * 1024 * 1024)
-                end
-                handler = FileContentHandler.new(tur, @file_store, real, tur.res.charset)
-                tur.req.set_content_handler(handler)
-              end
             end
 
+            pos = rel_path.index('?')
+            if pos != nil
+              rel_path = rel_path[0, pos]
+            end
+
+            begin
+              rel_path = CGI.unescape(rel_path)
+            rescue Encoding::CompatibilityError => e
+              BayLog.error("Cannot decode path: %s: %s", rel_path, e)
+            end
+
+            real = File.join(tur.town.location, rel_path)
+
+            handler = FileContentHandler.new(tur, real, tur.res.charset, @list_files)
+            tur.req.set_content_handler(handler)
           end
         end
       end

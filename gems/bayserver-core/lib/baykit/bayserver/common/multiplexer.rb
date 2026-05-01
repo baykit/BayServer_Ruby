@@ -37,7 +37,7 @@ module Baykit
           raise NotImplementedError.new
         end
 
-        def req_end(rd)
+        def req_transfer(rd, file_rd, ofs, len, &lis)
           raise NotImplementedError.new
         end
 

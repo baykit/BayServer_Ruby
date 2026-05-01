@@ -133,6 +133,10 @@ module Baykit
             st.access
           end
 
+          def req_transfer(rd, file_rd, ofs, len, &lis)
+            raise Sink.new
+          end
+
           def req_end(rd)
             st = get_rudder_state(rd)
             if st == nil

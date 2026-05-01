@@ -139,6 +139,10 @@ module Baykit
               @protocol_handler.post(cmd, &callback)
             end
 
+            def transfer_content(tur, file_rd, ofs, len, &lis)
+              ship.transporter.req_transfer(tur.ship.rudder, file_rd, ofs, len, &lis)
+            end
+
             def send_end_tour(tur, &callback)
               keep_alive = tur.res.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
               BayLog.trace("%s sendEndTour: tur=%s keep=%s", ship, tur, keep_alive)

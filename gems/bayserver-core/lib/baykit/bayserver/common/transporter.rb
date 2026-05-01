@@ -38,6 +38,10 @@ module Baykit
             raise NotImplementedError.new
           end
 
+          def req_transfer(rd, file_rd, ofs, len, &lis)
+            raise NotImplementedError.new
+          end
+
           def req_close(rd)
             raise NotImplementedError.new
           end

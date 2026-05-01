@@ -1,15 +1,24 @@
 require 'baykit/bayserver/http_exception'
+require 'baykit/bayserver/sink'
 require 'baykit/bayserver/protocol/protocol_exception'
+require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/docker/harbor'
+require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/tours/read_file_taxi'
 require 'baykit/bayserver/tours/content_consume_listener'
+require 'baykit/bayserver/tours/file_store'
+require 'baykit/bayserver/tours/send_file_ship'
 
 require 'baykit/bayserver/util/counter'
 require 'baykit/bayserver/util/headers'
 require 'baykit/bayserver/util/byte_array'
+require 'baykit/bayserver/util/directory_exception'
 require 'baykit/bayserver/util/gzip_compressor'
+require 'baykit/bayserver/util/http_status'
+require 'baykit/bayserver/util/mimes'
 
 module Baykit
   module BayServer
@@ -45,6 +54,9 @@ module Baykit
         attr :bytes_limit
         attr :buffer_size
 
+        # Whether to send via Direct Boarding (sendfile API)
+        attr_accessor :direct_boarding
+
         def initialize(tur)
           @headers = Headers.new()
           @tour = tur
@@ -52,6 +64,7 @@ module Baykit
         end
 
         def init()
+          @direct_boarding = BayServer.harbor.direct_boarding
         end
 
         def to_s()
@@ -76,6 +89,7 @@ module Baykit
           @bytes_consumed = 0
           @bytes_limit = 0
           @tour_returned = false
+          @direct_boarding = false
         end
 
         ######################################################
@@ -91,6 +105,10 @@ module Baykit
 
           if @header_sent
             return
+          end
+
+          if @tour.cargo != nil
+            @tour.cargo.save_headers(@headers)
           end
 
           @bytes_limit = @headers.content_length()
@@ -192,7 +210,11 @@ module Baykit
 
         def send_res_content(chk_tour_id, buf, ofs, len)
           @tour.check_tour_id(chk_tour_id)
-          BayLog.debug("%s sendContent len=%d", @tour, len)
+          BayLog.debug("%s sendContent len=%d cargo=%s", @tour, len, @tour.cargo)
+
+          if @tour.cargo != nil
+            @tour.cargo.save_content(buf, ofs, len)
+          end
 
           # Done listener
           done_lis = Proc.new() do
@@ -252,6 +274,147 @@ module Baykit
           return @available
         end
 
+        def send_file(path, charset)
+          info = nil
+          rd = nil
+          file_size = -1
+
+          if @tour.ship.port_docker.protocol == "h1" &&
+             !@tour.ship.port_docker.secure &&
+             @direct_boarding
+            # Send via directBoarding if the protocol is HTTP/1.x and unencrypted.
+            st = FileStore.get_file_store
+            info = st.get(path)
+            rd = info.rudder
+            file_size = info.file_length
+            @direct_boarding = info.rudder != nil
+          end
+
+          if rd == nil
+            if File.directory?(path)
+              raise DirectoryException.new
+            else
+              case BayServer.harbor.file_multiplexer
+              when Harbor::MULTIPLEXER_TYPE_SPIDER, Harbor::MULTIPLEXER_TYPE_SPIN,
+                   Harbor::MULTIPLEXER_TYPE_JOB, Harbor::MULTIPLEXER_TYPE_TAXI
+                f = File.open(path, "rb")
+                rd = Baykit::BayServer::Rudders::IORudder.new(f)
+              else
+                raise Sink.new
+              end
+              file_size = File.size(path)
+            end
+          end
+
+          mtype = nil
+          pos = path.rindex('.')
+          if pos != nil
+            ext = path[pos + 1 .. -1].downcase
+            mtype = Mimes.type(ext)
+          end
+
+          if mtype == nil
+            mtype = "application/octet-stream"
+          end
+
+          if mtype.start_with?("text/") && charset != nil
+            mtype = mtype + "; charset=" + charset
+          end
+
+          @headers.set_content_type(mtype)
+          @headers.set_content_length(file_size)
+          send_headers(Tour::TOUR_ID_NOCHECK)
+
+          if @direct_boarding
+            tur_id = @tour.tour_id
+            set_consume_listener do |len, resume|
+              begin
+                end_res_content(tur_id)
+              rescue IOError => e
+                BayLog.debug_e(e)
+              end
+            end
+            transfer_content(Tour::TOUR_ID_NOCHECK, rd, 0, info.file_length)
+          else
+            bufsize = @tour.ship.protocol_handler.max_res_packet_data_size
+            agt = Baykit::BayServer::Agent::GrandAgent.get(@tour.ship.agent_id)
+
+            case BayServer.harbor.file_multiplexer
+            when Harbor::MULTIPLEXER_TYPE_SPIDER
+              mpx = agt.spider_multiplexer
+            when Harbor::MULTIPLEXER_TYPE_SPIN
+              mpx = agt.spin_multiplexer
+            when Harbor::MULTIPLEXER_TYPE_JOB
+              mpx = agt.job_multiplexer
+            when Harbor::MULTIPLEXER_TYPE_TAXI
+              mpx = agt.taxi_multiplexer
+            else
+              raise Sink.new
+            end
+
+            send_file_ship = SendFileShip.new
+            tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
+              mpx,
+              send_file_ship,
+              true,
+              bufsize,
+              false)
+
+            send_file_ship.init(rd, tp, @tour)
+            sid = send_file_ship.ship_id
+            set_consume_listener do |len, resume|
+              if resume
+                send_file_ship.resume_read(sid)
+              end
+            end
+
+            st = Baykit::BayServer::Common::RudderStateStore.get_store(agt.agent_id).rent
+            st.init(rd, tp)
+            mpx.add_rudder_state(rd, st)
+            mpx.req_read(rd)
+          end
+        end
+
+        def transfer_content(check_id, file_rd, ofs, len)
+          BayLog.debug("%s transfer content: ofs=%d len=%d", self, ofs, len)
+
+          # Done listener
+          lis = Proc.new() do
+            @tour.check_tour_id(check_id)
+            @res_consume_listener.call(len, false)
+          end
+
+          if @tour.zombie?
+            BayLog.debug("%s zombie tour. return", self)
+            lis.call
+            return
+          end
+
+          if !@header_sent
+            raise Sink.new("Header not sent")
+          end
+
+          @bytes_posted += len
+          BayLog.debug("%s posted res content len=%d posted=%d limit=%d consumed=%d",
+                       @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
+
+          if @tour.aborted?
+            # Don't send peer any data. Do nothing
+            BayLog.debug("%s Aborted tour. do nothing: %s state=%s", self, @tour, @tour.state)
+            @tour.change_state(check_id, Tour::TourState::ENDED)
+            lis.call
+          else
+            begin
+              @tour.ship.transfer_res_content(@tour.ship_id, @tour, file_rd, ofs, len, &lis)
+            rescue IOError => e
+              BayLog.debug("%s error on sending resContent: %s", self, e)
+              lis.call
+              @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
+              raise e
+            end
+          end
+        end
+
         def end_res_content(chk_tour_id)
           @tour.check_tour_id(chk_tour_id)
 
@@ -263,6 +426,10 @@ module Baykit
 
           if !@tour.zombie? && @tour.city != nil
             @tour.city.log(@tour)
+          end
+
+          if @tour.cargo != nil
+            @tour.cargo.end_save
           end
 
           # send end message

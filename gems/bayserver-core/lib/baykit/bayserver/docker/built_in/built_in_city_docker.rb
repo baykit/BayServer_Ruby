@@ -4,6 +4,12 @@ require 'baykit/bayserver/bcf/package'
 require 'baykit/bayserver/docker/package'
 require 'baykit/bayserver/docker/send_file/send_file_docker'
 require 'baykit/bayserver/docker/built_in/built_in_town_docker'
+require 'baykit/bayserver/docker/built_in/wait_cargo_ship'
+require 'baykit/bayserver/agent/grand_agent'
+require 'baykit/bayserver/agent/multiplexer/plain_transporter'
+require 'baykit/bayserver/common/barges'
+require 'baykit/bayserver/common/rudder_state_store'
+require 'baykit/bayserver/tours/req_content_handler'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/url_decoder'
 require 'baykit/bayserver/tours/tour'
@@ -42,6 +48,32 @@ module Baykit
             attr_accessor :rewritten_uri
           end
 
+          # Cargo (cached content) → response handler
+          class CargoContentHandler
+            include Baykit::BayServer::Tours::ReqContentHandler  # implements
+
+            def initialize(cgo)
+              @cgo = cgo
+            end
+
+            def on_read_req_content(tur, buf, start, len)
+            end
+
+            def on_end_req_content(tur)
+              @cgo.headers.copy_to(tur.res.headers)
+              tur.res.send_headers(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK)
+
+              tur.res.set_consume_listener { |len, resume| }
+
+              tur.res.send_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK, @cgo.content, 0, @cgo.length)
+              tur.res.end_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK)
+            end
+
+            def on_abort_req(tur)
+              return false
+            end
+          end
+
           attr :towns
           attr :default_town
 
@@ -51,6 +83,9 @@ module Baykit
           attr :log_list
           attr :permission_list
 
+          # Barge dockers
+          attr :barges
+
           attr :trouble
           attr :name
 
@@ -59,6 +94,7 @@ module Baykit
             @clubs = []
             @log_list = []
             @permission_list = []
+            @barges = Baykit::BayServer::Common::Barges.new
           end
 
           def to_s
@@ -98,10 +134,16 @@ module Baykit
               @permission_list << dkr
             elsif dkr.kind_of?(Baykit::BayServer::Docker::Trouble)
               @trouble = dkr
+            elsif dkr.kind_of?(Baykit::BayServer::Docker::Barge)
+              @barges.add(dkr)
             else
               return false
             end
             return true
+          end
+
+          def find_barge(path)
+            return nil
           end
 
           def enter(tur)
@@ -147,6 +189,39 @@ module Baykit
               clb = match_info.club_match.club
               tur.town = match_info.town
               tur.club = clb
+
+              barge = lookup_barge(tur, match_info.town)
+              if barge != nil
+                pir = barge.get_cargo(tur)
+                cgo = pir[0]
+                rd = pir[1]
+
+                if rd != nil
+                  # Cargo is loading
+                  agt = Baykit::BayServer::Agent::GrandAgent.get(tur.ship.agent_id)
+                  wait_cargo_ship = WaitCargoShip.new
+                  tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
+                    agt.spider_multiplexer,
+                    wait_cargo_ship,
+                    true,
+                    8192,
+                    false)
+
+                  wait_cargo_ship.init(rd, tp, tur, cgo, clb)
+                  st = Baykit::BayServer::Common::RudderStateStore.get_store(agt.agent_id).rent
+                  st.init(rd, tp)
+                  agt.spider_multiplexer.add_rudder_state(rd, st)
+                  agt.spider_multiplexer.req_read(rd)
+                  return
+                elsif cgo.on_barge?
+                  # Cargo is ready (on cache)
+                  tur.req.set_content_handler(CargoContentHandler.new(cgo))
+                  return
+                else
+                  tur.cargo = cgo
+                end
+              end
+
               clb.arrive(tur)
             end
           end
@@ -294,6 +369,17 @@ module Baykit
             end
 
             return nil
+          end
+
+          def lookup_barge(tur, twn)
+            b = twn.find_barge(tur.req.uri)
+            if b == nil
+              b = @barges.find_barge(tur.req.uri)
+              if b == nil
+                b = BayServer.harbor.find_barge(tur.req.uri)
+              end
+            end
+            return b
           end
 
         end

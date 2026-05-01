@@ -57,7 +57,8 @@ module Baykit
               end
 
               Dir.foreach(path) do |f|
-                if File.directory?(f)
+                full = File.join(@path, f)
+                if File.directory?(full)
                   if f != "." && f != ".."
                     print_link(w, "#{f}/")
                   end

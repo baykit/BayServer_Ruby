@@ -26,6 +26,9 @@ module Baykit
             ######################################################
             # Implements Transporter
             ######################################################
+            def req_transfer(rd, file_rd, ofs, len, &lis)
+              raise Sink.new
+            end
 
             def secure()
               return true

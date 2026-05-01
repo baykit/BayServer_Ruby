@@ -103,6 +103,11 @@ module Baykit
             @multiplexer.req_write(rd, buf, adr, tag, &lis)
           end
 
+          def req_transfer(rd, file_rd, ofs, len, &lis)
+            check_rudder rd
+            @multiplexer.req_transfer(rd, file_rd, ofs, len, &lis)
+          end
+
           def req_close(rd)
             check_rudder rd
             @closed = true

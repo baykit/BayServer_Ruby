@@ -53,6 +53,7 @@ module Baykit
         attr :spider_multiplexer
         attr :job_multiplexer
         attr :taxi_multiplexer
+        attr :file_multiplexer
         attr :recipient
 
         attr :max_inbound_ships
@@ -119,6 +120,19 @@ module Baykit
                Harbor::MULTIPLEXER_TYPE_TAXI, Harbor::MULTIPLEXER_TYPE_TRAIN
 
             raise Sink.new("Multiplexer not supported: %s", Harbor.get_multiplexer_type_name(BayServer.harbor.net_multiplexer))
+          end
+
+          case BayServer.harbor.file_multiplexer
+          when Harbor::MULTIPLEXER_TYPE_SPIDER
+            @file_multiplexer = @spider_multiplexer
+          when Harbor::MULTIPLEXER_TYPE_SPIN
+            @file_multiplexer = @spin_multiplexer
+          when Harbor::MULTIPLEXER_TYPE_JOB
+            @file_multiplexer = @job_multiplexer
+          when Harbor::MULTIPLEXER_TYPE_TAXI
+            @file_multiplexer = @taxi_multiplexer
+          else
+            raise Sink.new("Multiplexer not supported: %s", Harbor.get_multiplexer_type_name(BayServer.harbor.file_multiplexer))
           end
 
           @last_timeout_check = 0
