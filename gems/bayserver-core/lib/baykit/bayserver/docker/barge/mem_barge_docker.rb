@@ -101,6 +101,23 @@ module Baykit
             end
 
             def end_save
+              # Critical section: atomically flip LOADING -> LOADED and
+              # snapshot the current @waiters list. After this block
+              # try_add_waiter will see LOADED and return false (caller
+              # serves from @buf), so no new waiter can be queued past the
+              # snapshot.
+              #
+              # @docker.add_total and the pipe-write notifications run
+              # OUTSIDE @lock on purpose: add_total acquires
+              # MemBargeDocker.@lock, while get_cargo holds that same lock
+              # and reaches us via try_add_waiter -> MemCargo.@lock. Doing
+              # add_total inside @lock created an AB-BA deadlock between
+              # the file-reader path (this method) and the new-waiter path
+              # (get_cargo). pipe.write is also moved out so a slow waiter
+              # cannot stall every other request behind MemCargo.@lock.
+              waiters_snapshot = nil
+              buf_len_to_add = 0
+
               @lock.synchronize do
                 if on_barge?
                   raise "already saved"
@@ -111,15 +128,19 @@ module Baykit
 
                 BayLog.debug("%s end save", self)
                 @status = LOADED
-                @docker.add_total(@buf_length)
+                buf_len_to_add = @buf_length
+                waiters_snapshot = @waiters.dup
+                @waiters.clear
+              end
 
-                @waiters.each do |rd|
-                  begin
-                    BayLog.debug("%s notify waiter", self)
-                    rd.write("\x00")
-                  rescue IOError, SystemCallError => e
-                    BayLog.error_e(e)
-                  end
+              @docker.add_total(buf_len_to_add)
+
+              waiters_snapshot.each do |rd|
+                begin
+                  BayLog.debug("%s notify waiter", self)
+                  rd.write("\x00")
+                rescue IOError, SystemCallError => e
+                  BayLog.error_e(e)
                 end
               end
             end
@@ -143,8 +164,23 @@ module Baykit
                 (Time.now.to_f * 1000).to_i - @last_accessed_time_millis > BayServer.harbor.cargo_lifespan_sec * 1000
             end
 
-            def add_waiter(rd)
-              @waiters << rd
+            # Atomically register a waiter only if the cargo is still
+            # LOADING. Returns true if the caller will receive a pipe-write
+            # notification from end_save; false if the cargo is already
+            # LOADED (caller should serve from @buf directly) or EXCEEDED
+            # (caller should fall through to the un-cached path).
+            #
+            # Must be paired with the @lock.synchronize'd end_save: the
+            # check + append have to be atomic with end_save's @status =
+            # LOADED + @waiters.each, or a waiter registered after each()
+            # finishes its iteration but before this method's lock acquires
+            # is silently dropped and the client hangs until wrk timeout.
+            def try_add_waiter(rd)
+              @lock.synchronize do
+                return false unless @status == LOADING
+                @waiters << rd
+                return true
+              end
             end
           end
 
@@ -217,20 +253,36 @@ module Baykit
                 @cargo_map[path] = cgo
                 tour.res.direct_boarding = false  # Don't use OS cache (sendfile API)
               else
+                # Reading cgo.status here was racy against end_save: a
+                # concurrent end_save could finish iterating @waiters and
+                # set status=LOADED between this check and add_waiter,
+                # leaving the new waiter without a notification. Use
+                # try_add_waiter so MemCargo.@lock guards the
+                # status-check + append atomically against end_save's
+                # status-set + each. If the cargo turned out to be already
+                # LOADED, close the pipe and fall through to the cached
+                # path.
                 if cgo.status == MemCargo::LOADING
-                  # Cargo is loading
-                  # Wait until cargo is loaded.
                   BayLog.debug("%s Cannot start tour (file reading)", tour)
 
                   begin
                     reader, writer = IO.pipe
-                    source_rd = IORudder.new(reader)
-                    source_rd.set_non_blocking
-                    wait_rd = IORudder.new(writer)
                   rescue IOError, SystemCallError => e
                     raise Sink.new("Cannot create pipe: %s", e)
                   end
-                  cgo.add_waiter(wait_rd)
+                  source_rd = IORudder.new(reader)
+                  source_rd.set_non_blocking
+                  wait_rd = IORudder.new(writer)
+
+                  unless cgo.try_add_waiter(wait_rd)
+                    # Cargo finished loading while we were creating the
+                    # pipe; close both ends and let the caller use the
+                    # in-memory copy directly via on_barge?.
+                    reader.close rescue nil
+                    writer.close rescue nil
+                    source_rd = nil
+                    tour.res.direct_boarding = false
+                  end
                 else
                   tour.res.direct_boarding = false  # Don't use OS cache (sendfile API)
                 end
