@@ -20,6 +20,11 @@ module Baykit
           raise NotImplementedError.new
         end
 
+        # Transfer file contents (zero-copy/sendfile path) to client
+        def transfer_content(tur, file_rd, ofs, len, &lis)
+          raise NotImplementedError.new
+        end
+
         # Send end of contents to client.
         def send_end_tour(tur, &lis)
           raise NotImplementedError.new

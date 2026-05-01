@@ -1,4 +1,5 @@
 require 'baykit/bayserver/common/recipient'
+require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/rudders/rudder'
 require 'baykit/bayserver/rudders/io_rudder'
 
@@ -168,6 +169,10 @@ module Baykit
             if need_write
               next_write(st)
             end
+          end
+
+          def req_transfer(rd, file_rd, ofs, len, &lis)
+            raise Sink.new
           end
 
           def req_end(rd)

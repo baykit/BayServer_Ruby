@@ -1,3 +1,4 @@
+require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/rudders/io_rudder'
 
 require 'baykit/bayserver/agent/multiplexer/multiplexer_base'
@@ -146,6 +147,11 @@ module Baykit
 
             st.access
           end
+
+          def req_transfer(rd, file_rd, ofs, len, &lis)
+            raise Sink.new
+          end
+
 
           def req_close(rd)
             st = get_rudder_state(rd)

@@ -158,6 +158,10 @@ module Baykit
               @protocol_handler.post(cmd, &callback)
             end
 
+            def transfer_content(tur, file_rd, ofs, len, &lis)
+              raise Sink.new
+            end
+
             def send_end_tour(tur, &callback)
               BayLog.debug("%s send_end_tour. tur=%s", self, tur)
               cmd = CmdData.new(tur.req.key, nil, [], 0, 0)

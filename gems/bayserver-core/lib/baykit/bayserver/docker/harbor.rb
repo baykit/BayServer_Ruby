@@ -121,18 +121,31 @@ module Baykit
           raise NotImplementedError
         end
 
-        # True if cache is enabled
-        def enable_cache
+        # Whether to enable Direct Boarding (the sendfile API).
+        # This bypasses user-space formalities for efficient data transfer.
+        def direct_boarding
           raise NotImplementedError
         end
 
-        # Lifespan seconds of cache
-        def cache_lifespan_sec
+        # The lifespan, in seconds, of a cargo (cached file).
+        def cargo_lifespan_sec
           raise NotImplementedError
         end
 
-        # Cache size
-        def cache_size_mb
+        # The maximum number of files (file descriptors) to be cached for Direct Boarding.
+        # When this limit is reached, the least recently used (LRU) items are evicted.
+        def max_direct_boardings
+          raise NotImplementedError
+        end
+
+        # The maximum file size, in mega-bytes, to be cached.
+        # Files exceeding this size will not be cached.
+        def max_cargo_size
+          raise NotImplementedError
+        end
+
+        # Find barge by path
+        def find_barge(path)
           raise NotImplementedError
         end
 

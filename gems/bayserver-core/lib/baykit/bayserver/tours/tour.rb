@@ -44,6 +44,7 @@ module Baykit
         attr_accessor :town
         attr_accessor :city
         attr_accessor :club
+        attr_accessor :cargo
 
         attr :req
         attr :res
@@ -76,6 +77,7 @@ module Baykit
           @city = nil
           @town = nil
           @club = nil
+          @cargo = nil
           @error_handling = false
 
           @tour_id = INVALID_TOUR_ID

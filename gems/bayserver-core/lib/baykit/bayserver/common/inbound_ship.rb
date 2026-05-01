@@ -200,6 +200,12 @@ module Baykit
             end
           end
 
+          def transfer_res_content(check_id, tur, file_rd, ofs, len, &lis)
+            check_ship_id(check_id)
+
+            tour_handler.transfer_content(tur, file_rd, ofs, len, &lis)
+          end
+
           def send_end_tour(chk_ship_id, tur, &callback)
             @lock.synchronize do
               check_ship_id(chk_ship_id)

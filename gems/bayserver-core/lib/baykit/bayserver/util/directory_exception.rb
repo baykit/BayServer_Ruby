@@ -1,0 +1,8 @@
+module Baykit
+  module BayServer
+    module Util
+      class DirectoryException < IOError
+      end
+    end
+  end
+end

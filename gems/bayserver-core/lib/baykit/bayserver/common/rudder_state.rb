@@ -36,6 +36,7 @@ module Baykit
 
           attr_accessor :accepting
           attr_accessor :connecting
+          attr_accessor :skip_formalities
 
           def initialize
 
