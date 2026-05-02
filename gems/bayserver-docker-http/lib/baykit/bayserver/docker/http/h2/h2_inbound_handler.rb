@@ -197,7 +197,7 @@ module Baykit
 
               set = CmdSettings.new(H2ProtocolHandler::CTL_STREAM_ID)
               set.stream_id = 0
-              set.items.append(CmdSettings::Item.new(CmdSettings::MAX_CONCURRENT_STREAMS, TourStore::MAX_TOURS))
+              set.items.append(CmdSettings::Item.new(CmdSettings::MAX_CONCURRENT_STREAMS, BayServer.harbor.max_tours_per_ship))
               set.items.append(CmdSettings::Item.new(CmdSettings::INITIAL_WINDOW_SIZE, @window_size))
               @protocol_handler.post(set, true)
 
