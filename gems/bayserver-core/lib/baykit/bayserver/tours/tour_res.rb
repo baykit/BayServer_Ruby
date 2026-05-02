@@ -38,7 +38,6 @@ module Baykit
         ###########################
         attr :headers
         attr_accessor :charset
-        attr :available
         attr :res_consume_listener
 
         attr_accessor :header_sent
@@ -50,9 +49,7 @@ module Baykit
         attr :compressor
 
         attr :bytes_posted
-        attr :bytes_consumed
         attr :bytes_limit
-        attr :buffer_size
 
         # Whether to send via Direct Boarding (sendfile API)
         attr_accessor :direct_boarding
@@ -60,7 +57,6 @@ module Baykit
         def initialize(tur)
           @headers = Headers.new()
           @tour = tur
-          @buffer_size = BayServer.harbor.ship_buffer_size
         end
 
         def init()
@@ -79,14 +75,12 @@ module Baykit
           @charset = nil
           @header_sent = false
 
-          @available = false
           @res_consume_listener = nil
 
           @can_compress = false
           @compressor = nil
           @headers.clear()
           @bytes_posted = 0
-          @bytes_consumed = 0
           @bytes_limit = 0
           @tour_returned = false
           @direct_boarding = false
@@ -203,9 +197,7 @@ module Baykit
 
         def set_consume_listener(&listener)
           @res_consume_listener = listener
-          @bytes_consumed = 0
           @bytes_posted = 0
-          @available = true
         end
 
         def send_res_content(chk_tour_id, buf, ofs, len)
@@ -238,8 +230,8 @@ module Baykit
 
           @bytes_posted += len
           @tour.ship.post_res_bytes(len)
-          BayLog.debug("%s posted res content len=%d posted=%d limit=%d consumed=%d",
-          @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
+          BayLog.debug("%s posted res content len=%d posted=%d limit=%d",
+          @tour, len, @bytes_posted, @bytes_limit)
           if @bytes_limit > 0 && @bytes_limit < self.bytes_posted
             raise ProtocolException.new("Post data exceed content-length: " + @bytes_posted + "/" + @bytes_limit)
           end
@@ -262,17 +254,7 @@ module Baykit
             end
           end
 
-
-          old_available = @available
-          if !buffer_available()
-            @available = false
-          end
-          if old_available && !@available
-            BayLog.debug("%s response unavailable (_ _): posted=%d consumed=%d (buffer=%d)",
-                         self, @bytes_posted, @bytes_consumed, @buffer_size)
-          end
-
-          return @available
+          return @tour.ship.res_buffer_available?
         end
 
         def send_file(path, charset)
@@ -397,8 +379,8 @@ module Baykit
           end
 
           @bytes_posted += len
-          BayLog.debug("%s posted res content len=%d posted=%d limit=%d consumed=%d",
-                       @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
+          BayLog.debug("%s posted res content len=%d posted=%d limit=%d",
+                       @tour, len, @bytes_posted, @bytes_limit)
 
           if @tour.aborted?
             # Don't send peer any data. Do nothing
@@ -478,32 +460,10 @@ module Baykit
             raise Sink.new("Response consume listener is null")
           end
 
-          @bytes_consumed += length
+          BayLog.debug("%s resConsumed: len=%d", @tour, length)
 
-          BayLog.debug("%s resConsumed: len=%d posted=%d consumed=%d limit=%d",
-                       @tour, length, @bytes_posted, @bytes_consumed, @bytes_limit)
-
-          resume = false
-          old_available = @available
-          if buffer_available()
-            @available = true
-          end
-          if !old_available && @available
-            BayLog.debug("%s response available (^o^): posted=%d consumed=%d", self,  @bytes_posted, @bytes_consumed)
-            resume = true
-          end
-
-          # Per-tour consume notification (Ruby's send_file_ship and
-          # Rack listeners depend on the (length, resume) callback
-          # every round, not just on the unavailable->available
-          # transition).
-          if @tour.running?
-            @res_consume_listener.call(length, resume)
-          end
-
-          # Ship-level accounting: lets a slow consumer in one tour
-          # wake up suspended siblings on the same connection (e.g.
-          # H2 streams) when their shared buffer drains.
+          # Ship-level buffer tracking and resume (notifies all
+          # suspended tours on this connection).
           @tour.ship.consume_res_bytes(length)
         end
 
@@ -572,11 +532,6 @@ module Baykit
           end
 
           return @compressor
-        end
-
-
-        def buffer_available()
-          return @bytes_posted - @bytes_consumed < @buffer_size
         end
       end
     end
