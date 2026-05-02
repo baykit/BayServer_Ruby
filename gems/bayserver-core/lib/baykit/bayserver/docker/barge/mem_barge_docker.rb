@@ -284,7 +284,14 @@ module Baykit
                     tour.res.direct_boarding = false
                   end
                 else
-                  tour.res.direct_boarding = false  # Don't use OS cache (sendfile API)
+                  # Cached cargo: direct boarding (sendfile/zero-copy) only
+                  # makes sense when the file was too big to cache and
+                  # harbor.direct_boarding is on. For an in-memory cargo we
+                  # want the body served from the cache, so direct_boarding
+                  # is forced off. (Ruby has no sendfile, so the boarding
+                  # branch is currently a flag-only no-op, but mirrors the
+                  # Java path.)
+                  tour.res.direct_boarding = cgo.exceeded? && BayServer.harbor.direct_boarding
                 end
               end
               cgo.access
