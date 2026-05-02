@@ -96,12 +96,12 @@ module Baykit
             HttpUtil.send_mime_headers(tur.res.headers, buf)
             HttpUtil.send_new_line(buf)
             cmd = CmdStdOut.new(tur.req.key, buf.buf, 0, buf.length)
-            @protocol_handler.post(cmd, true)
+            @protocol_handler.post(cmd, false)
           end
 
           def send_res_content(tur, bytes, ofs, len, &callback)
             cmd = CmdStdOut.new(tur.req.key, bytes, ofs, len);
-            @protocol_handler.post(cmd, true, &callback)
+            @protocol_handler.post(cmd, false, &callback)
           end
 
           def transfer_content(tur, file_rd, ofs, len, &lis)

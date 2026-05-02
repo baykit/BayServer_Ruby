@@ -80,14 +80,14 @@ module Baykit
               end
             end
             cmd.status = tur.res.headers.status
-            @protocol_handler.post(cmd, true)
+            @protocol_handler.post(cmd, false)
 
             BayLog.debug("%s send header: content-length=%d", self, tur.res.headers.content_length())
           end
 
           def send_res_content(tur, bytes, ofs, len, &lis)
             cmd = CmdSendBodyChunk.new(bytes, ofs, len);
-            @protocol_handler.post(cmd, true, &lis);
+            @protocol_handler.post(cmd, false, &lis);
           end
 
           def transfer_content(tur, file_rd, ofs, len, &lis)
