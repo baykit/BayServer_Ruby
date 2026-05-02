@@ -287,6 +287,8 @@ module Baykit
             rd = info.rudder
             file_size = info.file_length
             @direct_boarding = info.rudder != nil
+          else
+            @direct_boarding = false
           end
 
           if rd == nil
