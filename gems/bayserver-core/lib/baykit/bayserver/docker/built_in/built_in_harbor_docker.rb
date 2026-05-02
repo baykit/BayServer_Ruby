@@ -45,6 +45,7 @@ module Baykit
           DEFAULT_CARGO_LIFESPAN_SEC = 60
           DEFAULT_DIRECT_BOARDINGS = 128
           DEFAULT_MAX_CARGO_SIZE = 1 * 1024 * 1024
+          DEFAULT_MAX_TOURS_PER_SHIP = 128
 
           # Default charset
           attr :charset
@@ -63,6 +64,9 @@ module Baykit
 
           # Max count of watercraft
           attr :max_ships
+
+          # Max count of tours per ship (caps H2 concurrent streams per connection)
+          attr :max_tours_per_ship
 
           # Socket timeout in seconds
           attr :socket_timeout_sec
@@ -157,6 +161,7 @@ module Baykit
             @max_direct_boardings = DEFAULT_DIRECT_BOARDINGS
             @max_cargo_size = DEFAULT_MAX_CARGO_SIZE
             @max_direct_boarding_size = -1
+            @max_tours_per_ship = DEFAULT_MAX_TOURS_PER_SHIP
             @barges = Baykit::BayServer::Common::Barges.new
           end
 
@@ -269,6 +274,9 @@ module Baykit
               @grand_agents = Integer(kv.value)
             when "maxships"
               @max_ships = Integer(kv.value)
+
+            when "maxtourspership"
+              @max_tours_per_ship = Integer(kv.value)
             when "timeout"
               @socket_timeout_sec = Integer(kv.value)
             when "keeptimeout"

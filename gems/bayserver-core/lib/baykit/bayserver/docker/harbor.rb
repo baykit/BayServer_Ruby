@@ -46,6 +46,11 @@ module Baykit
           raise NotImplementedError.new
         end
 
+        # Max count of tours per ship (caps H2 concurrent streams per connection).
+        def max_tours_per_ship
+          raise NotImplementedError.new
+        end
+
         # Trouble docker
         def trouble
           raise NotImplementedError.new
