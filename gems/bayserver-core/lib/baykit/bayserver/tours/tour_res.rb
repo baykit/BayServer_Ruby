@@ -60,7 +60,7 @@ module Baykit
         def initialize(tur)
           @headers = Headers.new()
           @tour = tur
-          @buffer_size = BayServer.harbor.tour_buffer_size
+          @buffer_size = BayServer.harbor.ship_buffer_size
         end
 
         def init()
@@ -237,6 +237,7 @@ module Baykit
           end
 
           @bytes_posted += len
+          @tour.ship.post_res_bytes(len)
           BayLog.debug("%s posted res content len=%d posted=%d limit=%d consumed=%d",
           @tour, len, @bytes_posted, @bytes_limit, @bytes_consumed)
           if @bytes_limit > 0 && @bytes_limit < self.bytes_posted
@@ -492,9 +493,18 @@ module Baykit
             resume = true
           end
 
+          # Per-tour consume notification (Ruby's send_file_ship and
+          # Rack listeners depend on the (length, resume) callback
+          # every round, not just on the unavailable->available
+          # transition).
           if @tour.running?
             @res_consume_listener.call(length, resume)
           end
+
+          # Ship-level accounting: lets a slow consumer in one tour
+          # wake up suspended siblings on the same connection (e.g.
+          # H2 streams) when their shared buffer drains.
+          @tour.ship.consume_res_bytes(length)
         end
 
         def send_http_exception(chk_tour_id, http_ex)

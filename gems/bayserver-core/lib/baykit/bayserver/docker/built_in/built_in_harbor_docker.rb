@@ -29,7 +29,7 @@ module Baykit
           DEFAULT_TAXI_RUNNERS = 8
           DEFAULT_WAIT_TIMEOUT_SEC = 120
           DEFAULT_KEEP_TIMEOUT_SEC = 20
-          DEFAULT_TOUR_BUFFER_SIZE = 1024 * 1024;  # 1M
+          DEFAULT_SHIP_BUFFER_SIZE = 1024 * 1024;  # 1M
           DEFAULT_TRACE_HEADER = false
           DEFAULT_CHARSET = "UTF-8"
           DEFAULT_CONTROL_PORT = -1
@@ -74,8 +74,8 @@ module Baykit
           # Keep-Alive timeout in seconds
           attr :keep_timeout_sec
 
-          # Internal buffer size of Tour
-          attr :tour_buffer_size
+          # Response buffer size shared by all tours on a ship.
+          attr :ship_buffer_size
 
           # Trace req/res header flag
           attr :trace_header
@@ -144,7 +144,7 @@ module Baykit
             @groups = Groups.new
             @socket_timeout_sec = DEFAULT_WAIT_TIMEOUT_SEC
             @keep_timeout_sec = DEFAULT_KEEP_TIMEOUT_SEC
-            @tour_buffer_size = DEFAULT_TOUR_BUFFER_SIZE
+            @ship_buffer_size = DEFAULT_SHIP_BUFFER_SIZE
             @trace_header = DEFAULT_TRACE_HEADER
             @charset = DEFAULT_CHARSET
             @control_port = DEFAULT_CONTROL_PORT
@@ -281,8 +281,8 @@ module Baykit
               @socket_timeout_sec = Integer(kv.value)
             when "keeptimeout"
               @keep_timeout_sec = Integer(kv.value)
-            when "tourbuffersize"
-              @tour_buffer_size = StringUtil.parse_size(kv.value)
+            when "shipbuffersize", "tourbuffersize"
+              @ship_buffer_size = StringUtil.parse_size(kv.value)
             when "traceheader"
               @trace_header = StringUtil.parse_bool(kv.value)
             when "redirectfile"
