@@ -69,7 +69,7 @@ module Baykit
             begin
               rd.close()
             rescue IOError => e
-              Baylog.error_e(e)
+              BayLog.error_e(e)
             end
 
           end
