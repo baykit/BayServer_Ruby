@@ -18,11 +18,6 @@ module Baykit
           raise NotImplementedError.new
         end
 
-        # Find barge by path
-        def find_barge(path)
-          raise NotImplementedError.new
-        end
-
         def enter(tur)
           raise NotImplementedError.new
         end

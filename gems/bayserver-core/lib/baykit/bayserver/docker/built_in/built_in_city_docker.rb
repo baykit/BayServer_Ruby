@@ -142,10 +142,6 @@ module Baykit
             return true
           end
 
-          def find_barge(path)
-            return nil
-          end
-
           def enter(tur)
             BayLog.debug("%s City[%s] Request URI: %s", tur, @name, tur.req.uri)
 
