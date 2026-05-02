@@ -147,7 +147,8 @@ module Baykit
             # case where the kernel send buffer has room. Partial writes
             # fall back to the OP_WRITE path naturally because
             # on_writable re-queues unfinished work.
-            if st.remaining > 0 && (flush || st.remaining >= st.buf_size)
+            flush_threshold = [st.buf_size, BayServer.harbor.ship_buffer_size].min
+            if st.remaining > 0 && (flush || st.remaining >= flush_threshold)
               @try_write_lock.synchronize do
                 @try_write_list << st
               end
