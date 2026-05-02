@@ -9,6 +9,14 @@ module Baykit
   module BayServer
     module Agent
       module Multiplexer
+        # JobMultiplexer is a reference implementation modelled after the
+        # Go version of BayServer, where the runtime cheaply multiplexes a
+        # goroutine-per-I/O design. In Ruby every operation spawns a
+        # Thread, so GVL contention and context-switch overhead dominate
+        # under any meaningful concurrency. Network I/O should use
+        # SpiderMultiplexer (nio4r-backed epoll on Linux) instead. This
+        # class is retained for cross-language parity, not for production
+        # network I/O.
         class JobMultiplexer < JobMultiplexerBase
           include Baykit::BayServer::Agent::TimerHandler #implements
           include Baykit::BayServer::Common::Recipient  # implements
