@@ -288,6 +288,13 @@ module Baykit
                 end
               end
               cgo.access
+              # LRU access order: re-insert so the most recently used
+              # entry sits at the tail. add_total walks @cargo_map in
+              # insertion order during eviction, so this turns the
+              # walk into oldest-first-by-use rather than oldest-first-
+              # by-creation. Mirrors Java's LinkedHashMap(.., accessOrder=true).
+              @cargo_map.delete(path)
+              @cargo_map[path] = cgo
               return [cgo, source_rd]
             end
           end
