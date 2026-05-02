@@ -231,7 +231,7 @@ module Baykit
         end
 
         def buffer_available()
-          return @bytes_posted - @bytes_consumed < BayServer.harbor.tour_buffer_size
+          return @bytes_posted - @bytes_consumed < BayServer.harbor.ship_buffer_size
         end
       end
     end
