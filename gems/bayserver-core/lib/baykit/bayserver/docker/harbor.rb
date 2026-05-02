@@ -144,6 +144,12 @@ module Baykit
           raise NotImplementedError
         end
 
+        # The maximum file size, in bytes, eligible for the Direct
+        # Boarding (sendfile/transferTo) path. -1 means no limit.
+        def max_direct_boarding_size
+          raise NotImplementedError
+        end
+
         # Find barge by path
         def find_barge(path)
           raise NotImplementedError

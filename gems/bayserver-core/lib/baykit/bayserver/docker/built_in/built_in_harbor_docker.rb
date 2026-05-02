@@ -124,6 +124,11 @@ module Baykit
           # The maximum file size to be cached.
           attr :max_cargo_size
 
+          # The maximum file size, in bytes, eligible for the Direct Boarding
+          # path. -1 means no limit (everything that fits in the FileStore
+          # gets a rudder); any non-negative value is a hard threshold.
+          attr :max_direct_boarding_size
+
           # Barge dockers
           attr :barges
 
@@ -151,6 +156,7 @@ module Baykit
             @cargo_lifespan_sec = DEFAULT_CARGO_LIFESPAN_SEC
             @max_direct_boardings = DEFAULT_DIRECT_BOARDINGS
             @max_cargo_size = DEFAULT_MAX_CARGO_SIZE
+            @max_direct_boarding_size = -1
             @barges = Baykit::BayServer::Common::Barges.new
           end
 
@@ -334,6 +340,9 @@ module Baykit
 
             when "maxcargosize"
               @max_cargo_size = StringUtil.parse_size(kv.value)
+
+            when "maxdirectboardingsize"
+              @max_direct_boarding_size = StringUtil.parse_size(kv.value)
 
             else
               return false
