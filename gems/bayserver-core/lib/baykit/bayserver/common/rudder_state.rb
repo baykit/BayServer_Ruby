@@ -103,6 +103,16 @@ module Baykit
             @last_access_time = Time.now.tv_sec
           end
 
+          # Sum of pending bytes across queued WriteUnits. Used by
+          # SpiderMultiplexer's flush threshold so we can defer the
+          # OP_WRITE registration until either the caller asked for a
+          # flush or enough data has accumulated to be worth a syscall.
+          def remaining
+            total = 0
+            @write_queue.each { |u| total += u.buf.bytesize }
+            total
+          end
+
           def end
             @finale = true
           end

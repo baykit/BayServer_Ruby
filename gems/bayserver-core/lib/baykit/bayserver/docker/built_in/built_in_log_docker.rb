@@ -187,7 +187,8 @@ module Baykit
                   info.rudder,
                   sb,
                   nil,
-                  "log"
+                  "log",
+                  true
                 )
               end
             end

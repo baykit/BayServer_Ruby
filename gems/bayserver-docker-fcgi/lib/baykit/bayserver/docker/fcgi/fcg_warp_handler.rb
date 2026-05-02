@@ -282,14 +282,14 @@ module Baykit
 
           def send_stdin(tur, data, ofs, len, &callback)
             cmd = CmdStdIn.new(WarpData.get(tur).warp_id, data, ofs, len)
-            ship.post(cmd, &callback)
+            ship.post(cmd, true, &callback)
           end
 
           def send_begin_req(tur)
             cmd = CmdBeginRequest.new(WarpData.get(tur).warp_id)
             cmd.role = CmdBeginRequest::FCGI_RESPONDER
             cmd.keep_conn = true
-            ship.post(cmd)
+            ship.post(cmd, true)
           end
 
           def send_params(tur)
@@ -338,10 +338,10 @@ module Baykit
               end
             end
 
-            ship.post(cmd)
+            ship.post(cmd, true)
 
             cmd_params_end = CmdParams.new(WarpData.get(tur).warp_id)
-            ship.post(cmd_params_end)
+            ship.post(cmd_params_end, true)
           end
 
           def ship

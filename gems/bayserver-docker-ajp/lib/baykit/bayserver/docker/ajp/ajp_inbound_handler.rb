@@ -80,14 +80,14 @@ module Baykit
               end
             end
             cmd.status = tur.res.headers.status
-            @protocol_handler.post(cmd)
+            @protocol_handler.post(cmd, true)
 
             BayLog.debug("%s send header: content-length=%d", self, tur.res.headers.content_length())
           end
 
           def send_res_content(tur, bytes, ofs, len, &lis)
             cmd = CmdSendBodyChunk.new(bytes, ofs, len);
-            @protocol_handler.post(cmd, &lis);
+            @protocol_handler.post(cmd, true, &lis);
           end
 
           def transfer_content(tur, file_rd, ofs, len, &lis)
@@ -106,7 +106,7 @@ module Baykit
             end
 
             begin
-              @protocol_handler.post(cmd) do
+              @protocol_handler.post(cmd, true) do
                 BayLog.debug("%s call back in sendEndTour: tur=%s", self, tur)
                 ensure_func.call()
                 callback.call()
@@ -231,7 +231,7 @@ module Baykit
                 if bch.req_len > AjpPacket::MAX_DATA_LEN
                   bch.req_len = AjpPacket::MAX_DATA_LEN
                 end
-                @protocol_handler.post(bch)
+                @protocol_handler.post(bch, true)
 
                 if !success
                   return NextSocketAction::SUSPEND

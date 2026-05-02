@@ -145,7 +145,7 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf, adr, tag, &lis)
+          def req_write(rd, buf, adr, tag, flush, &lis)
             st = get_rudder_state(rd)
             if st == nil
               BayLog.warn("Invalid rudder")
