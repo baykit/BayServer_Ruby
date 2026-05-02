@@ -11,13 +11,13 @@ module Baykit
           if sip == nil || pkt == nil || lisnr == nil
             raise Sink.new()
           end
-          sip.transporter.req_write(
+          return sip.transporter.req_write(
             sip.rudder,
             pkt.buf[0, pkt.buf_len],
             nil,
             pkt,
-            flush) do
-            lisnr.call()
+            flush) do |avail|
+            lisnr.call(avail)
           end
         end
 

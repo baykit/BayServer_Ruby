@@ -149,7 +149,8 @@ module Baykit
             st = get_rudder_state(rd)
             if st == nil
               BayLog.warn("Invalid rudder")
-              lis.call()
+              lis.call(true)
+              return true
             end
 
             unt = WriteUnit.new(buf, adr, tag, &lis)
@@ -169,6 +170,7 @@ module Baykit
             if need_write
               next_write(st)
             end
+            return st.buffer_available?
           end
 
           def req_transfer(rd, file_rd, ofs, len, &lis)
