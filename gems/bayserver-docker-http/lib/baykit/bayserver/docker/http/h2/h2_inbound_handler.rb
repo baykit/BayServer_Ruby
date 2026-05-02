@@ -148,14 +148,14 @@ module Baykit
                     cmd.flags.set_end_headers(true)
                 end
 
-                @protocol_handler.post(cmd, true)
+                @protocol_handler.post(cmd, false)
               end
             end
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s send_res_content len=%d", self, len)
               cmd = CmdData.new(tur.req.key, nil, bytes, ofs, len);
-              @protocol_handler.post(cmd, true, &callback)
+              @protocol_handler.post(cmd, false, &callback)
             end
 
             def transfer_content(tur, file_rd, ofs, len, &lis)
@@ -256,7 +256,7 @@ module Baykit
                       upd2 = CmdWindowUpdate.new( 0)
                       upd2.window_size_increment = len
                       begin
-                        @protocol_handler.post(upd, true)
+                        @protocol_handler.post(upd, false)
                         @protocol_handler.post(upd2, true)
                       rescue IOError => e
                         BayLog.error_e(e)
