@@ -47,6 +47,11 @@ module Baykit
             @anchorable = anchorable
             @operations = {}
             @operations_lock = Mutex.new
+            # States queued by req_write for an inline-write attempt at the
+            # end of receive(). Lets us skip the epoll_ctl(ADD) +
+            # selector wait + epoll_ctl(DEL) round-trip for ready sockets.
+            @try_write_list = []
+            @try_write_lock = Mutex.new
 
             begin
               require "nio4r"  # gem: nio4r
@@ -133,8 +138,20 @@ module Baykit
             # past the per-connection buffer size. e491d8f's intermediate
             # sends pass flush=false so headers + small bodies coalesce
             # into a single write.
-            if flush || st.remaining >= st.buf_size
-              add_operation(rd, Selector::OP_WRITE)
+            #
+            # Instead of registering OP_WRITE with epoll and waiting for
+            # the next select() to discover that the socket is writable,
+            # queue the state on @try_write_list and have receive() try
+            # the write inline at the end of its processing. This skips
+            # the epoll_ctl(ADD) + epoll_ctl(DEL) pair on the common
+            # case where the kernel send buffer has room. Partial writes
+            # fall back to the OP_WRITE path naturally because
+            # on_writable re-queues unfinished work.
+            if st.remaining > 0 && (flush || st.remaining >= st.buf_size)
+              @try_write_lock.synchronize do
+                @try_write_list << st
+              end
+              wakeup
             end
 
             st.access
@@ -266,6 +283,28 @@ module Baykit
                 on_waked_up
               else
                 handle_channel(io, selected_map[io])
+              end
+            end
+
+            # Drain inline-write attempts queued by req_write. Calling
+            # on_writable directly here is the shortcut: we get to the
+            # send() syscall without going through epoll_ctl + select.
+            # If the buffer is full, on_writable will re-arm OP_WRITE
+            # itself and the rest of the bytes go out via the normal
+            # selector path next round.
+            while true
+              st = nil
+              @try_write_lock.synchronize do
+                st = @try_write_list.shift
+              end
+              break if st.nil?
+              begin
+                on_writable(st)
+              rescue Sink
+                raise
+              rescue => e
+                BayLog.error_e(e, "%s Unhandled error on deferred write: rd=%s", @agent, st.rudder)
+                raise Sink.new("Unhandled error: %s" % e.message)
               end
             end
 
