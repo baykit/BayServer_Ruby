@@ -225,6 +225,14 @@ module Baykit
           end
 
           def next_write(st)
+            # Re-arm OP_WRITE after a partial write. Before the
+            # tryWriteList shortcut, req_write always registered
+            # OP_WRITE up front and the registration survived any
+            # number of partial writes; on_wrote could no-op here. The
+            # shortcut path skips the up-front registration, so we
+            # need to add it now or the remaining bytes never get
+            # written and the response truncates after one write.
+            add_operation(st.rudder, Selector::OP_WRITE)
           end
 
           def close_rudder(rd)
