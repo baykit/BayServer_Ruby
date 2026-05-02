@@ -609,7 +609,13 @@ module Baykit
                 end
               end
 
-            rescue SystemCallError, IOError => e
+            rescue SystemCallError, IOError, OpenSSL::SSL::SSLError => e
+              # OpenSSL::SSL::SSLError doesn't inherit from IOError so
+              # without it raw SSL_write failures (e.g. peer abort
+              # mid-handshake or mid-record) escape on_writable and
+              # the agent treats it as a fatal Sink. Treat it the
+              # same way as a plain IO error: send an error letter
+              # and let the connection close gracefully.
               BayLog.debug_e(e, "%s IO error", self)
               @agent.send_error_letter(st.rudder, self, e, false)
             end
