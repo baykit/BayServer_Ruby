@@ -499,7 +499,12 @@ module Baykit
           st.bytes_wrote += let.n_bytes
 
           if st.write_queue.empty?
-            raise Sink("%s Write queue is empty: rd=%s", self, st.rudder)
+            # Spurious wrote_letter (e.g. one queued by an earlier
+            # on_writable whose bytes have already been accounted for
+            # by a peer wrote_letter). Drop instead of raising; the
+            # write path is otherwise consistent.
+            BayLog.debug("%s wrote letter for empty queue: rd=%s", self, st.rudder)
+            return
           end
 
           write_more = false
