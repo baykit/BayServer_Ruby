@@ -3,7 +3,7 @@ module Baykit
     module Tours
 
       module ReqContentHandler # interface
-        def on_read_req_content(tur, buf, start, len)
+        def on_read_req_content(tur, buf, start, len, &lis)
           raise NotImplementedError.new
         end
 
@@ -19,7 +19,8 @@ module Baykit
 
         class DevNullReqContentHandler
           include ReqContentHandler  # implements
-          def on_read_req_content(tur, buf, start, len)
+          def on_read_req_content(tur, buf, start, len, &lis)
+            tur.req.consumed(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK, len, &lis)
           end
 
           def on_end_req_content(tur)
