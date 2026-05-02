@@ -138,7 +138,7 @@ module Baykit
           raise NotImplementedError
         end
 
-        # The maximum file size, in mega-bytes, to be cached.
+        # The maximum file size, in bytes, to be cached.
         # Files exceeding this size will not be cached.
         def max_cargo_size
           raise NotImplementedError
