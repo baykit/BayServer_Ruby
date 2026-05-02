@@ -1,7 +1,6 @@
 require 'baykit/bayserver/http_exception'
 
 require 'baykit/bayserver/train/train'
-require 'baykit/bayserver/tours/req_content_handler'
 
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/http_status'
@@ -11,7 +10,6 @@ module Baykit
     module Docker
       module SendFile
         class DirectoryTrain < Baykit::BayServer::Train::Train
-          include Baykit::BayServer::Tours::ReqContentHandler   # implements
 
           include Baykit::BayServer::Agent
           include Baykit::BayServer::Train
@@ -27,10 +25,6 @@ module Baykit
             @path = path
             @available = false
             @abortable = true
-          end
-
-          def start_tour()
-            @tour.req.set_content_handler(self)
           end
 
           #######################################################
@@ -85,29 +79,6 @@ module Baykit
               raise HttpException.new(HttpStatus.INTERNAL_SERVER_ERROR, e)
             end
           end
-
-          #######################################################
-          # Implements ReqContentHandler
-          #######################################################
-
-          def on_read_content(tur, buf, start, len)
-            BayLog.debug("%s onReadContent(Ignore) len=%d", tur, len)
-          end
-
-          def on_end_content(tur)
-            BayLog.debug("%s endContent", tur)
-            @abortable = false
-
-            if !TrainRunner.post(self)
-              raise HttpException.new(HttpStatus.SERVICE_UNAVAILABLE, "TourRunner is busy")
-            end
-          end
-
-          def on_abort(tur)
-            BayLog.debug("%s onAbort aborted=%s", tur, @abortable)
-            return @abortable
-          end
-
 
           def print_link(w, path)
             w.write("<a href='#{path}'>")
