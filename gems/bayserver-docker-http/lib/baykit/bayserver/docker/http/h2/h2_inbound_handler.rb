@@ -62,7 +62,7 @@ module Baykit
             attr :header_buffer
 
             def initialize
-              @window_size = BayServer.harbor.tour_buffer_size
+              @window_size = BayServer.harbor.ship_buffer_size
               @settings = H2Settings.new
               @analyzer = HeaderBlockAnalyzer.new
               @req_header_tbl = HeaderTable.create_dynamic_table()

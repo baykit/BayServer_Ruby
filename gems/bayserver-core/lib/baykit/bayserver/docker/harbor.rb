@@ -71,8 +71,8 @@ module Baykit
           raise NotImplementedError.new
         end
 
-        # Internal buffer size of Tour
-        def tour_buffer_size
+        # Response buffer size shared by all tours on a ship.
+        def ship_buffer_size
           raise NotImplementedError.new
         end
 
