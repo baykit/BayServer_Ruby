@@ -17,9 +17,9 @@ module Baykit
             @listener = lis
           end
 
-          def done()
+          def done(buffer_available = true)
             if @listener != nil
-              @listener.call()
+              @listener.call(buffer_available)
             end
           end
         end

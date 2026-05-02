@@ -208,14 +208,15 @@ module Baykit
             @tour.cargo.save_content(buf, ofs, len)
           end
 
-          # Done listener
-          done_lis = Proc.new() do
-            consumed(chk_tour_id, len);
+          # Done listener: |avail| carries the post-write buffer state
+          # so the resConsumeListener can decide whether to resume.
+          done_lis = Proc.new() do |avail|
+            consumed(chk_tour_id, len, avail)
           end
 
           if @tour.zombie?
             BayLog.debug("%s zombie return", self)
-            done_lis.call()
+            done_lis.call(true)
             return true
           end
 
@@ -229,32 +230,32 @@ module Baykit
           end
 
           @bytes_posted += len
-          @tour.ship.post_res_bytes(len)
           BayLog.debug("%s posted res content len=%d posted=%d limit=%d",
           @tour, len, @bytes_posted, @bytes_limit)
           if @bytes_limit > 0 && @bytes_limit < self.bytes_posted
             raise ProtocolException.new("Post data exceed content-length: " + @bytes_posted + "/" + @bytes_limit)
           end
 
+          available = true
           if @tour.zombie? || @tour.aborted?
             # Don't send peer any data
             BayLog::debug("%s Aborted or zombie tour. do nothing: %s state=%s", self, @tour, @tour.state)
-            done_lis.call()
+            done_lis.call(true)
           else
             if @can_compress
               get_compressor().compress(buf, ofs, len, &done_lis)
             else
               begin
-                @tour.ship.send_res_content(@tour.ship_id, @tour, buf, ofs, len, &done_lis)
+                available = @tour.ship.send_res_content(@tour.ship_id, @tour, buf, ofs, len, &done_lis)
               rescue IOError => e
-                done_lis.call()
+                done_lis.call(true)
                 @tour.change_state(Tour::TOUR_ID_NOCHECK, Tour::TourState::ABORTED)
                 raise e
               end
             end
           end
 
-          return @tour.ship.res_buffer_available?
+          return available
         end
 
         def send_file(path, charset)
@@ -454,17 +455,15 @@ module Baykit
           end
         end
 
-        def consumed(check_id, length)
+        def consumed(check_id, length, buffer_available)
           @tour.check_tour_id(check_id)
           if @res_consume_listener == nil
             raise Sink.new("Response consume listener is null")
           end
 
-          BayLog.debug("%s resConsumed: len=%d", @tour, length)
+          BayLog.debug("%s resConsumed: len=%d available=%s", @tour, length, buffer_available)
 
-          # Ship-level buffer tracking and resume (notifies all
-          # suspended tours on this connection).
-          @tour.ship.consume_res_bytes(length)
+          @res_consume_listener.call(length, buffer_available)
         end
 
         def send_http_exception(chk_tour_id, http_ex)

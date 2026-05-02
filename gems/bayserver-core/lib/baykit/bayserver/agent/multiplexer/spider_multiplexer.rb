@@ -124,8 +124,8 @@ module Baykit
 
             if st == nil
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
-              lis.call()
-              return
+              lis.call(true)
+              return true
             end
 
             unt = WriteUnit.new(buf, adr, tag, &lis)
@@ -155,6 +155,7 @@ module Baykit
             end
 
             st.access
+            return st.buffer_available?
           end
 
           def req_transfer(rd, file_rd, ofs, len, &lis)

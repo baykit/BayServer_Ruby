@@ -59,7 +59,7 @@ module Baykit
               end
               u = st.write_queue.shift()
             end
-            u.done()
+            u.done(st.buffer_available?)
             return true
           end
 

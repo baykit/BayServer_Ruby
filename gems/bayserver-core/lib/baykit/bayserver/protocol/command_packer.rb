@@ -24,10 +24,10 @@ module Baykit
           pkt = @pkt_store.rent(cmd.type)
           begin
             cmd.pack(pkt)
-            @pkt_packer.post(sip, pkt, flush) do
+            return @pkt_packer.post(sip, pkt, flush) do |avail|
               @pkt_store.Return(pkt)
               if lisnr != nil
-                lisnr.call()
+                lisnr.call(avail)
               end
             end
           rescue IOError => e

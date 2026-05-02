@@ -69,6 +69,17 @@ module Baykit
           @ship_id
         end
 
+        # Returns whether the multiplexer's internal write buffer for
+        # this ship still has room. Delegates to RudderState via the
+        # transporter's multiplexer.
+        def buffer_available?
+          return true if @transporter.nil?
+          mpx = @transporter.respond_to?(:multiplexer) ? @transporter.multiplexer : @transporter
+          st = mpx.get_rudder_state(@rudder)
+          return true if st.nil?
+          st.buffer_available?
+        end
+
         def check_ship_id(check_id)
           if !@initialized
             raise Sink.new("#{self} ship not initialized (might be returned ship): #{check_id}")
