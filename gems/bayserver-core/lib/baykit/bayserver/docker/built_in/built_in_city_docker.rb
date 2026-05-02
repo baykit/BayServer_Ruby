@@ -64,14 +64,57 @@ module Baykit
               @cgo.headers.copy_to(tur.res.headers)
               tur.res.send_headers(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK)
 
-              tur.res.set_consume_listener { |len, resume| }
-
-              tur.res.send_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK, @cgo.content, 0, @cgo.length)
-              tur.res.end_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK)
+              if @cgo.length <= BayServer.harbor.ship_buffer_size
+                # Small enough to send in one shot.
+                tur.res.set_consume_listener { |len, resume| }
+                tur.res.send_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK, @cgo.content, 0, @cgo.length)
+                tur.res.end_res_content(Baykit::BayServer::Tours::Tour::TOUR_ID_NOCHECK)
+              else
+                # Large cached content -- send in chunks with backpressure.
+                BuiltInCityDocker.send_cached_content_chunked(tur, @cgo)
+              end
             end
 
             def on_abort_req(tur)
               return false
+            end
+          end
+
+          # Sends cached content in chunks with backpressure.
+          # When the write buffer is full, send_res_content returns false
+          # and the loop pauses; the consume listener resumes the loop
+          # once buffer headroom returns.
+          def self.send_cached_content_chunked(tur, cgo)
+            tur_id = tur.tour_id
+            chunk_size = tur.ship.protocol_handler.max_res_packet_data_size
+            pos = [0]  # mutable closure over the cursor
+
+            tur.res.set_consume_listener do |len, resume|
+              if resume
+                begin
+                  send_chunks(tur, tur_id, cgo, pos, chunk_size)
+                rescue IOError => e
+                  BayLog.error_e(e)
+                end
+              end
+            end
+
+            send_chunks(tur, tur_id, cgo, pos, chunk_size)
+          end
+
+          def self.send_chunks(tur, tur_id, cgo, pos, chunk_size)
+            available = true
+            while pos[0] < cgo.length && available
+              len = chunk_size
+              if len > cgo.length - pos[0]
+                len = cgo.length - pos[0]
+              end
+              available = tur.res.send_res_content(tur_id, cgo.content, pos[0], len)
+              pos[0] += len
+            end
+
+            if pos[0] >= cgo.length
+              tur.res.end_res_content(tur_id)
             end
           end
 

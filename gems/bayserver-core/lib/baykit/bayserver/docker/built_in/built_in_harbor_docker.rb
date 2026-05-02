@@ -29,7 +29,7 @@ module Baykit
           DEFAULT_TAXI_RUNNERS = 8
           DEFAULT_WAIT_TIMEOUT_SEC = 120
           DEFAULT_KEEP_TIMEOUT_SEC = 20
-          DEFAULT_SHIP_BUFFER_SIZE = 1024 * 1024;  # 1M
+          DEFAULT_SHIP_BUFFER_SIZE = 64 * 1024;  # 64K
           DEFAULT_TRACE_HEADER = false
           DEFAULT_CHARSET = "UTF-8"
           DEFAULT_CONTROL_PORT = -1
