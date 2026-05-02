@@ -73,8 +73,8 @@ module Baykit
           return @packet_unpacker.bytes_received(buf)
         end
 
-        def post(cmd, &lis)
-          @command_packer.post(@ship, cmd, &lis)
+        def post(cmd, flush, &lis)
+          @command_packer.post(@ship, cmd, flush, &lis)
         end
       end
     end

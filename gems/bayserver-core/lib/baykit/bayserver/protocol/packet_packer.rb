@@ -7,7 +7,7 @@ module Baykit
         def reset()
         end
 
-        def post(sip, pkt, &lisnr)
+        def post(sip, pkt, flush, &lisnr)
           if sip == nil || pkt == nil || lisnr == nil
             raise Sink.new()
           end
@@ -15,7 +15,8 @@ module Baykit
             sip.rudder,
             pkt.buf[0, pkt.buf_len],
             nil,
-            pkt) do
+            pkt,
+            flush) do
             lisnr.call()
           end
         end

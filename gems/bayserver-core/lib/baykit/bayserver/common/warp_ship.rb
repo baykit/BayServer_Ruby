@@ -256,14 +256,14 @@ module Baykit
             return timeout
           end
 
-          def post(cmd, &listener)
+          def post(cmd, flush, &listener)
             if !@connected
               @cmd_buf << [cmd, listener]
             else
               if cmd == nil
                 listener.call()
               else
-                @protocol_handler.post(cmd, &listener)
+                @protocol_handler.post(cmd, flush, &listener)
               end
             end
           end
@@ -274,7 +274,7 @@ module Baykit
                 if cmd == nil
                   lis.call()
                 else
-                  @protocol_handler.post(cmd, &lis)
+                  @protocol_handler.post(cmd, true, &lis)
                 end
               end
               @cmd_buf = []

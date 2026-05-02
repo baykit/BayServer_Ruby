@@ -98,9 +98,9 @@ module Baykit
             @multiplexer.req_read(rd)
           end
 
-          def req_write(rd, buf, adr, tag, &lis)
+          def req_write(rd, buf, adr, tag, flush, &lis)
             check_rudder rd
-            @multiplexer.req_write(rd, buf, adr, tag, &lis)
+            @multiplexer.req_write(rd, buf, adr, tag, flush, &lis)
           end
 
           def req_transfer(rd, file_rd, ofs, len, &lis)
