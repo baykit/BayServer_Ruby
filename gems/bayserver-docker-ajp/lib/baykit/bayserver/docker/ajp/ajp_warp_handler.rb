@@ -80,7 +80,7 @@ module Baykit
           end
 
           def send_end_tour(tur, keep_alive, &lis)
-            ship.post(nil, &lis)
+            ship.post(nil, true, &lis)
           end
 
           def on_protocol_error(e)
@@ -259,7 +259,7 @@ module Baykit
               end
             end
 
-            ship.post(cmd)
+            ship.post(cmd, true)
           end
 
           def send_data(tur, data, ofs, len, &callback)
@@ -268,7 +268,7 @@ module Baykit
             cmd = CmdData.new(data, ofs, len)
             cmd.to_server = true
 
-            ship.post(cmd, &callback)
+            ship.post(cmd, true, &callback)
           end
 
           def ship

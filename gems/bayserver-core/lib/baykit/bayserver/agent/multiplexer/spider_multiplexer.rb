@@ -113,9 +113,9 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf,adr, tag, &lis)
+          def req_write(rd, buf, adr, tag, flush, &lis)
             st = get_rudder_state(rd)
-            BayLog.debug("%s reqWrite st=%s tag=%s", @agent, st, tag)
+            BayLog.debug("%s reqWrite st=%s tag=%s flush=%s", @agent, st, tag, flush)
 
             if st == nil
               BayLog.warn("%s Channel is closed: %s", @agent, rd)
@@ -128,7 +128,14 @@ module Baykit
               st.write_queue << unt
             end
 
-            add_operation(rd, Selector::OP_WRITE)
+            # Defer the epoll OP_WRITE registration unless the caller
+            # explicitly asked to flush, or the queued bytes have grown
+            # past the per-connection buffer size. e491d8f's intermediate
+            # sends pass flush=false so headers + small bodies coalesce
+            # into a single write.
+            if flush || st.remaining >= st.buf_size
+              add_operation(rd, Selector::OP_WRITE)
+            end
 
             st.access
           end
@@ -612,7 +619,7 @@ module Baykit
               return false
             rescue IO::WaitWritable => e
               BayLog.debug("%s Handshake status: write more st=%s", self, st)
-              req_write(st.rudder, "", nil, nil)
+              req_write(st.rudder, "", nil, nil, true)
               return false
             end
           end

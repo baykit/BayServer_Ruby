@@ -125,7 +125,7 @@ module Baykit
             st.access
           end
 
-          def req_write(rd, buf, adr, tag, &lis)
+          def req_write(rd, buf, adr, tag, flush, &lis)
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 

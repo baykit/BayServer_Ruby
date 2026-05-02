@@ -130,13 +130,13 @@ module Baykit
               end
 
               cmd = CmdHeader.new_res_header(tur.res.headers, tur.req.protocol)
-              @protocol_handler.post(cmd)
+              @protocol_handler.post(cmd, true)
             end
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s H1 send_res_content len=%d", self, len)
               cmd = CmdContent.new(bytes, ofs, len)
-              @protocol_handler.post(cmd, &callback)
+              @protocol_handler.post(cmd, true, &callback)
             end
 
             def transfer_content(tur, file_rd, ofs, len, &lis)
@@ -161,7 +161,7 @@ module Baykit
               end
 
               begin
-                @protocol_handler.post(cmd) do
+                @protocol_handler.post(cmd, true) do
                   BayLog.debug("%s call back of end content command: tur=%s", ship, tur)
                   ensure_func.call()
                   callback.call()

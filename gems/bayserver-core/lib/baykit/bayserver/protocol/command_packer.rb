@@ -20,11 +20,11 @@ module Baykit
 
         end
 
-        def post(sip, cmd, &lisnr)
+        def post(sip, cmd, flush, &lisnr)
           pkt = @pkt_store.rent(cmd.type)
           begin
             cmd.pack(pkt)
-            @pkt_packer.post(sip, pkt) do
+            @pkt_packer.post(sip, pkt, flush) do
               @pkt_store.Return(pkt)
               if lisnr != nil
                 lisnr.call()

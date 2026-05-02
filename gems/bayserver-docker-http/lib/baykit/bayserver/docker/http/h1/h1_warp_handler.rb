@@ -122,17 +122,17 @@ module Baykit
               end
 
 
-              ship.post(cmd)
+              ship.post(cmd, true)
             end
 
             def send_res_content(tur, buf, start, len, &callback)
               cmd = CmdContent.new(buf, start, len)
-              ship.post(cmd, &callback)
+              ship.post(cmd, true, &callback)
             end
 
             def send_end_tour(tur, keep_alive, &lis)
               cmd = CmdEndContent.new()
-              ship.post(cmd, &lis)
+              ship.post(cmd, true, &lis)
             end
 
 

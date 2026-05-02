@@ -148,14 +148,14 @@ module Baykit
                     cmd.flags.set_end_headers(true)
                 end
 
-                @protocol_handler.post(cmd)
+                @protocol_handler.post(cmd, true)
               end
             end
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s send_res_content len=%d", self, len)
               cmd = CmdData.new(tur.req.key, nil, bytes, ofs, len);
-              @protocol_handler.post(cmd, &callback)
+              @protocol_handler.post(cmd, true, &callback)
             end
 
             def transfer_content(tur, file_rd, ofs, len, &lis)
@@ -166,7 +166,7 @@ module Baykit
               BayLog.debug("%s send_end_tour. tur=%s", self, tur)
               cmd = CmdData.new(tur.req.key, nil, [], 0, 0)
               cmd.flags.set_end_stream(true)
-              @protocol_handler.post(cmd, &callback)
+              @protocol_handler.post(cmd, true, &callback)
             end
 
             def on_protocol_error(err)
@@ -177,7 +177,7 @@ module Baykit
               cmd.error_code = H2ErrorCode::PROTOCOL_ERROR
               cmd.debug_data = "Thank you!"
               begin
-                @protocol_handler.post(cmd)
+                @protocol_handler.post(cmd, true)
                 @protocol_handler.ship.post_close()
               rescue IOError => e
                 BayLog.error_e(e)
@@ -199,7 +199,7 @@ module Baykit
               set.stream_id = 0
               set.items.append(CmdSettings::Item.new(CmdSettings::MAX_CONCURRENT_STREAMS, TourStore::MAX_TOURS))
               set.items.append(CmdSettings::Item.new(CmdSettings::INITIAL_WINDOW_SIZE, @window_size))
-              @protocol_handler.post(set)
+              @protocol_handler.post(set, true)
 
               set = CmdSettings.new(H2ProtocolHandler::CTL_STREAM_ID)
               set.stream_id = 0
@@ -256,8 +256,8 @@ module Baykit
                       upd2 = CmdWindowUpdate.new( 0)
                       upd2.window_size_increment = len
                       begin
-                        @protocol_handler.post(upd)
-                        @protocol_handler.post(upd2)
+                        @protocol_handler.post(upd, true)
+                        @protocol_handler.post(upd2, true)
                       rescue IOError => e
                         BayLog.error_e(e)
                       end
@@ -339,7 +339,7 @@ module Baykit
               end
 
               res = CmdSettings.new(0, H2Flags.new(H2Flags::FLAGS_ACK))
-              @protocol_handler.post(res)
+              @protocol_handler.post(res, true)
               return NextSocketAction::CONTINUE
             end
 
@@ -364,7 +364,7 @@ module Baykit
               BayLog.debug("%s handle_ping: stm=%d", ship, cmd.stream_id)
 
               res = CmdPing.new(cmd.stream_id, H2Flags.new(H2Flags::FLAGS_ACK), cmd.opaque_data)
-              @protocol_handler.post(res)
+              @protocol_handler.post(res, true)
               return NextSocketAction::CONTINUE
             end
 

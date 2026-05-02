@@ -96,12 +96,12 @@ module Baykit
             HttpUtil.send_mime_headers(tur.res.headers, buf)
             HttpUtil.send_new_line(buf)
             cmd = CmdStdOut.new(tur.req.key, buf.buf, 0, buf.length)
-            @protocol_handler.post(cmd)
+            @protocol_handler.post(cmd, true)
           end
 
           def send_res_content(tur, bytes, ofs, len, &callback)
             cmd = CmdStdOut.new(tur.req.key, bytes, ofs, len);
-            @protocol_handler.post(cmd, &callback)
+            @protocol_handler.post(cmd, true, &callback)
           end
 
           def transfer_content(tur, file_rd, ofs, len, &lis)
@@ -113,7 +113,7 @@ module Baykit
 
             # Send empty stdout command
             cmd = CmdStdOut.new(tur.req.key)
-            @protocol_handler.post(cmd)
+            @protocol_handler.post(cmd, true)
 
             # Send end request command
             cmd = CmdEndRequest.new(tur.req.key)
@@ -126,7 +126,7 @@ module Baykit
             end
 
             begin
-              @protocol_handler.post(cmd) do
+              @protocol_handler.post(cmd, true) do
                 BayLog.debug("%s call back in sendEndTour: tur=%s", self, tur)
                 ensure_func.call()
                 callback.call()
