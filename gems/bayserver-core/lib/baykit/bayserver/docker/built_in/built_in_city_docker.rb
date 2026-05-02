@@ -90,12 +90,40 @@ module Baykit
           attr :trouble
           attr :name
 
+          # 10-second TTL cache for welcome-file existence checks. The
+          # path-resolution path runs File.file? per request for every
+          # static directory hit; the syscall traffic dominates on
+          # benchmarks like 128B/1KB. This is the Ruby counterpart to
+          # Java's FileExistenceCache (ConcurrentHashMap-backed there).
+          class FileExistenceCache
+            TTL_MILLI_SEC = 10_000
+
+            def initialize
+              @entries = {}  # path -> [exists?, expire_at_millis]
+              @lock = Mutex.new
+            end
+
+            def is_file(path)
+              now = (Time.now.to_f * 1000).to_i
+              @lock.synchronize do
+                entry = @entries[path]
+                return entry[0] if entry && now < entry[1]
+              end
+              exists = File.file?(path)
+              @lock.synchronize do
+                @entries[path] = [exists, now + TTL_MILLI_SEC]
+              end
+              exists
+            end
+          end
+
           def initialize()
             @towns = []
             @clubs = []
             @log_list = []
             @permission_list = []
             @barges = Baykit::BayServer::Common::Barges.new
+            @file_existence_cache = FileExistenceCache.new
           end
 
           def to_s
@@ -342,7 +370,7 @@ module Baykit
                   index_uri = uri + t.welcome
                   rel_uri = rel + t.welcome
                   index_location = File.join(t.location, rel_uri)
-                  if File.file?(index_location)
+                  if @file_existence_cache.is_file(index_location)
                     if mi.query_string != nil
                       index_uri += "?" + mi.query_string
                     end
