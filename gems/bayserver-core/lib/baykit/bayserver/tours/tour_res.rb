@@ -283,8 +283,7 @@ module Baykit
              !@tour.ship.port_docker.secure &&
              @direct_boarding
             # Send via directBoarding if the protocol is HTTP/1.x and unencrypted.
-            st = FileStore.get_file_store
-            info = st.get(path)
+            info = FileStore.get_file_info(path)
             rd = info.rudder
             file_size = info.file_length
             @direct_boarding = info.rudder != nil

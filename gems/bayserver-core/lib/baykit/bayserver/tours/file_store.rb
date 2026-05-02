@@ -53,7 +53,7 @@ module Baykit
             info = @files[path]
             now = (Time.now.to_f * 1000).to_i
             if info != nil && now > info.last_access_time + @lifespan_milli_sec
-              BayLog.info("%d %d %d %d", info.last_access_time, @lifespan_milli_sec, info.last_access_time + @lifespan_milli_sec, now)
+              BayLog.debug("%d %d %d %d", info.last_access_time, @lifespan_milli_sec, info.last_access_time + @lifespan_milli_sec, now)
               info.close
               @files.delete(path)
               info = nil
@@ -86,6 +86,10 @@ module Baykit
           end
         end
 
+        def self.get_file_info(path)
+          get_file_store.get(path)
+        end
+
         def self.get_file_store
           if @@file_store == nil
             @@file_store = FileStore.new(
@@ -95,6 +99,7 @@ module Baykit
           end
           return @@file_store
         end
+        private_class_method :get_file_store
 
         private
 
