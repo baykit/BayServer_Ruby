@@ -269,7 +269,18 @@ module Baykit
           # Wake up the recipient
           #
           def wakeup
-            IOUtil.write_int32(@select_wakeup_pipe[1], 0)
+            # Non-blocking write: a full pipe means a wake-up byte is already
+            # pending, so there is nothing to do. A blocking write here would
+            # deadlock the agent — wakeup is called from add_operation on the
+            # same thread that drains the pipe in on_waked_up, so if the pipe
+            # ever fills (high request rate × multiple add_operation per
+            # request) the agent freezes and connections accumulate in
+            # CLOSE-WAIT after the client closes.
+            begin
+              @select_wakeup_pipe[1].write_nonblock([0].pack("N"))
+            rescue IO::WaitWritable
+              # pipe full — wakeup already pending, OK to drop
+            end
           end
 
           private
@@ -549,8 +560,18 @@ module Baykit
           end
 
           def on_waked_up
-            #BayLog.debug("%s waked up", self)
-            val = IOUtil.read_int32(@select_wakeup_pipe[0])
+            # Drain all pending wakeup bytes. Each add_operation call writes 4
+            # bytes; under high load this fires several times per request, and
+            # since this method runs on the same thread as the producer, only
+            # draining 4 bytes per cycle leaves the pipe near-full. Loop until
+            # WaitReadable to mirror the PHP port's onWakedUp pattern.
+            begin
+              while true
+                @select_wakeup_pipe[0].read_nonblock(4096)
+              end
+            rescue IO::WaitReadable
+              # fully drained
+            end
           end
 
           def self.op_mode(mode)
