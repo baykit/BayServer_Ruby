@@ -3,11 +3,9 @@ module Baykit
     module Agent
       module Letters
         class Letter
-          attr :state_id
           attr :rudder
           attr :multiplexer
-          def initialize(state_id, rd, mpx)
-            @state_id = state_id
+          def initialize(rd, mpx)
             @rudder = rd
             @multiplexer = mpx
           end
