@@ -74,7 +74,7 @@ module Baykit
         end
 
         def post(cmd, flush, &lis)
-          @command_packer.post(@ship, cmd, flush, &lis)
+          return @command_packer.post(@ship, cmd, flush, &lis)
         end
       end
     end

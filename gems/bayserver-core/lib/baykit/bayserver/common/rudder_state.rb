@@ -113,6 +113,14 @@ module Baykit
             total
           end
 
+          # Returns whether the multiplexer's internal write buffer
+          # for this connection still has room. Capacity is the
+          # ship_buffer_size harbor parameter; true means pending
+          # data in the write queue is at most ship_buffer_size.
+          def buffer_available?
+            remaining <= BayServer.harbor.ship_buffer_size
+          end
+
           def end
             @finale = true
           end

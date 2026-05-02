@@ -259,11 +259,13 @@ module Baykit
           def post(cmd, flush, &listener)
             if !@connected
               @cmd_buf << [cmd, listener]
+              return true
             else
               if cmd == nil
-                listener.call()
+                listener.call(true)
+                return true
               else
-                @protocol_handler.post(cmd, flush, &listener)
+                return @protocol_handler.post(cmd, flush, &listener)
               end
             end
           end
@@ -272,7 +274,7 @@ module Baykit
                 cmd = cmd_and_lis[0]
                 lis = cmd_and_lis[1]
                 if cmd == nil
-                  lis.call()
+                  lis.call(true)
                 else
                   @protocol_handler.post(cmd, true, &lis)
                 end

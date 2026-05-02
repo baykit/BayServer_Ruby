@@ -87,7 +87,7 @@ module Baykit
 
           def send_res_content(tur, bytes, ofs, len, &lis)
             cmd = CmdSendBodyChunk.new(bytes, ofs, len);
-            @protocol_handler.post(cmd, false, &lis);
+            return @protocol_handler.post(cmd, false, &lis);
           end
 
           def transfer_content(tur, file_rd, ofs, len, &lis)

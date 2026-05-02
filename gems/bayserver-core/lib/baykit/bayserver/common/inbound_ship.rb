@@ -38,13 +38,6 @@ module Baykit
             super
             @lock = ::Monitor.new
             @active_tours = []
-            # Ship-level response buffer accounting. All tours that
-            # share this connection (esp. H2 streams) account against
-            # the same buffer budget so a slow consumer in one stream
-            # can wake up its siblings when buffer headroom returns.
-            @res_bytes_posted = 0
-            @res_bytes_consumed = 0
-            @res_available = true
           end
 
           def to_s
@@ -72,38 +65,6 @@ module Baykit
               end
             end
             @need_end = false
-            @res_bytes_posted = 0
-            @res_bytes_consumed = 0
-            @res_available = true
-          end
-
-          ######################################################
-          # Ship-level response buffer accounting
-          ######################################################
-
-          def post_res_bytes(len)
-            @res_bytes_posted += len
-            if !res_buffer_available?
-              @res_available = false
-            end
-          end
-
-          def consume_res_bytes(len)
-            @res_bytes_consumed += len
-            if !@res_available && res_buffer_available?
-              @res_available = true
-              # Wake up every running tour on this ship: any of them
-              # might be suspended waiting for this buffer headroom.
-              @active_tours.each do |tur|
-                if tur.running? && tur.res.res_consume_listener != nil
-                  tur.res.res_consume_listener.call(0, true)
-                end
-              end
-            end
-          end
-
-          def res_buffer_available?
-            @res_bytes_posted - @res_bytes_consumed < BayServer.harbor.ship_buffer_size
           end
 
           ######################################################
@@ -233,9 +194,9 @@ module Baykit
             BayLog.debug("%s max_len=%d", self, max_len)
             if len > max_len
               send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs, max_len)
-              send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs + max_len, len - max_len, &callback)
+              return send_res_content(Ship::SHIP_ID_NOCHECK, tur, bytes, ofs + max_len, len - max_len, &callback)
             else
-              tour_handler.send_res_content(tur, bytes, ofs, len, &callback)
+              return tour_handler.send_res_content(tur, bytes, ofs, len, &callback)
             end
           end
 
