@@ -83,11 +83,11 @@ module Baykit
                   end
                 end
 
-                @agent.send_read_letter(@state_id, @state.rudder, @multiplexer, @state.read_buf.length, nil, false)
+                @agent.send_read_letter(@state.rudder, @multiplexer, @state.read_buf.length, nil, false)
                 return false
 
               rescue Exception => e
-                @agent.send_error_letter(@state_id, @state.rudder, @multiplexer, e, false)
+                @agent.send_error_letter(@state.rudder, @multiplexer, e, false)
                 return false
               end
             end
@@ -184,7 +184,7 @@ module Baykit
             st = get_rudder_state(rd)
             st.closing = true
             close_rudder(rd)
-            @agent.send_closed_letter(st.id, st.rudder, self, false)
+            @agent.send_closed_letter(st.rudder, self, false)
           end
 
 

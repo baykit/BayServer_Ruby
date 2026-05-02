@@ -48,7 +48,7 @@ module Baykit
                 begin
                   client_skt, adr = rd.io.accept
                 rescue Exception => e
-                  @agent.send_error_letter(id, rd, self, e, true)
+                  @agent.send_error_letter(rd, self, e, true)
                   next
                 end
 
@@ -57,7 +57,7 @@ module Baykit
                   BayLog.error("%s Agent is not alive (close)", @agent);
                   client_skt.close
                 else
-                  @agent.send_accepted_letter(id, rd, self, IORudder.new(client_skt), true)
+                  @agent.send_accepted_letter(rd, self, IORudder.new(client_skt), true)
                 end
 
               rescue Exception => e
@@ -83,9 +83,9 @@ module Baykit
               begin
                 rd.io.connect(adr)
                 BayLog.debug("%s Connected rd=%s", @agent, rd)
-                @agent.send_connected_letter(st.id, rd, self, true)
+                @agent.send_connected_letter(rd, self, true)
               rescue Exception => e
-                @agent.send_error_letter(st.id, rd, self, e, true)
+                @agent.send_error_letter(rd, self, e, true)
                 return
               end
             end
@@ -173,7 +173,7 @@ module Baykit
                 end
 
                 close_rudder(rd)
-                @agent.send_closed_letter(id, rd, self, true)
+                @agent.send_closed_letter(rd, self, true)
               rescue Exception => e
                 BayLog.fatal_e(e)
                 @agent.shutdown
@@ -226,11 +226,11 @@ module Baykit
                   BayLog.debug("%s Rudder is already closed: rd=%s", self, st.rudder);
                   next
                 else
-                  @agent.send_read_letter(id, st.rudder, self, n, nil, true)
+                  @agent.send_read_letter(st.rudder, self, n, nil, true)
                 end
 
               rescue Exception => e
-                @agent.send_error_letter(id, st.rudder, self, e, true)
+                @agent.send_error_letter(st.rudder, self, e, true)
               end
             end
           end
@@ -256,11 +256,11 @@ module Baykit
                   u.buf.slice!(0, n)
                 end
               rescue Exception => e
-                @agent.send_error_letter(id, st.rudder, self, e, true)
+                @agent.send_error_letter(st.rudder, self, e, true)
                 next
               end
 
-              @agent.send_wrote_letter(id, st.rudder, self, n, true)
+              @agent.send_wrote_letter(st.rudder, self, n, true)
             end
           end
 

@@ -94,7 +94,7 @@ module Baykit
             rescue Errno::EISCONN
               # Connection has been successfully established
             rescue SystemCallError => e
-              @agent.send_error_letter(st.id, rd, self, e, false)
+              @agent.send_error_letter(rd, self, e, false)
               return
             end
 
@@ -157,7 +157,7 @@ module Baykit
             end
 
             close_rudder(rd)
-            @agent.send_closed_letter(st.id, rd, self, false)
+            @agent.send_closed_letter(rd, self, false)
 
             st.access
           end
@@ -433,7 +433,7 @@ module Baykit
               end
               # Cannot handle Exception any more
               BayLog.error_e(e)
-              @agent.send_error_letter(st.id, st.rudder, self, e, false)
+              @agent.send_error_letter(st.rudder, self, e, false)
             end
 
             st.access()
@@ -454,7 +454,7 @@ module Baykit
             client_rd.set_non_blocking
             #client_skt.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
 
-            @agent.send_accepted_letter(st.id, st.rudder, self, client_rd, false)
+            @agent.send_accepted_letter(st.rudder, self, client_rd, false)
 
           end
 
@@ -468,10 +468,10 @@ module Baykit
               begin
                 raise SystemCallError.new("connect", err)
               rescue SystemCallError => e
-                @agent.send_error_letter(st.id, st.rudder, self, e, false)
+                @agent.send_error_letter(st.rudder, self, e, false)
               end
             else
-              @agent.send_connected_letter(st.id, st.rudder, self, false)
+              @agent.send_connected_letter(st.rudder, self, false)
             end
 
           end
@@ -502,11 +502,11 @@ module Baykit
               end
 
               BayLog.debug("%s read %d bytes", self, len)
-              @agent.send_read_letter(st.id, st.rudder, self, len, nil, false)
+              @agent.send_read_letter(st.rudder, self, len, nil, false)
 
             rescue Exception => e
               BayLog.debug_e(e, "%s Unhandled error", self)
-              @agent.send_error_letter(st.id, st.rudder, self, e, false)
+              @agent.send_error_letter(st.rudder, self, e, false)
               return
             end
           end
@@ -542,7 +542,7 @@ module Baykit
                 end
 
                 #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
-                @agent.send_wrote_letter(st.id, st.rudder, self, n, false)
+                @agent.send_wrote_letter(st.rudder, self, n, false)
 
                 len = wunit.buf.length
                 wunit.buf.slice!(0, n)
@@ -555,7 +555,7 @@ module Baykit
 
             rescue SystemCallError, IOError => e
               BayLog.debug_e(e, "%s IO error", self)
-              @agent.send_error_letter(st.id, st.rudder, self, e, false)
+              @agent.send_error_letter(st.rudder, self, e, false)
             end
           end
 

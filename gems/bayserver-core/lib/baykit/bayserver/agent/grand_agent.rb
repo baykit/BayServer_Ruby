@@ -303,45 +303,45 @@ module Baykit
           @net_multiplexer.add_rudder_state(@command_receiver.rudder, st)
         end
 
-        def send_accepted_letter(state_id, rd, mpx, client_rd, wakeup)
+        def send_accepted_letter(rd, mpx, client_rd, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(AcceptedLetter.new(state_id, rd, mpx, client_rd), wakeup)
+          send_letter(AcceptedLetter.new(rd, mpx, client_rd), wakeup)
         end
 
-        def send_connected_letter(state_id, rd, mpx, wakeup)
+        def send_connected_letter(rd, mpx, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ConnectedLetter.new(state_id, rd, mpx), wakeup)
+          send_letter(ConnectedLetter.new(rd, mpx), wakeup)
         end
-        def send_read_letter(state_id, rd, mpx, n, adr, wakeup)
+        def send_read_letter(rd, mpx, n, adr, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ReadLetter.new(state_id, rd, mpx, n, adr), wakeup)
-        end
-
-        def send_wrote_letter(state_id, rd, mpx, n, wakeup)
-          if rd == nil
-            raise ArgumentError.new
-          end
-          send_letter(WroteLetter.new(state_id, rd, mpx, n), wakeup)
+          send_letter(ReadLetter.new(rd, mpx, n, adr), wakeup)
         end
 
-        def send_closed_letter(state_id, rd, mpx, wakeup)
+        def send_wrote_letter(rd, mpx, n, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ClosedLetter.new(state_id, rd, mpx), wakeup)
+          send_letter(WroteLetter.new(rd, mpx, n), wakeup)
         end
 
-        def send_error_letter(state_id, rd, mpx, err, wakeup)
+        def send_closed_letter(rd, mpx, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ErrorLetter.new(state_id, rd, mpx, err), wakeup)
+          send_letter(ClosedLetter.new(rd, mpx), wakeup)
+        end
+
+        def send_error_letter(rd, mpx, err, wakeup)
+          if rd == nil
+            raise ArgumentError.new
+          end
+          send_letter(ErrorLetter.new(rd, mpx, err), wakeup)
         end
 
         def shutdown
