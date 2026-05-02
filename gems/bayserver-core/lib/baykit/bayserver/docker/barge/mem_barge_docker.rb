@@ -296,20 +296,25 @@ module Baykit
           # Private methods
           ############################################
 
+          # Add the size of the newly loaded cargo to the total, then evict
+          # old entries (insertion order) until the total falls within capacity.
+          # Entries with active waiters are skipped to avoid disrupting
+          # in-progress cargo loads.
           def add_total(len)
             @lock.synchronize do
               @total_size += len
-              BayLog.debug("%s addTotal=%d", self, @total_size)
+              BayLog.trace("%s addTotal=%d", self, @total_size)
               keys = @cargo_map.keys
               keys.each do |path|
                 break if @total_size <= @capacity
                 eldest = @cargo_map[path]
-                BayLog.debug("%s Remove cargo: %s cur total=%d", self, path, @total_size)
                 if eldest.waiters.empty?
+                  BayLog.trace("%s Evict cargo: %s len=%d total=%d", self, path, eldest.length, @total_size)
                   @total_size -= eldest.length
                   @cargo_map.delete(path)
+                else
+                  BayLog.trace("%s Skip cargo (has waiters): %s", self, path)
                 end
-                BayLog.debug("%s cargo removed: total=%d", self, @total_size)
               end
             end
           end
