@@ -5,6 +5,7 @@ require 'baykit/bayserver/tours/tour'
 require 'baykit/bayserver/util/directory_exception'
 require 'baykit/bayserver/util/http_status'
 require 'baykit/bayserver/docker/send_file/directory_train'
+require 'baykit/bayserver/train/train_runner'
 
 module Baykit
   module BayServer
@@ -78,7 +79,9 @@ module Baykit
           def handle_directory(tur, path)
             if @list_files
               train = DirectoryTrain.new(tur, path)
-              train.start_tour
+              if !Baykit::BayServer::Train::TrainRunner.post(tur.ship.agent_id, train)
+                raise HttpException.new(HttpStatus::SERVICE_UNAVAILABLE, "TourRunner is busy")
+              end
             else
               raise HttpException.new(HttpStatus::FORBIDDEN, "Directory scan is prohibited")
             end
