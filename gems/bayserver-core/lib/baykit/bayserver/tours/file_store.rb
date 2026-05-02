@@ -65,7 +65,7 @@ module Baykit
               end
 
               size = File.size(path)
-              if size > BayServer.harbor.max_cargo_size * 1024 * 1024
+              if size > BayServer.harbor.max_cargo_size
                 info = FileInfo.new(path, nil, size)
               else
                 f = File.open(path, "rb")
@@ -95,7 +95,7 @@ module Baykit
             @@file_store = FileStore.new(
               BayServer.harbor.cargo_lifespan_sec,
               BayServer.harbor.max_direct_boardings,
-              BayServer.harbor.max_cargo_size * 1024 * 1024)
+              BayServer.harbor.max_cargo_size)
           end
           return @@file_store
         end
