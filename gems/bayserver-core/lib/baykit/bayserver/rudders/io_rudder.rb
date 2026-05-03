@@ -8,15 +8,6 @@ module Baykit
 
         attr :io
         attr :non_blocking
-        # Cached peer / local addresses, populated once at accept time
-        # so the per-request hot path can skip getpeername / getsockname
-        # syscalls and the unpack_sockaddr_in parse those return values
-        # need. Stay nil for rudders that are not accepted client sockets
-        # (listening sockets, file descriptors, etc.) -- callers fall
-        # back to the live syscall path when nil.
-        attr_accessor :remote_address
-        attr_accessor :remote_port
-        attr_accessor :server_address
 
         def initialize(io)
           @io = io
