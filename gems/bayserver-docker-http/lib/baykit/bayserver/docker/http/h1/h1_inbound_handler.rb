@@ -370,17 +370,22 @@ module Baykit
               HttpUtil.parse_host_port(tur, secure ? 443 : 80)
               HttpUtil.parse_authorization(tur)
 
-              skt = ship.rudder.io
-              if skt.kind_of? SSL::SSLSocket
-                skt = skt.io
-              end
+              rd = ship.rudder
 
               client_adr = tur.req.headers.get(Headers::X_FORWARDED_FOR)
               if client_adr
                 tur.req.remote_address = client_adr
                 tur.req.remote_port = nil
+              elsif rd.respond_to?(:remote_address) && rd.remote_address
+                # Cached at accept time -- skip the per-request
+                # getpeername + Socket.unpack_sockaddr_in (~16% of
+                # 128B HTTP plain CPU profile).
+                tur.req.remote_address = rd.remote_address
+                tur.req.remote_port = rd.remote_port
               else
                 begin
+                  skt = rd.io
+                  skt = skt.io if skt.kind_of? SSL::SSLSocket
                   remote_addr = skt.getpeername()
                   tur.req.remote_port, tur.req.remote_address = Socket.unpack_sockaddr_in(remote_addr)
                 rescue => e
@@ -392,8 +397,14 @@ module Baykit
                 HttpUtil.resolve_remote_host(tur.req.remote_address)
               end
 
-              server_addr = skt.getsockname
-              server_port, tur.req.server_address = Socket.unpack_sockaddr_in(server_addr)
+              if rd.respond_to?(:server_address) && rd.server_address
+                tur.req.server_address = rd.server_address
+              else
+                skt = rd.io
+                skt = skt.io if skt.kind_of? SSL::SSLSocket
+                server_addr = skt.getsockname
+                _, tur.req.server_address = Socket.unpack_sockaddr_in(server_addr)
+              end
 
               tur.req.server_port = tur.req.req_port
               tur.req.server_name = tur.req.req_host
