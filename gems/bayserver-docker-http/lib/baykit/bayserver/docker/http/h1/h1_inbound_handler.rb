@@ -9,6 +9,7 @@ require 'baykit/bayserver/tours/tour_req'
 require 'baykit/bayserver/util/http_status'
 require 'baykit/bayserver/util/url_encoder'
 require 'baykit/bayserver/util/http_util'
+require 'baykit/bayserver/util/io_util'
 require 'baykit/bayserver/util/headers'
 
 require 'baykit/bayserver/protocol/packet_packer'
@@ -90,6 +91,11 @@ module Baykit
               @http_protocol = nil
               @cur_req_id = 1
               @cur_tour = nil
+              # Clear per-connection address cache so the next time
+              # this handler is rented out from the pool it does not
+              # return the previous client's IP.
+              @remote_addr = nil
+              @server_addr = nil
               @cur_req_id = 0
             end
 
@@ -370,24 +376,19 @@ module Baykit
               HttpUtil.parse_host_port(tur, secure ? 443 : 80)
               HttpUtil.parse_authorization(tur)
 
-              rd = ship.rudder
-
               client_adr = tur.req.headers.get(Headers::X_FORWARDED_FOR)
               if client_adr
                 tur.req.remote_address = client_adr
                 tur.req.remote_port = nil
-              elsif rd.respond_to?(:remote_address) && rd.remote_address
-                # Cached at accept time -- skip the per-request
-                # getpeername + Socket.unpack_sockaddr_in (~16% of
-                # 128B HTTP plain CPU profile).
-                tur.req.remote_address = rd.remote_address
-                tur.req.remote_port = rd.remote_port
               else
+                # H1InboundHandler is per-connection so an instance
+                # ivar memoizes for the life of the connection. The
+                # IOUtil helper skips Socket.unpack_sockaddr_in (the
+                # single hottest non-syscall frame at ~16% on 128B
+                # HTTP plain profiling).
                 begin
-                  skt = rd.io
-                  skt = skt.io if skt.kind_of? SSL::SSLSocket
-                  remote_addr = skt.getpeername()
-                  tur.req.remote_port, tur.req.remote_address = Socket.unpack_sockaddr_in(remote_addr)
+                  @remote_addr ||= IOUtil.get_remote_address(ship.rudder.io)
+                  tur.req.remote_address, tur.req.remote_port = @remote_addr
                 rescue => e
                   BayLog.error_e(e, "%s Cannot get remote address (Ignore): %s", tur, e)
                 end
@@ -397,13 +398,11 @@ module Baykit
                 HttpUtil.resolve_remote_host(tur.req.remote_address)
               end
 
-              if rd.respond_to?(:server_address) && rd.server_address
-                tur.req.server_address = rd.server_address
-              else
-                skt = rd.io
-                skt = skt.io if skt.kind_of? SSL::SSLSocket
-                server_addr = skt.getsockname
-                _, tur.req.server_address = Socket.unpack_sockaddr_in(server_addr)
+              begin
+                @server_addr ||= IOUtil.get_server_address(ship.rudder.io)
+                tur.req.server_address = @server_addr
+              rescue => e
+                BayLog.error_e(e, "%s Cannot get server address (Ignore): %s", tur, e)
               end
 
               tur.req.server_port = tur.req.req_port

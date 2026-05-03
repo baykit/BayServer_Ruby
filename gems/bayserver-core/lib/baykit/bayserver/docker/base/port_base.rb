@@ -198,17 +198,9 @@ module Baykit
                 IOUtil.get_sock_recv_buf_size(rd.io))
 
               ssl_socket = tp.new_ssl_socket(rd.io)
-              old_rd = rd
               rd = IORudder.new(ssl_socket)
               if agt.net_multiplexer.is_non_blocking
                 rd.set_non_blocking
-              end
-              # Carry the address cache over from the raw-socket rudder
-              # so start_tour can read it after the SSL handshake.
-              if old_rd.respond_to?(:remote_address)
-                rd.remote_address = old_rd.remote_address
-                rd.remote_port = old_rd.remote_port
-                rd.server_address = old_rd.server_address
               end
 
             else
