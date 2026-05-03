@@ -498,7 +498,12 @@ module Baykit
           def on_acceptable(st)
 
             begin
-              client_skt, = st.rudder.io.accept_nonblock
+              # Capture the Addrinfo accept_nonblock returns alongside
+              # the client socket; ip_address / ip_port read out of it
+              # directly, so we can pre-fill the per-connection
+              # address cache without ever calling getpeername +
+              # Socket.unpack_sockaddr_in on the per-request path.
+              client_skt, peer_ai = st.rudder.io.accept_nonblock
             rescue IO::WaitReadable
               # Maybe another agent get socket
               BayLog.debug("Accept failed (must wait readable)")
@@ -509,6 +514,24 @@ module Baykit
             client_rd = IORudder.new(client_skt)
             client_rd.set_non_blocking
             #client_skt.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK)
+
+            if peer_ai
+              client_rd.remote_address = peer_ai.ip_address
+              client_rd.remote_port = peer_ai.ip_port
+            end
+            # Server address: same for every accepted connection on
+            # this listening rudder. Memoize on the listening rudder
+            # so we only resolve once per port, then propagate.
+            srv_addr = st.rudder.server_address
+            if srv_addr.nil?
+              begin
+                srv_addr = st.rudder.io.local_address.ip_address
+                st.rudder.server_address = srv_addr
+              rescue => e
+                BayLog.debug_e(e, "%s Cannot resolve server_address", self)
+              end
+            end
+            client_rd.server_address = srv_addr
 
             @agent.send_accepted_letter(st.rudder, self, client_rd, false)
 
