@@ -583,29 +583,88 @@ module Baykit
                 return
               end
 
-              st.write_queue.length.times do |i|
+              # Gather consecutive non-empty bufs into a single
+              # write_nonblock call so multiple WriteUnits ride one
+              # syscall (and on TLS one SSL_write -> one TLS record).
+              # Empty bufs (already drained by an earlier on_writable
+              # in this same receive() pass) keep the original
+              # write/letter dance so on_wrote shifts them out.
+              cap = st.buf_size > 0 ? st.buf_size : 65536
+              i = 0
+              done = false
+              while i < st.write_queue.length && !done
                 wunit = st.write_queue[i]
 
-                BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d adr=%s",
-                             self, st.rudder, wunit.tag, wunit.buf.length, wunit.adr)
-                #BayLog.debug(this + " " + new String(wUnit.buf.array(), 0, wUnit.buf.limit()));
+                if wunit.buf.empty?
+                  # Same shape as the original per-unit branch: a
+                  # zero-length write returns 0, then wrote_letter(0).
+                  begin
+                    n = st.rudder.write(wunit.buf)
+                  rescue OpenSSL::SSL::SSLErrorWaitWritable, IO::WaitWritable => e
+                    BayLog.debug_e(e, "%s Cannot write data", self)
+                    n = 0
+                  end
+                  @agent.send_wrote_letter(st.rudder, self, n, false)
+                  i += 1
+                  next
+                end
+
+                # Collect consecutive non-empty bufs from index i.
+                batch = [wunit]
+                total = wunit.buf.bytesize
+                j = i + 1
+                while j < st.write_queue.length
+                  uu = st.write_queue[j]
+                  break if uu.buf.empty?
+                  sz = uu.buf.bytesize
+                  break if total + sz > cap
+                  batch << uu
+                  total += sz
+                  j += 1
+                end
+
+                if batch.length == 1
+                  BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d adr=%s",
+                               self, st.rudder, wunit.tag, wunit.buf.length, wunit.adr)
+                  buf_to_write = wunit.buf
+                else
+                  BayLog.debug("%s Try to gather-write: rd=%s units=%d total=%d",
+                               self, st.rudder, batch.length, total)
+                  buf_to_write = batch.map(&:buf).join
+                end
 
                 begin
-                  n = st.rudder.write(wunit.buf)
+                  n = st.rudder.write(buf_to_write)
                 rescue OpenSSL::SSL::SSLErrorWaitWritable, IO::WaitWritable => e
                   BayLog.debug_e(e, "%s Cannot write data", self)
                   n = 0
                 end
 
-                #BayLog.debug("%s Wrote: rd=%s len=%d",self, st.rudder, n);
-                @agent.send_wrote_letter(st.rudder, self, n, false)
+                # Distribute n across the batch units, mirroring the
+                # original "send wrote_letter, slice, break on partial"
+                # pattern but per-unit.
+                remaining = n
+                partial = false
+                batch.each do |b|
+                  sz = b.buf.bytesize
+                  if remaining >= sz
+                    @agent.send_wrote_letter(st.rudder, self, sz, false)
+                    b.buf.slice!(0, sz)
+                    remaining -= sz
+                  else
+                    @agent.send_wrote_letter(st.rudder, self, remaining, false)
+                    b.buf.slice!(0, remaining)
+                    remaining = 0
+                    partial = true
+                    break
+                  end
+                end
 
-                len = wunit.buf.length
-                wunit.buf.slice!(0, n)
-
-                if n < len
-                  BayLog.debug("%s Wrote %d bytes (Data remains)", self, n)
-                  break
+                if partial
+                  BayLog.debug("%s Wrote %d / %d bytes (Data remains)", self, n, total)
+                  done = true
+                else
+                  i += batch.length
                 end
               end
 
