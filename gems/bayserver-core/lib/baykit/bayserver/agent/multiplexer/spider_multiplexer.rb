@@ -586,25 +586,34 @@ module Baykit
               # Gather consecutive non-empty bufs into a single
               # write_nonblock call so multiple WriteUnits ride one
               # syscall (and on TLS one SSL_write -> one TLS record).
-              # Empty bufs (already drained by an earlier on_writable
-              # in this same receive() pass) keep the original
-              # write/letter dance so on_wrote shifts them out.
+              # Java caps its writev gather at bufsize; do the same so
+              # we don't spend memcpy on bytes the kernel won't accept
+              # in this round anyway.
               cap = st.buf_size > 0 ? st.buf_size : 65536
+
+              # Drain any units at the head whose buf has already been
+              # emptied by an earlier on_writable in this same
+              # receive() pass. Java has no equivalent of wrote_letter(0)
+              # to drive consumption of zero-byte units; consume them
+              # inline (shift + done()) instead so we don't burn a
+              # syscall + letter just to remove a zero-byte placeholder.
+              while !st.write_queue.empty? && st.write_queue[0].buf.empty?
+                drained = st.write_queue_lock.synchronize { st.write_queue.shift }
+                drained.done(st.buffer_available?)
+              end
+              return if st.write_queue.empty?
+
               i = 0
               done = false
               while i < st.write_queue.length && !done
                 wunit = st.write_queue[i]
 
+                # An empty buf can only appear past the head -- the
+                # head-drain above removed any leading empties. A mid-
+                # batch empty acts as a cap on the gather so the
+                # listener for the unit just ahead of it fires before
+                # we keep going.
                 if wunit.buf.empty?
-                  # Same shape as the original per-unit branch: a
-                  # zero-length write returns 0, then wrote_letter(0).
-                  begin
-                    n = st.rudder.write(wunit.buf)
-                  rescue OpenSSL::SSL::SSLErrorWaitWritable, IO::WaitWritable => e
-                    BayLog.debug_e(e, "%s Cannot write data", self)
-                    n = 0
-                  end
-                  @agent.send_wrote_letter(st.rudder, self, n, false)
                   i += 1
                   next
                 end
