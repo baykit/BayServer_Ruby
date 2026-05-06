@@ -5,6 +5,17 @@ module Baykit
   module BayServer
     module Agent
       module Multiplexer
+        # All collections owned by this base class (`@rudders`,
+        # `@channel_count`) and the per-state collections it touches
+        # (`st.write_queue`) are accessed only by the agent's own event
+        # loop -- in multi_core mode each agent is a forked process, in
+        # thread mode each agent owns its own multiplexer instance. The
+        # write path is also entirely agent-driven (req_write, on_wrote
+        # via the letter loop, on_writable). There is no contender, so
+        # we drop the Mutex#synchronize wrappers from every read / write
+        # site below; the locks remain in `attr :rudders_lock`/`:lock`
+        # for backward compatibility with any external caller, but the
+        # hot path no longer pays for them.
         class MultiplexerBase
           include Baykit::BayServer::Common::Multiplexer # implements
           include Baykit::BayServer
@@ -29,17 +40,13 @@ module Baykit
 
           def add_rudder_state(rd, st)
             st.multiplexer = self
-            @rudders_lock.synchronize do
-              @rudders[rd.key] = st
-            end
+            @rudders[rd.key] = st
             @channel_count += 1
             st.access()
           end
 
           def remove_rudder_state(rd)
-            @rudders_lock.synchronize do
-              @rudders.delete(rd.key())
-            end
+            @rudders.delete(rd.key())
             @channel_count -= 1
           end
 
@@ -52,13 +59,8 @@ module Baykit
           end
 
           def consume_oldest_unit(st)
-            u = nil
-            st.write_queue_lock.synchronize do
-              if st.write_queue.empty?
-                return false
-              end
-              u = st.write_queue.shift()
-            end
+            return false if st.write_queue.empty?
+            u = st.write_queue.shift()
             u.done(st.buffer_available?)
             return true
           end
@@ -84,9 +86,7 @@ module Baykit
           #########################################
 
           def find_rudder_state_by_key(key)
-            @rudders_lock.synchronize do
-              return @rudders[key]
-            end
+            return @rudders[key]
           end
 
           def close_timeout_sockets
@@ -96,10 +96,7 @@ module Baykit
 
             close_list = []
             remove_list = []
-            copied = nil
-            @rudders_lock.synchronize do
-              copied = @rudders.values
-            end
+            copied = @rudders.values
             now = Time.now.tv_sec
 
             copied.each do |st|
@@ -128,10 +125,7 @@ module Baykit
           end
 
           def close_all()
-            copied = nil
-            @rudders_lock.synchronize do
-              copied = @rudders.values
-            end
+            copied = @rudders.values
             copied.each do |st|
               if st.rudder != @agent.command_receiver.rudder
                 close_rudder(st.rudder)
