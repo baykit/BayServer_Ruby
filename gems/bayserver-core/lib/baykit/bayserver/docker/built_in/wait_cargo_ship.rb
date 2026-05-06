@@ -91,7 +91,13 @@ module Baykit
           end
 
           def notify_eof()
-            raise Sink.new
+            # The cargo notification pipe is single-use: end_save writes
+            # one byte per waiter, and the writing end is then closed.
+            # The waiter reads the byte (notify_read above) and on the
+            # next read sees EOF; treat that as a clean end-of-stream
+            # rather than a programming error.
+            BayLog.debug("%s cargo wait EOF", @tour)
+            return NextSocketAction::CLOSE
           end
 
           def notify_close
