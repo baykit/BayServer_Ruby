@@ -69,6 +69,14 @@ module Baykit
 
             @agent.add_timer_handler(self)
             @handshaked = false
+
+            # Per-multiplexer scratch buffer reused by on_writable when
+            # gathering more than one WriteUnit into a single
+            # write_nonblock call. Pre-allocates the underlying String
+            # capacity once; #clear preserves it, and #<< appends in
+            # place without allocating. Avoids the per-call
+            # `batch.map(&:buf).join` (one Array + one String per call).
+            @gather_buf = String.new(capacity: 65536)
           end
           def to_s
             return "SpdMpx[" + @agent.to_s + "]"
@@ -621,7 +629,9 @@ module Baykit
                 else
                   BayLog.debug("%s Try to gather-write: rd=%s units=%d total=%d",
                                self, st.rudder, batch.length, total)
-                  buf_to_write = batch.map(&:buf).join
+                  @gather_buf.clear
+                  batch.each { |b| @gather_buf << b.buf }
+                  buf_to_write = @gather_buf
                 end
 
                 begin
