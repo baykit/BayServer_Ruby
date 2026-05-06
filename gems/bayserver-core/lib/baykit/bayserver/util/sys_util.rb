@@ -1,5 +1,6 @@
 require 'etc'
 require 'pathname'
+require 'socket'
 require 'tmpdir'
 
 require 'baykit/bayserver/bay_log'
@@ -130,6 +131,26 @@ module Baykit
 
         def SysUtil.support_unix_domain_socket_address()
           return !SysUtil.run_on_windows()
+        end
+
+        # Probe whether this Ruby/OS combination accepts SO_REUSEPORT on
+        # a TCP server socket. Linux >= 3.9 and recent BSDs support it;
+        # macOS BSD-style and Windows differ. Mirrors Java's
+        # SysUtil.supportReusePort.
+        def SysUtil.support_reuse_port?
+          return false unless Socket.const_defined?(:SO_REUSEPORT)
+          begin
+            s = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
+            begin
+              s.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEPORT, true)
+              return true
+            ensure
+              s.close
+            end
+          rescue => e
+            BayLog.debug("SO_REUSEPORT not supported: %s", e)
+            return false
+          end
         end
 
       end
