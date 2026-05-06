@@ -337,7 +337,8 @@ module Baykit
               raise Sink.new
             end
 
-            send_file_ship = SendFileShip.new
+            require 'baykit/bayserver/tours/send_file_ship_store'
+            send_file_ship = Baykit::BayServer::Tours::SendFileShipStore.get_store(agt.agent_id).rent
             tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
               mpx,
               send_file_ship,
@@ -348,7 +349,14 @@ module Baykit
             send_file_ship.init(rd, tp, @tour)
             sid = send_file_ship.ship_id
             set_consume_listener do |len, resume|
-              if resume
+              # The consume_listener can fire after the file side has hit
+              # EOF and the SendFileShip was returned to the pool (and
+              # potentially re-rented with a new ship_id). Check the
+              # ship_id matches before attempting to resume reading; the
+              # counter is monotonic so a non-match unambiguously means
+              # this listener is a stray fire-after-close and can be
+              # ignored.
+              if resume && send_file_ship.ship_id == sid
                 send_file_ship.resume_read(sid)
               end
             end
