@@ -64,6 +64,22 @@ module Baykit
 
             FIXED_REQ_ID = 1
 
+            # Canonical (uppercase) HTTP version / method strings. Hash
+            # lookup returns the frozen canonical string when the input
+            # already matches one of the well-known values; the upcase
+            # fallback only fires for case-irregular input. Avoids the
+            # per-request allocation `cmd.version.upcase` /
+            # `cmd.method.upcase` would otherwise produce.
+            HTTP_VERSION_CANON = {
+              "HTTP/1.1" => "HTTP/1.1".freeze,
+              "HTTP/1.0" => "HTTP/1.0".freeze,
+              "HTTP/0.9" => "HTTP/0.9".freeze,
+              "HTTP/2.0" => "HTTP/2.0".freeze,
+            }.freeze
+            HTTP_METHOD_CANON = %w[GET POST PUT DELETE HEAD OPTIONS PATCH CONNECT TRACE].each_with_object({}) do |m, h|
+              h[m] = m.dup.freeze
+            end.freeze
+
             attr :protocol_handler
             attr :header_read
             attr :state
@@ -208,7 +224,7 @@ module Baykit
               end
 
               # Check HTTP2
-              protocol = cmd.version.upcase
+              protocol = HTTP_VERSION_CANON[cmd.version] || cmd.version.upcase
               if protocol == "HTTP/2.0"
                 if ship.port_docker.support_h2
                   ship.port_docker.return_protocol_handler(ship.agent_id, @protocol_handler)
@@ -239,7 +255,7 @@ module Baykit
               @http_protocol = protocol
 
               tur.req.uri = URLEncoder.encode_tilde(cmd.uri)
-              tur.req.method = cmd.method.upcase
+              tur.req.method = HTTP_METHOD_CANON[cmd.method] || cmd.method.upcase
               tur.req.protocol = protocol
 
               if !(tur.req.protocol == "HTTP/1.1" ||
