@@ -43,16 +43,38 @@ module Baykit
         log(LOG_LEVEL_INFO, 3, nil, fmt, args)
       end
 
-      def self.trace(fmt, *args)
-        log(LOG_LEVEL_TRACE, 3, nil , fmt, args)
+      # Fixed-arity (arg1..arg10) instead of *args splat: a *args
+      # parameter forces the caller to allocate an Array to hold the
+      # arguments before the method body can run, so the level check
+      # below cannot prevent it. With debug/trace fired thousands of
+      # times per second on the hot path, that splat Array becomes a
+      # measurable GC pressure source even when nothing is logged.
+      def self.trace(fmt, arg1 = nil, arg2 = nil, arg3 = nil, arg4 = nil, arg5 = nil,
+                          arg6 = nil, arg7 = nil, arg8 = nil, arg9 = nil, arg10 = nil)
+        return if @log_level > LOG_LEVEL_TRACE
+        log(LOG_LEVEL_TRACE, 3, nil, fmt,
+            [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10].compact)
       end
 
-      def self.debug(fmt, *args)
-        log(LOG_LEVEL_DEBUG, 3, nil, fmt, args)
+      def self.trace_e(err, fmt = nil, arg1 = nil, arg2 = nil, arg3 = nil, arg4 = nil, arg5 = nil,
+                                       arg6 = nil, arg7 = nil, arg8 = nil, arg9 = nil, arg10 = nil)
+        return if @log_level > LOG_LEVEL_TRACE
+        log(LOG_LEVEL_TRACE, 3, err, fmt,
+            [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10].compact)
       end
 
-      def self.debug_e(err, fmt=nil, *args)
-        log(LOG_LEVEL_DEBUG, 3, err, fmt, args)
+      def self.debug(fmt, arg1 = nil, arg2 = nil, arg3 = nil, arg4 = nil, arg5 = nil,
+                          arg6 = nil, arg7 = nil, arg8 = nil, arg9 = nil, arg10 = nil)
+        return if @log_level > LOG_LEVEL_DEBUG
+        log(LOG_LEVEL_DEBUG, 3, nil, fmt,
+            [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10].compact)
+      end
+
+      def self.debug_e(err, fmt = nil, arg1 = nil, arg2 = nil, arg3 = nil, arg4 = nil, arg5 = nil,
+                                       arg6 = nil, arg7 = nil, arg8 = nil, arg9 = nil, arg10 = nil)
+        return if @log_level > LOG_LEVEL_DEBUG
+        log(LOG_LEVEL_DEBUG, 3, err, fmt,
+            [arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10].compact)
       end
 
       def self.warn(fmt, *args)
