@@ -283,6 +283,16 @@ module Baykit
       end
 
       def self.open_ports()
+        # When SO_REUSEPORT is available and we are about to fork
+        # multiple agents, open one ServerSocketChannel per agent so the
+        # kernel hashes incoming connections across them by 4-tuple
+        # instead of letting all agents race on a single shared accept
+        # queue. Java's BayServer uses the same layout. Falls back to
+        # one shared socket on Windows / single-agent / non-TCP / lack
+        # of OS support.
+        use_reuse_port = @harbor.multi_core && !SysUtil.run_on_windows() &&
+                         @harbor.grand_agents > 1 && SysUtil.support_reuse_port?
+
         @ports.each do |dkr|
           # open port
           adr = dkr.address()
@@ -292,26 +302,33 @@ module Baykit
             BayLog.debug(BayMessage.get(:MSG_OPENING_TCP_PORT, dkr.host, dkr.port, dkr.protocol))
 
             if adr.instance_of? String
-              adr = Socket.sockaddr_un(adr)
-              skt = Socket.new(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
+              # UNIX-domain socket: always single shared listener.
+              sockaddr = Socket.sockaddr_un(adr)
+              count = 1
+              family = Socket::AF_UNIX
             else
-              adr = Socket.sockaddr_in(adr[0], adr[1])
-              skt = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
-            end
-            #if not SysUtil.run_on_windows()
-              skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
-            #end
-
-            begin
-              skt.bind(adr)
-            rescue SystemCallError => e
-              BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
-              raise e
+              sockaddr = Socket.sockaddr_in(adr[0], adr[1])
+              count = use_reuse_port ? @harbor.grand_agents : 1
+              family = Socket::AF_INET
             end
 
-            @anchorable_port_map[IORudder.new(skt)] = dkr
+            count.times do
+              skt = Socket.new(family, Socket::SOCK_STREAM, 0)
+              skt.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
+              if count > 1
+                skt.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEPORT, true)
+              end
 
-            skt.listen(Socket::SOMAXCONN)
+              begin
+                skt.bind(sockaddr)
+              rescue SystemCallError => e
+                BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
+                raise e
+              end
+
+              @anchorable_port_map[IORudder.new(skt)] = dkr
+              skt.listen(Socket::SOMAXCONN)
+            end
 
           else
             # Open UDP port
@@ -363,26 +380,39 @@ module Baykit
         if(SysUtil.run_on_windows())
          open_ports()
         else
+          # Group inherited listening FDs by their bound port number.
+          # When the master used SO_REUSEPORT it opened grandAgents
+          # sockets per port; when it did not, there is exactly one
+          # socket per port. This agent registers exactly one socket
+          # per port (its own share under SO_REUSEPORT, or the only one
+          # in single-listener mode) and closes the rest in its own FD
+          # table -- the kernel sockets stay alive for the other agents
+          # via their separate FD references.
+          fds_by_port = Hash.new { |h, k| h[k] = [] }
           @derived_port_nos.each do |no|
-            # Rebuild server socket
             skt = Socket.for_fd(no.to_i)
-            portDkr = nil
+            fds_by_port[skt.local_address.ip_port] << skt
+          end
 
-            @ports.each do |p|
-              port = skt.local_address.ip_port
-              if p.port == port
-                portDkr = p
-                break
-              end
-            end
-
-            if portDkr == nil
-              BayLog.fatal("Cannot find port docker: %d", portDkr.port)
+          fds_by_port.each do |port_num, fds|
+            portDkr = @ports.find { |p| p.port == port_num }
+            if portDkr.nil?
+              BayLog.fatal("Cannot find port docker for port %d", port_num)
               exit(1)
             end
 
-            BayLog.debug("agt#%d server port=%d socket=%s(%d)", agt_id, portDkr.port, skt, no)
-            @anchorable_port_map[IORudder.new(skt)] = portDkr
+            # SO_REUSEPORT mode: master opened N == grandAgents listeners
+            # per port; agents 1..N pick listeners[0..N-1] respectively.
+            # Single-listener mode: every agent picks the only one.
+            idx = (fds.size > 1) ? (agt_id - 1) % fds.size : 0
+            mine = fds[idx]
+            fds.each_with_index do |s, i|
+              s.close rescue nil unless i == idx
+            end
+
+            BayLog.debug("agt#%d server port=%d socket=%s (idx %d/%d)",
+                         agt_id, portDkr.port, mine, idx, fds.size)
+            @anchorable_port_map[IORudder.new(mine)] = portDkr
           end
         end
 
