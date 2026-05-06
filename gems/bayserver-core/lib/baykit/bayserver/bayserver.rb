@@ -311,7 +311,7 @@ module Baykit
 
             @anchorable_port_map[IORudder.new(skt)] = dkr
 
-            skt.listen(0)
+            skt.listen(Socket::SOMAXCONN)
 
           else
             # Open UDP port
