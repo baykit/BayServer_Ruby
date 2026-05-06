@@ -76,10 +76,11 @@ module Baykit
               @io_monitor_map[io].interests = :w
             else
               @selector.deregister(io)
+              @io_monitor_map.delete(io)
             end
           end
 
-          super  # Update @io_monitor_map
+          super  # Update @io_op_map (parent only manages @io_op_map; @io_monitor_map is ours)
         end
 
 
@@ -91,10 +92,11 @@ module Baykit
               @io_monitor_map[io].interests = :r
             else
               @selector.deregister(io)
+              @io_monitor_map.delete(io)
             end
           end
 
-          super  # Update @io_monitor_map
+          super  # Update @io_op_map (parent only manages @io_op_map; @io_monitor_map is ours)
         end
 
       end
