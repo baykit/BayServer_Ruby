@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'baykit/bayserver/docker/http/h1/command/package'
 require 'baykit/bayserver/protocol/package'
 
@@ -222,7 +224,13 @@ module Baykit
               end
 
               def unpack_message_header(bytes, start, len)
-                buf = ""
+                # `buf` is mutated via #concat below, so it must be a fresh
+                # mutable String -- under frozen_string_literal: true the
+                # `""` literal is shared and frozen, which would error on
+                # the first concat. Use String.new(capacity:) to also
+                # pre-reserve room for typical header names / values and
+                # avoid an immediate growth on the first byte.
+                buf = String.new(capacity: 32)
                 read_name = true
                 name = nil
                 skipping = true
@@ -234,7 +242,7 @@ module Baykit
                   elsif read_name && b == ":"
                     # header name completed
                     name = buf
-                    buf = ""
+                    buf = String.new(capacity: 128)
                     skipping = true
                     read_name = false
                   else
