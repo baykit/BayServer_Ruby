@@ -16,7 +16,11 @@ module Baykit
         include Baykit::BayServer::Util
         include Baykit::BayServer::Util::Reusable # implements
 
-        INITIAL_BUF_SIZE = 8192 * 4
+        # Sized to fit the typical body chunk (64K) plus a small header
+        # without a single expand step. The pool reuses Packet instances,
+        # and reset() now preserves the underlying buffer so subsequent
+        # requests re-use the already-allocated capacity.
+        INITIAL_BUF_SIZE = 128 * 1024
 
         attr :type
         attr :buf
@@ -28,13 +32,19 @@ module Baykit
           @type = type
           @header_len = header_len
           @max_data_len = max_data_len
-          @buf = StringUtil.alloc(INITIAL_BUF_SIZE)
+          # Pre-fill to INITIAL_BUF_SIZE with zero bytes so the buffer's
+          # length (used by put_bytes' expand check) starts at full
+          # capacity. put_bytes overwrites in place via String#[]=, so
+          # the pre-filled zeros never reach the wire.
+          @buf = "\0" * INITIAL_BUF_SIZE
           reset
         end
 
         def reset
-          @buf.clear()
-          header_len.times do |i| @buf << 0 end
+          # Do NOT clear @buf -- keeping it at its current length means
+          # subsequent put_bytes calls hit the expand check only when the
+          # request actually exceeds the current capacity, instead of
+          # rebuilding from zero on every pooled rent.
           @buf_len = header_len
         end
 
