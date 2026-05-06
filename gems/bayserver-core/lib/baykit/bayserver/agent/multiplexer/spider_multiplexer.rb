@@ -369,13 +369,13 @@ module Baykit
 
               begin
                 io = rd.io
-                BayLog.trace("%s register op=%s st=%s", @agent, self.class.op_mode(rd_op.op), st)
+                # BayLog.trace("%s register op=%s st=%s", @agent, self.class.op_mode(rd_op.op), st)
                 op = @selector.get_op(io)
                 if op == nil
                   @selector.register(io, rd_op.op)
                 else
                   new_op = op | rd_op.op
-                  BayLog.trace("%s Already registered rd=%s op=%s update to %s", @agent, rd_op.rudder, self.class.op_mode(op), self.class.op_mode(new_op))
+                  # BayLog.trace("%s Already registered rd=%s op=%s update to %s", @agent, rd_op.rudder, self.class.op_mode(op), self.class.op_mode(new_op))
                   @selector.modify(io, new_op)
                 end
 
