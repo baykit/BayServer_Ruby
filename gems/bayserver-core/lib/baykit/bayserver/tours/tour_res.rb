@@ -3,7 +3,6 @@ require 'baykit/bayserver/sink'
 require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/multiplexer/plain_transporter'
-require 'baykit/bayserver/tours/send_file_ship_store'
 require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/taxi/taxi_runner'
 require 'baykit/bayserver/docker/harbor'
@@ -338,6 +337,7 @@ module Baykit
               raise Sink.new
             end
 
+            require 'baykit/bayserver/tours/send_file_ship_store'
             send_file_ship = Baykit::BayServer::Tours::SendFileShipStore.get_store(agt.agent_id).rent
             tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
               mpx,

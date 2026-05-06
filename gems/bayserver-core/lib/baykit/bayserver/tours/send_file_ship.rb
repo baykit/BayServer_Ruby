@@ -2,7 +2,6 @@ require 'baykit/bayserver/bay_log'
 require 'baykit/bayserver/agent/next_socket_action'
 require 'baykit/bayserver/common/read_only_ship'
 require 'baykit/bayserver/util/http_status'
-require 'baykit/bayserver/tours/send_file_ship_store'
 
 module Baykit
   module BayServer
@@ -89,6 +88,7 @@ module Baykit
           # Skip if we never got a real agent_id (= ship was rented but
           # init didn't run, e.g. error on the rent path).
           if @initialized && @agent_id && @agent_id > 0
+            require 'baykit/bayserver/tours/send_file_ship_store'
             store = Baykit::BayServer::Tours::SendFileShipStore.get_store(@agent_id)
             store.Return(self) if store && store.active_list.include?(self)
           end
