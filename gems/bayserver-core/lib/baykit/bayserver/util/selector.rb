@@ -54,9 +54,7 @@ module Baykit
         end
 
         def count
-          @lock.synchronize do
-            return @io_op_map.length
-          end
+          return @io_op_map.length
         end
 
         def select(timeout_sec = nil)
@@ -69,48 +67,47 @@ module Baykit
           end
         end
 
+        # Each Selector instance is owned by one SpiderMultiplexer / one
+        # GrandAgent and only touched from that agent's event-loop thread
+        # -- there is no other thread mutating @io_op_map. The previous
+        # @lock.synchronize on every register / unregister was pure
+        # overhead in the per-request hot path. The lock attribute
+        # remains for ABI compatibility with any external caller, but
+        # the body here no longer pays for it.
         private
         def register_read(io, io_op)
-          @lock.synchronize do
-            if io_op.key?(io)
-              io_op[io] = (io_op[io] | OP_READ)
-            else
-              io_op[io] = OP_READ
-            end
+          if io_op.key?(io)
+            io_op[io] = (io_op[io] | OP_READ)
+          else
+            io_op[io] = OP_READ
           end
         end
 
         def register_write(io, io_op)
-          @lock.synchronize do
-            if io_op.key?(io)
-              io_op[io] = (io_op[io] | OP_WRITE)
+          if io_op.key?(io)
+            io_op[io] = (io_op[io] | OP_WRITE)
+          else
+            io_op[io] = OP_WRITE
+          end
+        end
+
+        def unregister_read(io, io_op)
+          if io_op.include?(io)
+            if io_op[io] == OP_READ
+              io_op.delete(io)
             else
               io_op[io] = OP_WRITE
             end
           end
         end
 
-        def unregister_read(io, io_op)
-          @lock.synchronize do
-            if io_op.include?(io)
-              if io_op[io] == OP_READ
-                io_op.delete(io)
-              else
-                io_op[io] = OP_WRITE
-              end
-            end
-          end
-        end
-
 
         def unregister_write(io, io_op)
-          @lock.synchronize do
-            if io_op.include?(io)
-              if io_op[io] == OP_WRITE
-                io_op.delete(io)
-              else
-                io_op[io] = OP_READ
-              end
+          if io_op.include?(io)
+            if io_op[io] == OP_WRITE
+              io_op.delete(io)
+            else
+              io_op[io] = OP_READ
             end
           end
         end

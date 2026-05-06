@@ -28,7 +28,6 @@ module Baykit
             @charset = charset
             @abortable = true
             @list_files = list_files
-            @lock = Mutex.new
           end
 
           ######################################################
@@ -56,21 +55,26 @@ module Baykit
           ######################################################
 
           def req_start_tour
-            @lock.synchronize do
-              BayLog.debug("%s req_start_tour", @tour)
+            # Each FileContentHandler is created per request and only ever
+            # touched by the agent's own event loop (req_start_tour from
+            # on_end_req_content, on_abort_req from a peer error path on
+            # the same agent). The previous @lock.synchronize wrapped the
+            # entire send_file call but never had a real contender;
+            # dropping it removes a Mutex acquire/release per request on
+            # the static-file hot path.
+            BayLog.debug("%s req_start_tour", @tour)
 
-              begin
-                @tour.res.send_file(@path, @charset)
-              rescue DirectoryException => e
-                handle_directory(@tour, @path)
-              rescue Errno::ENOENT => e
-                raise HttpException.new(HttpStatus::NOT_FOUND, @path)
-              rescue HttpException
-                raise
-              rescue => e
-                BayLog.error_e(e)
-                raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, @path)
-              end
+            begin
+              @tour.res.send_file(@path, @charset)
+            rescue DirectoryException => e
+              handle_directory(@tour, @path)
+            rescue Errno::ENOENT => e
+              raise HttpException.new(HttpStatus::NOT_FOUND, @path)
+            rescue HttpException
+              raise
+            rescue => e
+              BayLog.error_e(e)
+              raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, @path)
             end
           end
 
