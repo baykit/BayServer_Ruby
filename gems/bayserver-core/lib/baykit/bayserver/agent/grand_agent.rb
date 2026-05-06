@@ -18,6 +18,7 @@ require 'baykit/bayserver/train/train_runner'
 require 'baykit/bayserver/taxi/taxi_runner'
 
 require 'baykit/bayserver/util/io_util'
+require 'baykit/bayserver/util/rough_time'
 require 'baykit/bayserver/util/selector'
 
 module Baykit
@@ -213,7 +214,7 @@ module Baykit
               if @spin_multiplexer.is_empty && @letter_queue.empty?
                 # timed out
                 # check per 10 seconds
-                if Time.now.tv_sec - @last_timeout_check >= 10
+                if Baykit::BayServer::Util::RoughTime.current_time_secs - @last_timeout_check >= 10
                   ring
                 end
               end
@@ -424,7 +425,7 @@ module Baykit
           @timer_handlers.each do |h|
             h.on_timer
           end
-          @last_timeout_check = Time.now.tv_sec
+          @last_timeout_check = Baykit::BayServer::Util::RoughTime.current_time_secs
         end
 
         def send_letter(let, wakeup)

@@ -1,5 +1,6 @@
 require 'baykit/bayserver/util/reusable'
 require 'baykit/bayserver/util/counter'
+require 'baykit/bayserver/util/rough_time'
 
 module Baykit
   module BayServer
@@ -110,7 +111,7 @@ module Baykit
           #########################################
 
           def access
-            @last_access_time = Time.now.tv_sec
+            @last_access_time = Baykit::BayServer::Util::RoughTime.current_time_secs
           end
 
           # Sum of pending bytes across queued WriteUnits. Used by

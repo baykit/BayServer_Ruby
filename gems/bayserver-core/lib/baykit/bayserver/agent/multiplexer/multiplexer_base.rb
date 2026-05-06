@@ -1,5 +1,6 @@
 require 'baykit/bayserver/bay_log'
 require 'baykit/bayserver/common/multiplexer'
+require 'baykit/bayserver/util/rough_time'
 
 module Baykit
   module BayServer
@@ -97,7 +98,7 @@ module Baykit
             close_list = []
             remove_list = []
             copied = @rudders.values
-            now = Time.now.tv_sec
+            now = Baykit::BayServer::Util::RoughTime.current_time_secs
 
             copied.each do |st|
               # Drop rudders that were closed elsewhere without going through
