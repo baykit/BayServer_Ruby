@@ -1,17 +1,24 @@
+# frozen_string_literal: true
+
 module Baykit
   module BayServer
     module Util
       class URLEncoder
+        # Percent-encode '~' (and only '~') in a URL. The vast majority of
+        # request URIs do not contain '~', so the fast path is to return
+        # the input unchanged without iterating each char or allocating
+        # a working buffer.
         def URLEncoder.encode_tilde(url)
-          buf = ""
+          return url unless url.include?("~")
+          buf = String.new(capacity: url.bytesize + 8)
           url.each_char do |c|
-            if(c == "~")
-              buf.concat("%7E")
+            if c == "~"
+              buf << "%7E"
             else
-              buf.concat(c)
+              buf << c
             end
           end
-          return buf
+          buf
         end
       end
     end
