@@ -11,27 +11,34 @@ module Baykit
         #
         HEADER_SEPARATOR = ": "
 
+        # All known names canonicalised to lowercase. Header name lookup
+        # is case-insensitive per RFC 7230 and we already store every
+        # entry lowercased, so emitting the lowercase form on the wire is
+        # both spec-compliant and avoids a per-lookup String#downcase
+        # allocation when callers pass these constants. The previous
+        # mixed-case forms were the largest single source of
+        # `String#downcase` in the alloc profile (Headers#get etc).
         CONTENT_TYPE = "content-type"
         CONTENT_LENGTH = "content-length"
         CONTENT_ENCODING = "content-encoding"
-        HDR_TRANSFER_ENCODING = "Transfer-Encoding"
-        CONNECTION = "Connection"
-        AUTHORIZATION = "Authorization"
-        WWW_AUTHENTICATE = "WWW-Authenticate"
-        STATUS = "Status"
-        LOCATION = "Location"
-        HOST = "Host"
-        COOKIE = "Cookie"
-        USER_AGENT = "User-Agent"
-        ACCEPT = "Accept"
-        ACCEPT_LANGUAGE = "Accept-Language"
-        ACCEPT_ENCODING = "Accept-Encoding"
-        UPGRADE_INSECURE_REQUESTS = "Upgrade-Insecure-Requests"
-        SERVER = "Server"
-        X_FORWARDED_HOST = "X-Forwarded-Host"
-        X_FORWARDED_FOR = "X-Forwarded-For"
-        X_FORWARDED_PROTO = "X-Forwarded-Proto"
-        X_FORWARDED_PORT = "X-Forwarded-Port"
+        HDR_TRANSFER_ENCODING = "transfer-encoding"
+        CONNECTION = "connection"
+        AUTHORIZATION = "authorization"
+        WWW_AUTHENTICATE = "www-authenticate"
+        STATUS = "status"
+        LOCATION = "location"
+        HOST = "host"
+        COOKIE = "cookie"
+        USER_AGENT = "user-agent"
+        ACCEPT = "accept"
+        ACCEPT_LANGUAGE = "accept-language"
+        ACCEPT_ENCODING = "accept-encoding"
+        UPGRADE_INSECURE_REQUESTS = "upgrade-insecure-requests"
+        SERVER = "server"
+        X_FORWARDED_HOST = "x-forwarded-host"
+        X_FORWARDED_FOR = "x-forwarded-for"
+        X_FORWARDED_PROTO = "x-forwarded-proto"
+        X_FORWARDED_PORT = "x-forwarded-port"
 
         CONNECTION_CLOSE = 1
         CONNECTION_KEEP_ALIVE = 2
@@ -69,13 +76,17 @@ module Baykit
           @status = new_val.to_i
         end
 
+        # `match?(/[A-Z]/)` returns a boolean without allocating a
+        # MatchData (unlike `match`). When the name has no uppercase
+        # bytes -- which is the case for every Headers::* constant and
+        # for every name produced by the H1 header parser, since that
+        # already lowercases bytes as it reads them -- we skip the
+        # downcase. The fallback path keeps mixed-case external callers
+        # working at the cost of an extra allocation only for them.
         def get(name)
-          values = headers[name.downcase()]
-          if(values == nil)
-            return nil
-          else
-            return values[0]
-          end
+          name = name.downcase if name.match?(/[A-Z]/)
+          values = @headers[name]
+          values ? values[0] : nil
         end
 
         def get_int(name)
@@ -88,7 +99,7 @@ module Baykit
         end
 
         def set(name, value)
-          name = name.downcase
+          name = name.downcase if name.match?(/[A-Z]/)
           values = @headers[name]
           if(values == nil)
             values = []
@@ -104,7 +115,7 @@ module Baykit
         end
 
         def add(name, value)
-          name = name.downcase()
+          name = name.downcase if name.match?(/[A-Z]/)
           values = @headers[name]
           if(values == nil)
             values = []
@@ -122,12 +133,9 @@ module Baykit
         end
 
         def values(name)
-          values = @headers[name.downcase()]
-          if(values == nil)
-            return []
-          else
-            return values
-          end
+          name = name.downcase if name.match?(/[A-Z]/)
+          values = @headers[name]
+          values ? values : []
         end
 
         def count()
@@ -141,11 +149,13 @@ module Baykit
         end
 
         def contains(name)
-          return @headers.keys.include?(name.downcase())
+          name = name.downcase if name.match?(/[A-Z]/)
+          @headers.key?(name)
         end
 
         def remove(name)
-          @headers.delete(name.downcase())
+          name = name.downcase if name.match?(/[A-Z]/)
+          @headers.delete(name)
         end
 
         #
@@ -174,18 +184,18 @@ module Baykit
 
         def get_connection
           con = get(CONNECTION)
-          if(con != nil)
-            con = con.downcase()
-          end
-          case con
-          when "close" then
-            return CONNECTION_CLOSE
-          when "keep-alive" then
-            return CONNECTION_KEEP_ALIVE
-          when "upgrade" then
-            return CONNECTION_UPGRADE
+          return CONNECTION_UNKNOWN if con.nil?
+          # casecmp? returns true/false without allocating, vs the
+          # previous `con = con.downcase()` which always allocated even
+          # when the value was already lowercase.
+          if con.casecmp?("close")
+            CONNECTION_CLOSE
+          elsif con.casecmp?("keep-alive")
+            CONNECTION_KEEP_ALIVE
+          elsif con.casecmp?("upgrade")
+            CONNECTION_UPGRADE
           else
-            return CONNECTION_UNKNOWN
+            CONNECTION_UNKNOWN
           end
         end
       end
