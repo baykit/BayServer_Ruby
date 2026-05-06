@@ -33,7 +33,13 @@ module Baykit
               packet.expand
             end
             begin
-              @packet.buf[@start + @pos, len] = buf[ofs, len]
+              # bytesplice(index, length, src, src_index, src_length) is
+              # the Ruby equivalent of System.arraycopy: it copies bytes
+              # from src directly into self without first allocating a
+              # substring (`buf[ofs, len]`) and without re-allocating
+              # self. Drops two String allocations per call -- this path
+              # is on every header / body chunk write.
+              @packet.buf.bytesplice(@start + @pos, len, buf, ofs, len)
             rescue IndexError => e
               raise IndexError.new("data exceeds packet size: len=#{len} pktlen=#{buf.length - @start}")
             end
