@@ -136,9 +136,11 @@ module Baykit
 
                   line_start_pos = pos
 
-                  # Calculate line length excluding \n
-                  # Also handle \r if it exists just before \n
-                  line_end = (next_nl > pos && pkt.buf[next_nl - 1] == "\r") ? next_nl - 1 : next_nl
+                  # Calculate line length excluding \n. Also strip a
+                  # trailing \r if present. Using getbyte avoids the
+                  # 1-char String allocation that `pkt.buf[next_nl-1]`
+                  # used to make for every header line.
+                  line_end = (next_nl > pos && pkt.buf.getbyte(next_nl - 1) == CR_CODE_POINT) ? next_nl - 1 : next_nl
                   line_len = line_end - pos
 
                   if line_len == 0
@@ -199,28 +201,44 @@ module Baykit
               end
 
               private
-              def unpack_request_line (buf, start, len)
-                line = buf[start, len]
-                items = line.split(" ")
-                if items.length != 3
-                  raise ProtocolException.new(BayMessage.get(:HTP_INVALID_FIRST_LINE, line))
+              # The previous implementation extracted the full line via
+              # `buf[start, len]` and then `String#split` to break it
+              # into three tokens; that allocated five strings (a copy
+              # of the line, an Array, plus three split tokens) per
+              # request. Since the buffer is already in hand, scanning
+              # for the two space delimiters and taking three byteslice
+              # results out of the original buffer needs only the three
+              # field strings -- no whole-line copy, no Array.
+              def unpack_request_line(buf, start, len)
+                endp = start + len
+                sp1 = buf.index(" ", start)
+                if sp1.nil? || sp1 >= endp
+                  raise ProtocolException.new(BayMessage.get(:HTP_INVALID_FIRST_LINE, buf.byteslice(start, len)))
+                end
+                sp2 = buf.index(" ", sp1 + 1)
+                if sp2.nil? || sp2 >= endp
+                  raise ProtocolException.new(BayMessage.get(:HTP_INVALID_FIRST_LINE, buf.byteslice(start, len)))
                 end
 
-                @method = items[0]
-                @uri = items[1]
-                @version = items[2]
+                @method  = buf.byteslice(start, sp1 - start)
+                @uri     = buf.byteslice(sp1 + 1, sp2 - sp1 - 1)
+                @version = buf.byteslice(sp2 + 1, endp - sp2 - 1)
               end
 
               def unpack_status_line(buf, start, len)
-                line = buf[start, len]
-                items = line.split(" ")
-
-                if items.length < 2
-                  raise ProtocolException.new BayMessage.get(:HTP_INVALID_FIRST_LINE, line)
+                endp = start + len
+                sp1 = buf.index(" ", start)
+                if sp1.nil? || sp1 >= endp
+                  raise ProtocolException.new BayMessage.get(:HTP_INVALID_FIRST_LINE, buf.byteslice(start, len))
                 end
 
-                @version = items[0]
-                @status = items[1].to_i
+                @version = buf.byteslice(start, sp1 - start)
+                # Status code is the next whitespace-delimited token. The
+                # reason phrase that follows can contain spaces, so we
+                # only need to find the first space after the code.
+                sp2 = buf.index(" ", sp1 + 1)
+                code_end = (sp2.nil? || sp2 > endp) ? endp : sp2
+                @status = buf.byteslice(sp1 + 1, code_end - sp1 - 1).to_i
               end
 
               def unpack_message_header(bytes, start, len)
