@@ -253,8 +253,6 @@ module Baykit
           InboundShipStore.init()
           ProtocolHandlerStore.init()
           TourStore.init(TourStore::MAX_TOURS)
-          require 'baykit/bayserver/tours/send_file_ship_store'
-          Baykit::BayServer::Tours::SendFileShipStore.init()
           MemUsage.init()
 
           if SysUtil.run_on_rubymine()

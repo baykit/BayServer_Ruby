@@ -83,15 +83,6 @@ module Baykit
         end
 
         def notify_close
-          # Return to the per-agent SendFileShipStore so the next file
-          # request reuses this instance instead of allocating fresh.
-          # Skip if we never got a real agent_id (= ship was rented but
-          # init didn't run, e.g. error on the rent path).
-          if @initialized && @agent_id && @agent_id > 0
-            require 'baykit/bayserver/tours/send_file_ship_store'
-            store = Baykit::BayServer::Tours::SendFileShipStore.get_store(@agent_id)
-            store.Return(self) if store && store.active_list.include?(self)
-          end
         end
 
         def check_timeout(duration_sec)
