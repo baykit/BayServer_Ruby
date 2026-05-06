@@ -129,9 +129,7 @@ module Baykit
             end
 
             unt = WriteUnit.new(buf, adr, tag, &lis)
-            st.write_queue_lock.synchronize do
-              st.write_queue << unt
-            end
+            st.write_queue << unt
 
             # Defer the epoll OP_WRITE registration unless the caller
             # explicitly asked to flush, or the queued bytes have grown
@@ -149,9 +147,7 @@ module Baykit
             # on_writable re-queues unfinished work.
             flush_threshold = [st.buf_size, BayServer.harbor.ship_buffer_size].min
             if st.remaining > 0 && (flush || st.remaining >= flush_threshold)
-              @try_write_lock.synchronize do
-                @try_write_list << st
-              end
+              @try_write_list << st
               wakeup
             end
 
@@ -303,10 +299,7 @@ module Baykit
             # itself and the rest of the bytes go out via the normal
             # selector path next round.
             while true
-              st = nil
-              @try_write_lock.synchronize do
-                st = @try_write_list.shift
-              end
+              st = @try_write_list.shift
               break if st.nil?
               begin
                 on_writable(st)
@@ -341,21 +334,12 @@ module Baykit
 
           private
           def add_operation(rd, op, to_connect=false)
-            @operations_lock.synchronize do
-              found = false
-              ch_op = @operations[rd]
-              if ch_op != nil
-                ch_op.op |= op
-                ch_op.to_connect = (ch_op.to_connect or to_connect)
-                found = true
-                #BayLog.debug("%s Update operation: %d con=%s rd=%s",
-                #             @agent, self.class.op_mode(ch_op.op), ch_op.to_connect, rd)
-              end
-
-              if not found
-                #BayLog.debug("%s New operation: %d con=%s close=%s rd=%s", @agent, op, to_connect, rd)
-                @operations[rd] =ChannelOperation.new(rd, op, to_connect)
-              end
+            ch_op = @operations[rd]
+            if ch_op != nil
+              ch_op.op |= op
+              ch_op.to_connect = (ch_op.to_connect or to_connect)
+            else
+              @operations[rd] = ChannelOperation.new(rd, op, to_connect)
             end
 
             wakeup
@@ -366,46 +350,44 @@ module Baykit
               return 0
             end
 
-            @operations_lock.synchronize do
-              nch = @operations.length
-              @operations.each do |rd, rd_op|
-                st = get_rudder_state(rd)
-                if rd.io.closed?
-                  # Channel is closed before register operation
-                  BayLog.debug("%s Try to register closed socket (Ignore)", @agent)
-                  next
-                end
-
-                begin
-                  io = rd.io
-                  BayLog.trace("%s register op=%s st=%s", @agent, self.class.op_mode(rd_op.op), st)
-                  op = @selector.get_op(io)
-                  if op == nil
-                    @selector.register(io, rd_op.op)
-                  else
-                    new_op = op | rd_op.op
-                    BayLog.trace("%s Already registered rd=%s op=%s update to %s", @agent, rd_op.rudder, self.class.op_mode(op), self.class.op_mode(new_op))
-                    @selector.modify(io, new_op)
-                  end
-
-                  if rd_op.to_connect
-                    if st == nil
-                      BayLog.warn("%s register connect but ChannelState is null", @agent);
-                    else
-                      st.connecting = true
-                    end
-
-                  end
-
-                rescue => e
-                  st = get_rudder_state(rd)
-                  BayLog.error_e(e, "%s Cannot register operation: %s", self.agent, st.rudder)
-                end
+            nch = @operations.length
+            @operations.each do |rd, rd_op|
+              st = get_rudder_state(rd)
+              if rd.io.closed?
+                # Channel is closed before register operation
+                BayLog.debug("%s Try to register closed socket (Ignore)", @agent)
+                next
               end
 
-              @operations.clear
-              return nch
+              begin
+                io = rd.io
+                BayLog.trace("%s register op=%s st=%s", @agent, self.class.op_mode(rd_op.op), st)
+                op = @selector.get_op(io)
+                if op == nil
+                  @selector.register(io, rd_op.op)
+                else
+                  new_op = op | rd_op.op
+                  BayLog.trace("%s Already registered rd=%s op=%s update to %s", @agent, rd_op.rudder, self.class.op_mode(op), self.class.op_mode(new_op))
+                  @selector.modify(io, new_op)
+                end
+
+                if rd_op.to_connect
+                  if st == nil
+                    BayLog.warn("%s register connect but ChannelState is null", @agent);
+                  else
+                    st.connecting = true
+                  end
+
+                end
+
+              rescue => e
+                st = get_rudder_state(rd)
+                BayLog.error_e(e, "%s Cannot register operation: %s", self.agent, st.rudder)
+              end
             end
+
+            @operations.clear
+            return nch
           end
 
           def handle_channel(io, op)
@@ -598,7 +580,7 @@ module Baykit
               # inline (shift + done()) instead so we don't burn a
               # syscall + letter just to remove a zero-byte placeholder.
               while !st.write_queue.empty? && st.write_queue[0].buf.empty?
-                drained = st.write_queue_lock.synchronize { st.write_queue.shift }
+                drained = st.write_queue.shift
                 drained.done(st.buffer_available?)
               end
               return if st.write_queue.empty?
