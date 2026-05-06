@@ -365,6 +365,8 @@ module Baykit
             @harbor.max_ships)
 
           invoke_runners()
+          require 'baykit/bayserver/util/rough_time'
+          RoughTime.init
         end
 
         SignalAgent.init(@harbor.control_port)
@@ -376,6 +378,12 @@ module Baykit
       def self.child_start(agt_id)
 
         invoke_runners()
+
+        # Background timer that refreshes the cached time every 100ms.
+        # The forked child does not inherit the master's timer thread,
+        # so each agent has to start its own.
+        require 'baykit/bayserver/util/rough_time'
+        RoughTime.init
 
         if(SysUtil.run_on_windows())
          open_ports()
