@@ -1,6 +1,8 @@
 require 'baykit/bayserver/util/reusable'
 require 'baykit/bayserver/util/counter'
 require 'baykit/bayserver/util/rough_time'
+require 'baykit/bayserver/util/object_store'
+require 'baykit/bayserver/common/write_unit'
 
 module Baykit
   module BayServer
@@ -39,8 +41,23 @@ module Baykit
           attr_accessor :connecting
           attr_accessor :skip_formalities
 
+          # Per-connection ObjectStore pool for WriteUnits. write_queue
+          # holds in-flight units; @write_unit_store is the free-list,
+          # both for the same connection. The store persists across
+          # rents of this RudderState (= our reset() does NOT touch
+          # the store) so cached WriteUnits stay reusable for the next
+          # connection that takes this state.
           def initialize
+            @write_unit_store = Baykit::BayServer::Util::ObjectStore.new(
+              lambda { Baykit::BayServer::Common::WriteUnit.new })
+          end
 
+          def rent_write_unit
+            @write_unit_store.rent
+          end
+
+          def return_write_unit(u)
+            @write_unit_store.Return(u)
           end
 
           def init(rd, tp = nil, timeout_sec = 0)

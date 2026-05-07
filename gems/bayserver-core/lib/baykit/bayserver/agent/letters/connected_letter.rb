@@ -3,12 +3,9 @@ module Baykit
     module Agent
       module Letters
         class ConnectedLetter < Letter
-          def initialize(rd, mpx)
-            super rd, mpx
-          end
+          # init / reset inherited from Letter (no extra fields)
         end
       end
     end
   end
 end
-

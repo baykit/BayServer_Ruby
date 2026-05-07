@@ -13,6 +13,7 @@ require 'baykit/bayserver/agent/signal/signal_agent'
 
 require 'baykit/bayserver/common/rudder_state'
 require 'baykit/bayserver/docker/harbor'
+require 'baykit/bayserver/util/object_store'
 
 require 'baykit/bayserver/train/train_runner'
 require 'baykit/bayserver/taxi/taxi_runner'
@@ -96,6 +97,19 @@ module Baykit
           @letter_queue_lock = Mutex.new
           @postpone_queue = []
           @postpone_queue_lock = Mutex.new
+
+          # Per-agent ObjectStore pools for Letter subclasses. Each
+          # send_xxx_letter rents from the appropriate store + init()s
+          # the fields; the receive() loop Returns each letter via
+          # return_letter() after consuming it. Letter#reset clears
+          # the rudder/multiplexer back-refs so the previous request's
+          # state can be GC'd while the shells stay cached.
+          @accepted_letter_store  = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::AcceptedLetter.new })
+          @connected_letter_store = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::ConnectedLetter.new })
+          @read_letter_store      = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::ReadLetter.new })
+          @wrote_letter_store     = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::WroteLetter.new })
+          @closed_letter_store    = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::ClosedLetter.new })
+          @error_letter_store     = Baykit::BayServer::Util::ObjectStore.new(lambda { Letters::ErrorLetter.new })
 
           @spider_multiplexer = SpiderMultiplexer.new(self, anchorable)
           @spin_multiplexer = SpinMultiplexer.new(self)
@@ -225,25 +239,29 @@ module Baykit
                   let = @letter_queue.shift
                 end
 
-                st = let.multiplexer.get_rudder_state(let.rudder)
-                if st == nil
-                  BayLog.debug("%s rudder is already returned: %s", self, let.rudder)
-                  next
-                end
+                begin
+                  st = let.multiplexer.get_rudder_state(let.rudder)
+                  if st == nil
+                    BayLog.debug("%s rudder is already returned: %s", self, let.rudder)
+                    next
+                  end
 
-                case let
-                when AcceptedLetter
-                  on_accepted(let, st)
-                when ConnectedLetter
-                  on_connected(let, st)
-                when ReadLetter
-                  on_read(let, st)
-                when WroteLetter
-                  on_wrote(let, st)
-                when ClosedLetter
-                  on_closed(let, st)
-                when ErrorLetter
-                  on_error(let, st)
+                  case let
+                  when AcceptedLetter
+                    on_accepted(let, st)
+                  when ConnectedLetter
+                    on_connected(let, st)
+                  when ReadLetter
+                    on_read(let, st)
+                  when WroteLetter
+                    on_wrote(let, st)
+                  when ClosedLetter
+                    on_closed(let, st)
+                  when ErrorLetter
+                    on_error(let, st)
+                  end
+                ensure
+                  return_letter(let)
                 end
               end
             end # while
@@ -308,41 +326,66 @@ module Baykit
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(AcceptedLetter.new(rd, mpx, client_rd), wakeup)
+          let = @accepted_letter_store.rent
+          let.init(rd, mpx, client_rd)
+          send_letter(let, wakeup)
         end
 
         def send_connected_letter(rd, mpx, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ConnectedLetter.new(rd, mpx), wakeup)
+          let = @connected_letter_store.rent
+          let.init(rd, mpx)
+          send_letter(let, wakeup)
         end
+
         def send_read_letter(rd, mpx, n, adr, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ReadLetter.new(rd, mpx, n, adr), wakeup)
+          let = @read_letter_store.rent
+          let.init(rd, mpx, n, adr)
+          send_letter(let, wakeup)
         end
 
         def send_wrote_letter(rd, mpx, n, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(WroteLetter.new(rd, mpx, n), wakeup)
+          let = @wrote_letter_store.rent
+          let.init(rd, mpx, n)
+          send_letter(let, wakeup)
         end
 
         def send_closed_letter(rd, mpx, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ClosedLetter.new(rd, mpx), wakeup)
+          let = @closed_letter_store.rent
+          let.init(rd, mpx)
+          send_letter(let, wakeup)
         end
 
         def send_error_letter(rd, mpx, err, wakeup)
           if rd == nil
             raise ArgumentError.new
           end
-          send_letter(ErrorLetter.new(rd, mpx, err), wakeup)
+          let = @error_letter_store.rent
+          let.init(rd, mpx, err)
+          send_letter(let, wakeup)
+        end
+
+        # Return a consumed letter to its appropriate ObjectStore.
+        def return_letter(let)
+          case let
+          when Letters::AcceptedLetter  then @accepted_letter_store.Return(let)
+          when Letters::ConnectedLetter then @connected_letter_store.Return(let)
+          when Letters::ReadLetter      then @read_letter_store.Return(let)
+          when Letters::WroteLetter     then @wrote_letter_store.Return(let)
+          when Letters::ClosedLetter    then @closed_letter_store.Return(let)
+          when Letters::ErrorLetter     then @error_letter_store.Return(let)
+          end
         end
 
         def shutdown

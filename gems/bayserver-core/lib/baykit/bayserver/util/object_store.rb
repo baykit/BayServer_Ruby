@@ -1,4 +1,6 @@
 require 'baykit/bayserver/util/reusable'
+require 'baykit/bayserver/util/object_factory'
+require 'baykit/bayserver/bay_log'
 module Baykit
   module BayServer
     module Util
@@ -9,16 +11,26 @@ module Baykit
         attr :active_list
         attr :factory
 
+        # Array-backed free_list. The original Hash-based design used
+        # Hash#shift / Hash#include? / Hash#delete / Kernel#hash on the
+        # hot path; replacing with Array pop/push made rent O(1).
+        #
+        # @active_list exists only to power the debug-mode integrity
+        # check (already-returned / not-active). Maintaining it in
+        # production was a measurable bottleneck (Array#delete is O(n)
+        # and Letters / WriteUnits Return at request rate × 5+), so
+        # both the push on rent and the delete + include? checks on
+        # Return are gated on BayLog.debug_mode?. Production never
+        # touches @active_list.
         def initialize(factory=nil)
-          @free_list = {}
-          @active_list = {}
+          @free_list = []
+          @active_list = []
           @factory = factory
         end
 
         def reset()
           if @active_list.length > 0
             BayLog.error("BUG?: There are %d active objects: %s", @active_list.length, @active_list)
-
             # for security
             @free_list.clear()
             @active_list.clear()
@@ -34,28 +46,28 @@ module Baykit
               obj = @factory.call()
             end
           else
-            obj = @free_list.shift()[0]
+            obj = @free_list.pop
           end
           if obj == nil
             raise Sink.new()
           end
-          @active_list[obj] = true
+          @active_list.push(obj) if BayLog.debug_mode?
           return obj
         end
 
         def Return(obj, reuse=true)
-          if @free_list.include?(obj)
-            raise Sink.new("This object already returned: " + obj.to_s)
+          if BayLog.debug_mode?
+            if @free_list.include?(obj)
+              raise Sink.new("This object already returned: " + obj.to_s)
+            end
+            if !@active_list.include?(obj)
+              raise Sink.new("This object is not active: " + obj.to_s)
+            end
+            @active_list.delete(obj)
           end
-
-          if !@active_list.include?(obj)
-            raise Sink.new("This object is not active: " + obj)
-          end
-
-          @active_list.delete(obj)
           if reuse
-            @free_list[obj] = true
             obj.reset()
+            @free_list.push(obj)
           end
         end
 

@@ -12,6 +12,8 @@ require 'baykit/bayserver/common/rudder_state_store'
 require 'baykit/bayserver/tours/req_content_handler'
 require 'baykit/bayserver/util/string_util'
 require 'baykit/bayserver/util/url_decoder'
+require 'baykit/bayserver/util/object_store'
+require 'baykit/bayserver/util/reusable'
 require 'baykit/bayserver/tours/tour'
 
 module Baykit
@@ -29,6 +31,7 @@ module Baykit
           include Baykit::BayServer::Agent
 
           class  ClubMatchInfo
+            include Baykit::BayServer::Util::Reusable
             attr_accessor :club
             attr_accessor :script_name
             attr_accessor :path_info
@@ -38,14 +41,29 @@ module Baykit
               @script_name = nil
               @path_info = nil
             end
+
+            def reset
+              @club = nil
+              @script_name = nil
+              @path_info = nil
+            end
           end
 
           class MatchInfo
+            include Baykit::BayServer::Util::Reusable
             attr_accessor :town
             attr_accessor :club_match
             attr_accessor :query_string
             attr_accessor :redirect_uri
             attr_accessor :rewritten_uri
+
+            def reset
+              @town = nil
+              @club_match = nil
+              @query_string = nil
+              @redirect_uri = nil
+              @rewritten_uri = nil
+            end
           end
 
           # Cargo (cached content) → response handler
@@ -167,6 +185,23 @@ module Baykit
             @permission_list = []
             @barges = Baykit::BayServer::Common::Barges.new
             @file_existence_cache = FileExistenceCache.new
+            @match_info_store      = Baykit::BayServer::Util::ObjectStore.new(lambda { MatchInfo.new })
+            @club_match_info_store = Baykit::BayServer::Util::ObjectStore.new(lambda { ClubMatchInfo.new })
+          end
+
+          def rent_match_info
+            @match_info_store.rent
+          end
+
+          def return_match_info(mi)
+            if mi.club_match != nil
+              @club_match_info_store.Return(mi.club_match)
+            end
+            @match_info_store.Return(mi)
+          end
+
+          def rent_club_match_info
+            @club_match_info_store.rent
           end
 
           def to_s
@@ -227,70 +262,74 @@ module Baykit
               raise HttpException.new(HttpStatus::NOT_FOUND, tur.req.uri)
             end
 
-            match_info.town.tour_admitted(tur)
+            begin
+              match_info.town.tour_admitted(tur)
 
-            if match_info.redirect_uri != nil
-              raise HttpException.moved_temp(match_info.redirect_uri)
-            else
-              BayLog.debug("%s Town[%s] Club[%s]", tur, match_info.town.name(), match_info.club_match.club)
-
-              tur.req.query_string = match_info.query_string
-              tur.req.script_name = match_info.club_match.script_name
-
-              if StringUtil.set?(match_info.club_match.club.charset)
-                tur.req.charset = match_info.club_match.club.charset
-                tur.res.charset = match_info.club_match.club.charset
+              if match_info.redirect_uri != nil
+                raise HttpException.moved_temp(match_info.redirect_uri)
               else
-                tur.req.charset = BayServer.harbor.charset
-                tur.res.charset = BayServer.harbor.charset
-              end
+                BayLog.debug("%s Town[%s] Club[%s]", tur, match_info.town.name(), match_info.club_match.club)
 
-              tur.req.path_info = match_info.club_match.path_info
-              if StringUtil.set?(tur.req.path_info) && match_info.club_match.club.decode_path_info
-                tur.req.path_info = CGI.unescape(tur.req.path_info, Encoding::ASCII_8BIT)
-              end
+                tur.req.query_string = match_info.query_string
+                tur.req.script_name = match_info.club_match.script_name
 
-              if match_info.rewritten_uri
-                tur.req.rewritten_uri = match_info.rewritten_uri # URI is rewritten
-              end
-
-              clb = match_info.club_match.club
-              tur.town = match_info.town
-              tur.club = clb
-
-              barge = lookup_barge(tur, match_info.town)
-              if barge != nil
-                pir = barge.get_cargo(tur)
-                cgo = pir[0]
-                rd = pir[1]
-
-                if rd != nil
-                  # Cargo is loading
-                  agt = Baykit::BayServer::Agent::GrandAgent.get(tur.ship.agent_id)
-                  wait_cargo_ship = WaitCargoShip.new
-                  tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
-                    agt.spider_multiplexer,
-                    wait_cargo_ship,
-                    true,
-                    8192,
-                    false)
-
-                  wait_cargo_ship.init(rd, tp, tur, cgo, clb)
-                  st = Baykit::BayServer::Common::RudderStateStore.get_store(agt.agent_id).rent
-                  st.init(rd, tp)
-                  agt.spider_multiplexer.add_rudder_state(rd, st)
-                  agt.spider_multiplexer.req_read(rd)
-                  return
-                elsif cgo.on_barge?
-                  # Cargo is ready (on cache)
-                  tur.req.set_content_handler(CargoContentHandler.new(cgo))
-                  return
+                if StringUtil.set?(match_info.club_match.club.charset)
+                  tur.req.charset = match_info.club_match.club.charset
+                  tur.res.charset = match_info.club_match.club.charset
                 else
-                  tur.cargo = cgo
+                  tur.req.charset = BayServer.harbor.charset
+                  tur.res.charset = BayServer.harbor.charset
                 end
-              end
 
-              clb.arrive(tur)
+                tur.req.path_info = match_info.club_match.path_info
+                if StringUtil.set?(tur.req.path_info) && match_info.club_match.club.decode_path_info
+                  tur.req.path_info = CGI.unescape(tur.req.path_info, Encoding::ASCII_8BIT)
+                end
+
+                if match_info.rewritten_uri
+                  tur.req.rewritten_uri = match_info.rewritten_uri # URI is rewritten
+                end
+
+                clb = match_info.club_match.club
+                tur.town = match_info.town
+                tur.club = clb
+
+                barge = lookup_barge(tur, match_info.town)
+                if barge != nil
+                  pir = barge.get_cargo(tur)
+                  cgo = pir[0]
+                  rd = pir[1]
+
+                  if rd != nil
+                    # Cargo is loading
+                    agt = Baykit::BayServer::Agent::GrandAgent.get(tur.ship.agent_id)
+                    wait_cargo_ship = WaitCargoShip.new
+                    tp = Baykit::BayServer::Agent::Multiplexer::PlainTransporter.new(
+                      agt.spider_multiplexer,
+                      wait_cargo_ship,
+                      true,
+                      8192,
+                      false)
+
+                    wait_cargo_ship.init(rd, tp, tur, cgo, clb)
+                    st = Baykit::BayServer::Common::RudderStateStore.get_store(agt.agent_id).rent
+                    st.init(rd, tp)
+                    agt.spider_multiplexer.add_rudder_state(rd, st)
+                    agt.spider_multiplexer.req_read(rd)
+                    return
+                  elsif cgo.on_barge?
+                    # Cargo is ready (on cache)
+                    tur.req.set_content_handler(CargoContentHandler.new(cgo))
+                    return
+                  else
+                    tur.cargo = cgo
+                  end
+                end
+
+                clb.arrive(tur)
+              end
+            ensure
+              return_match_info(match_info)
             end
           end
 
@@ -307,7 +346,7 @@ module Baykit
           private
           def club_maches(club_list, rel_uri, town_name)
 
-            cmi = ClubMatchInfo.new()
+            cmi = rent_club_match_info()
             any_club = nil
 
             club_list.each do |clb|
@@ -346,6 +385,7 @@ module Baykit
             end
 
             if cmi.club == nil
+              @club_match_info_store.Return(cmi)
               return nil
             end
 
@@ -368,7 +408,7 @@ module Baykit
             if req_uri == nil
               raise RuntimeError.new("Req uri is nil")
             end
-            mi = MatchInfo.new()
+            mi = rent_match_info()
 
             uri = req_uri
             pos = uri.index('?')
@@ -422,13 +462,14 @@ module Baykit
                     if m2 != nil
                       # matched
                       m2.rewritten_uri = index_uri
+                      return_match_info(mi)
                       return m2
                     end
                   end
                 end
 
                 # default club matches
-                mi.club_match = ClubMatchInfo.new()
+                mi.club_match = rent_club_match_info()
                 mi.club_match.club = @default_club
                 mi.club_match.script_name = nil
                 mi.club_match.path_info = nil
@@ -436,6 +477,7 @@ module Baykit
               return mi
             end
 
+            return_match_info(mi)
             return nil
           end
 

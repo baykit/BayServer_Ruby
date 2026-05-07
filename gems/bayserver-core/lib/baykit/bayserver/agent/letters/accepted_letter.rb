@@ -3,15 +3,19 @@ module Baykit
     module Agent
       module Letters
         class AcceptedLetter < Letter
-          attr :client_rudder
+          attr_accessor :client_rudder
 
-          def initialize(rd, mpx, client_rd)
+          def init(rd, mpx, client_rd)
             super(rd, mpx)
             @client_rudder = client_rd
+          end
+
+          def reset
+            super
+            @client_rudder = nil
           end
         end
       end
     end
   end
 end
-
