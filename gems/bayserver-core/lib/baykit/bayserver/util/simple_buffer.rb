@@ -37,7 +37,13 @@ module Baykit
             extend_buf
           end
 
-          @buf[@length, len] = bytes[pos, len]
+          # Append `len` bytes from `bytes[pos, len]` directly into @buf
+          # via the 5-arg bytesplice form. Replaces the previous
+          # `@buf[@length, len] = bytes[pos, len]` assignment, which
+          # allocated an intermediate String for the right-hand-side
+          # slice on every call. bytesplice copies in place with no
+          # interim allocation.
+          @buf.bytesplice(@length, 0, bytes, pos, len)
           @length += len
         end
 

@@ -132,9 +132,11 @@ module Baykit
               tur.req.req_host = host_port
               tur.req.req_port = default_port
             else
-              tur.req.req_host = host_port[0, pos]
+              tur.req.req_host = host_port.byteslice(0, pos)
+              # byteslice with explicit (ofs, len) avoids the per-call
+              # Range allocation that `host_port[pos + 1 .. -1]` had.
               begin
-                tur.req.req_port = host_port[pos + 1 .. -1].to_i
+                tur.req.req_port = host_port.byteslice(pos + 1, host_port.bytesize - pos - 1).to_i
               rescue => e
                 BayLog.error(e)
               end
