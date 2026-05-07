@@ -25,13 +25,13 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
 
                 acc.get_bytes(@opaque_data, 0, 8)
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_bytes(@opaque_data)
                 super
               end

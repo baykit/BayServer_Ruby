@@ -26,13 +26,13 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 val = acc.get_int()
                 @window_size_increment = H2Packet.extract_int31(val)
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_int(H2Packet.consolidate_flag_and_int32(0, @window_size_increment))
                 BayLog.trace("h2: Pack windowUpdate size=#{@window_size_increment}")
                 super

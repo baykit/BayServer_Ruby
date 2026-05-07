@@ -27,7 +27,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
                 acc.put_bytes(@buf, @start, @len)
               end
 

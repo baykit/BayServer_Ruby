@@ -27,6 +27,8 @@ module Baykit
         attr_accessor :buf_len
         attr :header_len
         attr :max_data_len
+        attr :header_accessor
+        attr :data_accessor
 
         def initialize(type, header_len, max_data_len)
           @type = type
@@ -37,6 +39,8 @@ module Baykit
           # capacity. put_bytes overwrites in place via String#[]=, so
           # the pre-filled zeros never reach the wire.
           @buf = "\0" * INITIAL_BUF_SIZE
+          @header_accessor = PacketPartAccessor.new(self, 0, header_len)
+          @data_accessor = PacketPartAccessor.new(self, header_len, -1)
           reset
         end
 
@@ -46,6 +50,8 @@ module Baykit
           # request actually exceeds the current capacity, instead of
           # rebuilding from zero on every pooled rent.
           @buf_len = header_len
+          @header_accessor.reset
+          @data_accessor.reset
         end
 
         def data_len()
@@ -55,14 +61,6 @@ module Baykit
         def expand
           new_len = if @buf.length == 0 then 128 else @buf.length * 2 end
           @buf << "\0" * new_len
-        end
-
-        def new_header_accessor()
-          return PacketPartAccessor.new(self, 0, @header_len)
-        end
-
-        def new_data_accessor()
-          return PacketPartAccessor.new(self, @header_len, -1)
         end
 
         def to_s

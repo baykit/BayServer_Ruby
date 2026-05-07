@@ -49,7 +49,7 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
 
                 if pkt.flags.padded?
                   @pad_length = acc.get_byte
@@ -66,7 +66,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
 
                 if @flags.padded?
                   acc.put_byte(@pad_length)

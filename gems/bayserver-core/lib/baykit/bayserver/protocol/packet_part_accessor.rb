@@ -1,5 +1,6 @@
 require 'baykit/bayserver/sink'
 require 'baykit/bayserver/util/string_util'
+require 'baykit/bayserver/util/reusable'
 
 module Baykit
   module BayServer
@@ -7,6 +8,7 @@ module Baykit
       class PacketPartAccessor
         include Baykit::BayServer
         include Baykit::BayServer::Util
+        include Baykit::BayServer::Util::Reusable
 
         attr :packet
         attr :start
@@ -17,6 +19,10 @@ module Baykit
           @packet = pkt
           @start = start
           @max_len = max_len
+          @pos = 0
+        end
+
+        def reset
           @pos = 0
         end
 

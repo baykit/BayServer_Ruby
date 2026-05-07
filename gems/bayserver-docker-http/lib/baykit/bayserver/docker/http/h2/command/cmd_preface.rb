@@ -26,14 +26,14 @@ module Baykit
               end
 
               def unpack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 preface_data = StringUtil.alloc(24)
                 acc.get_bytes(preface_data, 0, 24)
                 @protocol = preface_data[6, 8]
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_bytes(PREFACE_BYTES)
               end
 

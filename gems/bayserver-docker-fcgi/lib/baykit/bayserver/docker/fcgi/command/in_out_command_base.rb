@@ -41,7 +41,7 @@ module Baykit
 
             def pack(pkt)
               if @data != nil && @length > 0
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_bytes(@data, @start, @length)
               end
 

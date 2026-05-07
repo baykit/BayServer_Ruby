@@ -36,14 +36,14 @@ module Baykit
             def unpack(pkt)
               super
 
-              acc = pkt.new_data_accessor
+              acc = pkt.data_accessor
               @role = acc.get_short
               flags = acc.get_byte
               @keep_conn = (flags & FCGI_KEEP_CONN) != 0
             end
 
             def pack(pkt)
-              acc = pkt.new_data_accessor
+              acc = pkt.data_accessor
               acc.put_short(@role)
               acc.put_byte(@keep_conn ? 1 : 0)
               reserved = " " * 5

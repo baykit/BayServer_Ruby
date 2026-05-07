@@ -61,7 +61,7 @@ module Baykit
             end
 
             def pack_header
-              acc = new_header_accessor
+              acc = header_accessor
               put_int24(acc, data_len)
               acc.put_byte(@type)
               acc.put_byte(@flags.flags)

@@ -71,7 +71,7 @@ module Baykit
 
             def unpack(pkt)
               super
-              acc = pkt.new_data_accessor
+              acc = pkt.data_accessor
               while acc.pos < pkt.data_len
                 name_len = read_length(acc)
                 value_len = read_length(acc)
@@ -88,7 +88,7 @@ module Baykit
             end
 
             def pack(pkt)
-              acc = pkt.new_data_accessor
+              acc = pkt.data_accessor
               @params.each do |nv|
                 name = nv[0]
                 value = nv[1]
