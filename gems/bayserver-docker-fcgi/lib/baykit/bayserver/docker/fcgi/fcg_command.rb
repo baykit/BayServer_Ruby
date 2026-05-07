@@ -25,7 +25,7 @@ module Baykit
           end
 
           def pack_header(pkt)
-            acc = pkt.new_header_accessor()
+            acc = pkt.header_accessor()
             acc.put_byte(pkt.version)
             acc.put_byte(pkt.type)
             acc.put_short(pkt.req_id)

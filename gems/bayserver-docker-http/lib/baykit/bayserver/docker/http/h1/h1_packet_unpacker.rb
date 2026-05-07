@@ -83,7 +83,7 @@ module Baykit
 
                   # Move to packet processing
                   pkt = @pkt_store.rent(H1Type::HEADER)
-                  pkt.new_data_accessor.put_bytes(@tmp_buf.bytes, 0, @tmp_buf.length)
+                  pkt.data_accessor.put_bytes(@tmp_buf.bytes, 0, @tmp_buf.length)
 
                   begin
                     next_act = @cmd_upacker.packet_received(pkt)
@@ -120,7 +120,7 @@ module Baykit
                   end
 
                   #BayLog.debug("remain=#{buf.length - pos} len=#{len}")
-                  pkt.new_data_accessor.put_bytes(buf, pos, len)
+                  pkt.data_accessor.put_bytes(buf, pos, len)
                   pos += len
 
                   begin

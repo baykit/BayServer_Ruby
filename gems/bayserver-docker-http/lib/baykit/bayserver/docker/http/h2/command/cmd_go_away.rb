@@ -35,7 +35,7 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
                 val = acc.get_int
                 @last_stream_id = H2Packet.extract_int31(val)
                 @error_code = acc.get_int
@@ -44,7 +44,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_int(@last_stream_id)
                 acc.put_int(@error_code)
                 if @debug_data != nil

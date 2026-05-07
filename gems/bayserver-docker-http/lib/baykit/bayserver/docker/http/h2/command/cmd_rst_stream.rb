@@ -26,12 +26,12 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
                 @error_code = acc.get_int
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
                 acc.put_int(@error_code)
                 super
               end

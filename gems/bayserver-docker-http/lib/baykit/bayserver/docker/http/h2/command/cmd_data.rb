@@ -43,7 +43,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 if @flags.padded?
                   raise RuntimeError.new("Padding not supported")
                 end

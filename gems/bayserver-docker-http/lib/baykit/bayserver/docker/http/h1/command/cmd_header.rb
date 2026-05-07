@@ -175,7 +175,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor
+                acc = pkt.data_accessor
                 if @is_req_header
                   pack_request_line(acc)
                 else

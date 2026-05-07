@@ -30,7 +30,7 @@ module Baykit
 
               def unpack(pkt)
                 super
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
 
                 val = acc.get_int
                 @excluded = H2Packet.extract_flag(val) == 1
@@ -39,7 +39,7 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 acc.put_int(H2Packet.make_stream_dependency32(@excluded, @stream_dependency))
                 acc.put_byte(@weight)
                 super

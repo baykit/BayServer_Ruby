@@ -60,7 +60,7 @@ module Baykit
                   return
                 end
 
-                acc = pkt.new_data_accessor()
+                acc = pkt.data_accessor()
                 pos = 0
                 while pos < pkt.data_len()
                   id = acc.get_short()
@@ -74,7 +74,7 @@ module Baykit
                 if @flags.ack?
                   # do not pack payload
                 else
-                  acc = pkt.new_data_accessor()
+                  acc = pkt.data_accessor()
                   @items.each do |item|
                     acc.put_short(item.id)
                     acc.put_int(item.value)

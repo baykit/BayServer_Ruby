@@ -136,8 +136,8 @@ module Baykit
               if state == STATE_END
                 pkt = @pkt_store.rent(@type)
                 pkt.req_id = @req_id
-                pkt.new_header_accessor.put_bytes(@header_buf.buf, 0, @header_buf.length)
-                pkt.new_data_accessor.put_bytes(@data_buf.buf, 0, @data_buf.length)
+                pkt.header_accessor.put_bytes(@header_buf.buf, 0, @header_buf.length)
+                pkt.data_accessor.put_bytes(@data_buf.buf, 0, @data_buf.length)
 
                 begin
                   state = @cmd_unpacker.packet_received(pkt)
