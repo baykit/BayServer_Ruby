@@ -322,6 +322,16 @@ module Baykit
             return !selected_map.empty?
           end
 
+          # Frozen 4-byte buffer reused for every wakeup write. The
+          # previous `[0].pack("N")` allocated three objects per call:
+          # the Array `[0]`, the format String "N", and the resulting
+          # 4-byte String. Object profile attributed roughly 4-5 % of
+          # all sampled allocations to wakeup + Array#pack via this
+          # path (wakeup fires several times per request). The bytes
+          # themselves are arbitrary -- the recipient just drains the
+          # pipe -- so a single shared frozen string is fine.
+          WAKEUP_BUF = "\x00\x00\x00\x00".b.freeze
+
           #
           # Wake up the recipient
           #
@@ -334,7 +344,7 @@ module Baykit
             # request) the agent freezes and connections accumulate in
             # CLOSE-WAIT after the client closes.
             begin
-              @select_wakeup_pipe[1].write_nonblock([0].pack("N"))
+              @select_wakeup_pipe[1].write_nonblock(WAKEUP_BUF)
             rescue IO::WaitWritable
               # pipe full — wakeup already pending, OK to drop
             end
