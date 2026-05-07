@@ -8,22 +8,20 @@ module Baykit
         end
 
         def post(sip, pkt, flush, &lisnr)
-          if sip == nil || pkt == nil || lisnr == nil
-            raise Sink.new()
-          end
-          # Pass pkt.buf + (0, pkt.buf_len) by reference. The downstream
-          # WriteUnit#init copies these bytes into its own retained
-          # buffer via a single bytesplice, eliminating the previous
-          # `pkt.buf[0, pkt.buf_len]` String slice allocation per
-          # packet.
+          raise Sink.new() if sip.nil? || pkt.nil? || !block_given?
+          # `block_given?` + `&lisnr` direct-forward avoids the implicit
+          # Proc materialization that the previous `lisnr == nil` check
+          # + wrapper `do |avail| lisnr.call(avail) end` block forced
+          # on every call (~2 Procs per call attributed to this method
+          # in stackprof obj-mode). Ruby 3+ lazy block forwarding lets
+          # the block ride straight through to req_write without ever
+          # being captured as a Proc here.
           return sip.transporter.req_write(
             sip.rudder,
             pkt.buf, 0, pkt.buf_len,
             nil,
             pkt,
-            flush) do |avail|
-            lisnr.call(avail)
-          end
+            flush, &lisnr)
         end
 
       end
