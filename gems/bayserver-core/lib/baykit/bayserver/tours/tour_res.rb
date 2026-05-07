@@ -294,7 +294,9 @@ module Baykit
           mtype = nil
           pos = path.rindex('.')
           if pos != nil
-            ext = path[pos + 1 .. -1].downcase
+            # byteslice avoids the per-call Range allocation that
+            # `path[pos + 1 .. -1]` had. downcase still allocates.
+            ext = path.byteslice(pos + 1, path.bytesize - pos - 1).downcase
             mtype = Mimes.type(ext)
           end
 
@@ -303,7 +305,11 @@ module Baykit
           end
 
           if mtype.start_with?("text/") && charset != nil
-            mtype = mtype + "; charset=" + charset
+            # Interpolation builds the result in one allocation; the
+            # previous `mtype + "; charset=" + charset` chain allocated
+            # an intermediate String for the first `+` and a final one
+            # for the second `+`.
+            mtype = "#{mtype}; charset=#{charset}"
           end
 
           @headers.set_content_type(mtype)
