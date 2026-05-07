@@ -185,7 +185,7 @@ module Baykit
 
                 info.multiplexer.req_write(
                   info.rudder,
-                  sb,
+                  sb, 0, sb.bytesize,
                   nil,
                   "log",
                   true

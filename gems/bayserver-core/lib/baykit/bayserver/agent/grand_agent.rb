@@ -553,8 +553,8 @@ module Baykit
 
           write_more = false
           unit = st.write_queue[0]
-          if unit.buf.length > 0
-            BayLog.debug("Could not write enough data buf_len=%d", unit.buf.length)
+          if unit.remaining > 0
+            BayLog.debug("Could not write enough data remaining=%d", unit.remaining)
             write_more = true
           else
             # Removes write unit from writeQueue
