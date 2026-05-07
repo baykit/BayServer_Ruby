@@ -145,7 +145,7 @@ module Baykit
             end
           end
 
-          def req_write(rd, buf, adr, tag, flush, &lis)
+          def req_write(rd, buf, ofs, len, adr, tag, flush, &lis)
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s tag=%s flush=%s", @agent, st, tag, flush)
 
@@ -156,7 +156,7 @@ module Baykit
             end
 
             unt = st.rent_write_unit
-            unt.init(buf, adr, tag, &lis)
+            unt.init(buf, ofs, len, adr, tag, &lis)
             st.write_queue << unt
 
             # Defer the epoll OP_WRITE registration unless the caller
@@ -631,7 +631,10 @@ module Baykit
               # to drive consumption of zero-byte units; consume them
               # inline (shift + done()) instead so we don't burn a
               # syscall + letter just to remove a zero-byte placeholder.
-              while !st.write_queue.empty? && st.write_queue[0].buf.empty?
+              # Track progress via WriteUnit#wrote / #remaining instead
+              # of slice!() so each unit's @buf retains its underlying
+              # capacity for the next pool rent.
+              while !st.write_queue.empty? && st.write_queue[0].remaining == 0
                 drained = st.write_queue.shift
                 drained.done(st.buffer_available?)
                 st.return_write_unit(drained)
@@ -643,24 +646,24 @@ module Baykit
               while i < st.write_queue.length && !done
                 wunit = st.write_queue[i]
 
-                # An empty buf can only appear past the head -- the
-                # head-drain above removed any leading empties. A mid-
-                # batch empty acts as a cap on the gather so the
-                # listener for the unit just ahead of it fires before
-                # we keep going.
-                if wunit.buf.empty?
+                # A zero-remaining unit can only appear past the head --
+                # the head-drain above removed any leading ones. A mid-
+                # batch zero acts as a cap on the gather so the listener
+                # for the unit just ahead of it fires before we keep
+                # going.
+                if wunit.remaining == 0
                   i += 1
                   next
                 end
 
                 # Collect consecutive non-empty bufs from index i.
                 batch = [wunit]
-                total = wunit.buf.bytesize
+                total = wunit.remaining
                 j = i + 1
                 while j < st.write_queue.length
                   uu = st.write_queue[j]
-                  break if uu.buf.empty?
-                  sz = uu.buf.bytesize
+                  break if uu.remaining == 0
+                  sz = uu.remaining
                   break if total + sz > cap
                   batch << uu
                   total += sz
@@ -669,13 +672,16 @@ module Baykit
 
                 if batch.length == 1
                   BayLog.debug("%s Try to write: rd=%s pkt=%s len=%d adr=%s",
-                               self, st.rudder, wunit.tag, wunit.buf.length, wunit.adr)
-                  buf_to_write = wunit.buf
+                               self, st.rudder, wunit.tag, wunit.remaining, wunit.adr)
+                  # remaining_buf returns @buf as-is for the common
+                  # full-write case (wrote==0); for partial retries it
+                  # allocates a byteslice of the unsent tail.
+                  buf_to_write = wunit.remaining_buf
                 else
                   BayLog.debug("%s Try to gather-write: rd=%s units=%d total=%d",
                                self, st.rudder, batch.length, total)
                   @gather_buf.clear
-                  batch.each { |b| @gather_buf << b.buf }
+                  batch.each { |b| @gather_buf << b.remaining_buf }
                   buf_to_write = @gather_buf
                 end
 
@@ -686,20 +692,19 @@ module Baykit
                   n = 0
                 end
 
-                # Distribute n across the batch units, mirroring the
-                # original "send wrote_letter, slice, break on partial"
-                # pattern but per-unit.
+                # Distribute n across the batch units by advancing each
+                # WriteUnit's @wrote counter instead of slicing its buf.
                 remaining = n
                 partial = false
                 batch.each do |b|
-                  sz = b.buf.bytesize
-                  if remaining >= sz
-                    @agent.send_wrote_letter(st.rudder, self, sz, false)
-                    b.buf.slice!(0, sz)
-                    remaining -= sz
+                  rem = b.remaining
+                  if remaining >= rem
+                    @agent.send_wrote_letter(st.rudder, self, rem, false)
+                    b.wrote = b.len  # full unit done
+                    remaining -= rem
                   else
                     @agent.send_wrote_letter(st.rudder, self, remaining, false)
-                    b.buf.slice!(0, remaining)
+                    b.wrote += remaining
                     remaining = 0
                     partial = true
                     break
@@ -779,7 +784,7 @@ module Baykit
               return false
             rescue IO::WaitWritable => e
               BayLog.debug("%s Handshake status: write more st=%s", self, st)
-              req_write(st.rudder, "", nil, nil, true)
+              req_write(st.rudder, "", 0, 0, nil, nil, true)
               return false
             end
           end

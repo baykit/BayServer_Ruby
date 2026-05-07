@@ -139,7 +139,7 @@ module Baykit
           # flush or enough data has accumulated to be worth a syscall.
           def remaining
             total = 0
-            @write_queue.each { |u| total += u.buf.bytesize }
+            @write_queue.each { |u| total += u.remaining }
             total
           end
 

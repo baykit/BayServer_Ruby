@@ -125,7 +125,7 @@ module Baykit
             st.access
           end
 
-          def req_write(rd, buf, adr, tag, flush, &lis)
+          def req_write(rd, buf, ofs, len, adr, tag, flush, &lis)
             st = get_rudder_state(rd)
             BayLog.debug("%s reqWrite st=%s", @agent, st)
 
@@ -136,7 +136,8 @@ module Baykit
               #return true
             end
 
-            unt = WriteUnit.new(buf, adr, tag, &lis)
+            unt = st.rent_write_unit
+            unt.init(buf, ofs, len, adr, tag, &lis)
             st.write_queue_lock.synchronize do
               st.write_queue << unt
             end
@@ -256,13 +257,13 @@ module Baykit
               end
 
               u = st.write_queue[0]
-              BayLog.debug("%s Try to write: pkt=%s buflen=%d", self, u.tag, u.buf.length)
+              BayLog.debug("%s Try to write: pkt=%s remaining=%d", self, u.tag, u.remaining)
 
               n = 0
               begin
-                if u.buf.length > 0
-                  n = st.rudder.write(u.buf)
-                  u.buf.slice!(0, n)
+                if u.remaining > 0
+                  n = st.rudder.write(u.remaining_buf)
+                  u.wrote += n
                 end
               rescue Exception => e
                 @agent.send_error_letter(st.rudder, self, e, true)

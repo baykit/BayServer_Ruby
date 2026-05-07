@@ -33,7 +33,7 @@ module Baykit
           raise NotImplementedError.new
         end
 
-        def req_write(rd, buf, adr, tag, flush, &lis)
+        def req_write(rd, buf, ofs, len, adr, tag, flush, &lis)
           raise NotImplementedError.new
         end
 
