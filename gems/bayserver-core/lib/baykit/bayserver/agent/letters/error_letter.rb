@@ -3,14 +3,19 @@ module Baykit
     module Agent
       module Letters
         class ErrorLetter < Letter
-          attr :err
-          def initialize(rd, mpx, err)
-            super rd, mpx
+          attr_accessor :err
+
+          def init(rd, mpx, err)
+            super(rd, mpx)
             @err = err
+          end
+
+          def reset
+            super
+            @err = nil
           end
         end
       end
     end
   end
 end
-

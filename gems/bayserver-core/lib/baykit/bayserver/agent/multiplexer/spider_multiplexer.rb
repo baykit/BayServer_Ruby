@@ -22,16 +22,27 @@ module Baykit
           include Baykit::BayServer::Common
 
           class ChannelOperation
+            include Baykit::BayServer::Util::Reusable # implements (for ObjectStore)
 
-            attr :rudder
+            attr_accessor :rudder
             attr_accessor :op
             attr_accessor :to_connect
 
+            def initialize
+            end
 
-            def initialize(rd, op, to_connect)
+            # Set fields after rent from the multiplexer's ObjectStore.
+            def init(rd, op, to_connect)
               @rudder = rd
               @op = op
               @to_connect = to_connect
+            end
+
+            # Clear refs before returning to the pool.
+            def reset
+              @rudder = nil
+              @op = 0
+              @to_connect = false
             end
           end
 
@@ -47,6 +58,14 @@ module Baykit
             @anchorable = anchorable
             @operations = {}
             @operations_lock = Mutex.new
+            # Per-multiplexer ObjectStore pool for ChannelOperation:
+            # add_operation allocates one shell each time @operations
+            # has no entry for the rudder (~3/req on the spider hot
+            # path). Rent + init replaces .new + initialize per call;
+            # register_channel_ops Returns each entry after the
+            # @operations.each loop processes it.
+            @channel_op_store = Baykit::BayServer::Util::ObjectStore.new(
+              lambda { ChannelOperation.new })
             # States queued by req_write for an inline-write attempt at the
             # end of receive(). Lets us skip the epoll_ctl(ADD) +
             # selector wait + epoll_ctl(DEL) round-trip for ready sockets.
@@ -136,7 +155,8 @@ module Baykit
               return true
             end
 
-            unt = WriteUnit.new(buf, adr, tag, &lis)
+            unt = st.rent_write_unit
+            unt.init(buf, adr, tag, &lis)
             st.write_queue << unt
 
             # Defer the epoll OP_WRITE registration unless the caller
@@ -351,13 +371,23 @@ module Baykit
           end
 
           private
+          def rent_channel_operation
+            @channel_op_store.rent
+          end
+
+          def return_channel_operation(co)
+            @channel_op_store.Return(co)
+          end
+
           def add_operation(rd, op, to_connect=false)
             ch_op = @operations[rd]
             if ch_op != nil
               ch_op.op |= op
               ch_op.to_connect = (ch_op.to_connect or to_connect)
             else
-              @operations[rd] = ChannelOperation.new(rd, op, to_connect)
+              ch_op = rent_channel_operation
+              ch_op.init(rd, op, to_connect)
+              @operations[rd] = ch_op
             end
 
             wakeup
@@ -404,6 +434,10 @@ module Baykit
               end
             end
 
+            # Return each ChannelOperation to the pool before clearing
+            # the hash, so the next add_operation rents rather than
+            # allocates.
+            @operations.each_value { |co| return_channel_operation(co) }
             @operations.clear
             return nch
           end
@@ -600,6 +634,7 @@ module Baykit
               while !st.write_queue.empty? && st.write_queue[0].buf.empty?
                 drained = st.write_queue.shift
                 drained.done(st.buffer_available?)
+                st.return_write_unit(drained)
               end
               return if st.write_queue.empty?
 

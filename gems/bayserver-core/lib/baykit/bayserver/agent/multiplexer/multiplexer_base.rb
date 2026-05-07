@@ -63,6 +63,7 @@ module Baykit
             return false if st.write_queue.empty?
             u = st.write_queue.shift()
             u.done(st.buffer_available?)
+            st.return_write_unit(u)
             return true
           end
 
