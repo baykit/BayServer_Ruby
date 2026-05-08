@@ -115,6 +115,7 @@ module Baykit
                 if @tmp_buf.length == CONNECTION_PREFACE.length
                   pkt = @pkt_store.rent(H2Type::PREFACE)
                   pkt.data_accessor().put_bytes(@tmp_buf.buf, 0, @tmp_buf.length)
+                  pkt.data_accessor.reset
                   nstat = @cmd_unpacker.packet_received(pkt)
                   @pkt_store.Return(pkt)
                   if nstat != NextSocketAction::CONTINUE
@@ -185,6 +186,7 @@ module Baykit
                   pkt.flags = H2Flags.new(@flags)
                   pkt.header_accessor().put_bytes(@tmp_buf.buf, 0, H2Packet::FRAME_HEADER_LEN)
                   pkt.data_accessor().put_bytes(@tmp_buf.buf, H2Packet::FRAME_HEADER_LEN, @tmp_buf.length - H2Packet::FRAME_HEADER_LEN)
+                  pkt.data_accessor.reset
 
                   begin
                     next_act = @cmd_unpacker.packet_received(pkt)

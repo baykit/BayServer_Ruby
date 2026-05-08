@@ -530,6 +530,13 @@ module Baykit
               next_act = st.transporter.on_read(st.rudder, st.read_buf, let.address)
             end
 
+          rescue ProtocolException => e
+            close = st.transporter.ship.notify_protocol_error(e)
+            if !close && st.transporter.server_mode
+              next_act = NextSocketAction::CONTINUE
+            else
+              next_act = NextSocketAction::CLOSE
+            end
           rescue IOError => e
             st.transporter.on_error(st.rudder, e)
             next_act = NextSocketAction::CLOSE

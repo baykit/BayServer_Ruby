@@ -76,6 +76,7 @@ module Baykit
               @header_buffer = SimpleBuffer.new
               @conn_send_window = DEFAULT_INITIAL_WINDOW
               @stream_send_windows = {}
+              @rst_streams = {}
             end
 
             ######################################################
@@ -92,6 +93,7 @@ module Baykit
               # each new connection with fresh windows.
               @conn_send_window = DEFAULT_INITIAL_WINDOW
               @stream_send_windows.clear
+              @rst_streams.clear
             end
 
             def init(proto_handler)
@@ -167,17 +169,22 @@ module Baykit
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s send_res_content len=%d", self, len)
+              stream_id = tur.req.key
+              # Do not send DATA on a stream that has already been RST_STREAM'd.
+              if @rst_streams[stream_id]
+                callback&.call(true)
+                return NextSocketAction::CONTINUE
+              end
               # Account for the bytes we are about to send against the flow-control
               # windows. Without this, handle_window_update only ever sees
               # WINDOW_UPDATE additions and eventually trips the > 2^31-1 guard
               # on long-lived high-throughput connections.
               if len > 0
-                stream_id = tur.req.key
                 @conn_send_window -= len
                 str_win = (@stream_send_windows[stream_id] || DEFAULT_INITIAL_WINDOW) - len
                 @stream_send_windows[stream_id] = str_win
               end
-              cmd = CmdData.new(tur.req.key, nil, bytes, ofs, len);
+              cmd = CmdData.new(stream_id, nil, bytes, ofs, len);
               return @protocol_handler.post(cmd, false, &callback)
             end
 
@@ -371,13 +378,23 @@ module Baykit
                   @settings.max_concurrent_streams = item.value
 
                 when CmdSettings::INITIAL_WINDOW_SIZE
-                  # RFC 7540 § 6.5.2: INITIAL_WINDOW_SIZE must not exceed 2^31-1;
-                  # larger values are FLOW_CONTROL_ERROR.
-                  if item.value < 0
+                  # RFC 7540 § 6.5.2: INITIAL_WINDOW_SIZE must not exceed 2^31-1.
+                  # Ruby's get_int returns unsigned (0..0xFFFFFFFF), so we must
+                  # compare against MAX_WINDOW (0x7FFFFFFF), not against < 0.
+                  if item.value > MAX_WINDOW
                     raise H2ProtocolException.new(H2ErrorCode::FLOW_CONTROL_ERROR,
                       "SETTINGS_INITIAL_WINDOW_SIZE exceeds 2^31-1: #{item.value}")
                   end
+                  old_initial = @settings.initial_window_size
                   @settings.initial_window_size = item.value
+                  # RFC 7540 § 6.9.2: when INITIAL_WINDOW_SIZE changes, adjust all
+                  # open stream send windows by the delta. Window may become negative.
+                  delta = item.value - old_initial
+                  if delta != 0
+                    @stream_send_windows.each_key do |sid|
+                      @stream_send_windows[sid] += delta
+                    end
+                  end
 
                 when CmdSettings::MAX_FRAME_SIZE
                   # RFC 7540 § 6.5.2: MAX_FRAME_SIZE must be within [2^14, 2^24-1].
@@ -424,6 +441,7 @@ module Baykit
                   rst.error_code = H2ErrorCode::FLOW_CONTROL_ERROR
                   @protocol_handler.post(rst, true)
                   @stream_send_windows.delete(cmd.stream_id)
+                  @rst_streams[cmd.stream_id] = true
                   return NextSocketAction::CONTINUE
                 end
                 @stream_send_windows[cmd.stream_id] = win

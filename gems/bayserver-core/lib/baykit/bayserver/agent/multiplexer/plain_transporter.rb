@@ -59,7 +59,19 @@ module Baykit
 
               rescue UpgradeException => e
                 BayLog.debug("%s Protocol upgrade", @ship)
-                return @ship.notify_read(buf)
+                begin
+                  return @ship.notify_read(buf)
+                rescue ProtocolException => e2
+                  close = @ship.notify_protocol_error(e2)
+                  if !close && @server_mode
+                    return NextSocketAction::CONTINUE
+                  else
+                    return NextSocketAction::CLOSE
+                  end
+                rescue IOError => e2
+                  on_error(rd, e2)
+                  return NextSocketAction::CLOSE
+                end
 
               rescue ProtocolException => e
                 close = @ship.notify_protocol_error(e)

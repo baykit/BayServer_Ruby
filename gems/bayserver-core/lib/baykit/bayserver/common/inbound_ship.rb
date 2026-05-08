@@ -4,6 +4,7 @@ require 'baykit/bayserver/agent/next_socket_action'
 require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/ships/ship'
 require 'baykit/bayserver/tours/package'
+require 'baykit/bayserver/protocol/protocol_handler_store'
 
 module Baykit
   module BayServer
@@ -72,6 +73,24 @@ module Baykit
           ######################################################
 
           def notify_handshake_done(proto)
+            BayLog.trace("%s notify_handshake_done: proto=%s", self, proto)
+            return NextSocketAction::CONTINUE if proto.nil?
+
+            current_proto = @protocol_handler.protocol
+            return NextSocketAction::CONTINUE if proto == current_proto
+
+            # Switch to the ALPN-negotiated protocol handler.
+            begin
+              store = Baykit::BayServer::Protocol::ProtocolHandlerStore.get_store(proto, true, @agent_id)
+              new_hnd = store.rent()
+              if new_hnd
+                @port_docker.return_protocol_handler(@agent_id, @protocol_handler)
+                set_protocol_handler(new_hnd)
+                BayLog.debug("%s Switched to protocol handler: %s (via ALPN)", self, proto)
+              end
+            rescue => e
+              BayLog.warn("%s Cannot switch to ALPN protocol %s: %s", self, proto, e)
+            end
             return NextSocketAction::CONTINUE
           end
 

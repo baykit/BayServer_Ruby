@@ -217,15 +217,9 @@ module Baykit
                   st.handshaking = false
 
                   BayLog.debug("%s Handshake done (rd=%s)", self, st.rudder)
-                  app_protocols = st.rudder.io.context.alpn_protocols
-
-                  # HELP ME
-                  #   This code does not work!
-                  #   We cannot get application protocol name
-                  proto = nil
-                  if app_protocols != nil && app_protocols.length > 0
-                    proto = app_protocols[0]
-                  end
+                  proto = st.rudder.io.respond_to?(:alpn_protocol) ? st.rudder.io.alpn_protocol : nil
+                  BayLog.debug("%s ALPN negotiated: %s", self, proto.inspect)
+                  st.transporter.ship.notify_handshake_done(proto)
                 end
 
                 BayLog.debug("%s Try to Read (rd=%s)", @agent, st.rudder)

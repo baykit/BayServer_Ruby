@@ -785,15 +785,11 @@ module Baykit
               st.rudder.io.accept_nonblock
 
               BayLog.debug("%s Handshake done (rd=%s)", self, st.rudder)
-              app_protocols = st.rudder.io.context.alpn_protocols
-
-              # HELP ME
-              #   This code does not work!
-              #   We cannot get application protocol name
-              proto = nil
-              if app_protocols != nil && app_protocols.length > 0
-                proto = app_protocols[0]
-              end
+              # SSLSocket#alpn_protocol returns the negotiated protocol after handshake.
+              # context.alpn_protocols is the advertised list, not the negotiated result.
+              proto = st.rudder.io.respond_to?(:alpn_protocol) ? st.rudder.io.alpn_protocol : nil
+              BayLog.debug("%s ALPN negotiated: %s", self, proto.inspect)
+              st.transporter.ship.notify_handshake_done(proto)
 
               return true
             rescue IO::WaitReadable => e
