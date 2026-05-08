@@ -76,6 +76,12 @@ module Baykit
           raise NotImplementedError.new
         end
 
+        # Maximum number of IO events SpiderMultiplexer.receive() will process
+        # per call (-1 = unlimited, the default).
+        def max_events_per_receive
+          raise NotImplementedError.new
+        end
+
         # File name to redirect stdout/stderr
         def redirect_file
           raise NotImplementedError.new
@@ -143,9 +149,14 @@ module Baykit
           raise NotImplementedError
         end
 
-        # The maximum file size, in bytes, to be cached.
-        # Files exceeding this size will not be cached.
+        # The maximum file size, in bytes, to be cached for plain HTTP tours.
         def max_cargo_size
+          raise NotImplementedError
+        end
+
+        # The maximum file size, in bytes, to be cached for secure (HTTPS) tours.
+        # Returns max_cargo_size when not explicitly configured.
+        def max_cargo_size_secure
           raise NotImplementedError
         end
 

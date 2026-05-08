@@ -71,6 +71,7 @@ module Baykit
             # selector wait + epoll_ctl(DEL) round-trip for ready sockets.
             @try_write_list = []
             @try_write_lock = Mutex.new
+            @leftover_selected = {}  # keys not processed when max_events_per_receive is active
 
             begin
               require "nio4r"  # gem: nio4r
@@ -302,7 +303,14 @@ module Baykit
           # Receive letters
           #
           def receive(wait)
-            if not wait
+            max_events = BayServer.harbor.max_events_per_receive
+
+            if max_events > 0 && !@leftover_selected.empty?
+              # Still draining keys from a previous select(); skip the syscall
+              # and keep the agent on the same connection subset one more pass.
+              selected_map = @leftover_selected
+              @leftover_selected = {}
+            elsif not wait
               selected_map = @selector.select()
             else
               selected_map = @selector.select(GrandAgent::SELECT_TIMEOUT_SEC)
@@ -310,6 +318,11 @@ module Baykit
             #BayLog.debug("%s selected: %s", self, selected_map)
 
             register_channel_ops
+
+            if max_events > 0 && selected_map.size > max_events
+              keys = selected_map.keys
+              keys[max_events..].each { |io| @leftover_selected[io] = selected_map.delete(io) }
+            end
 
             selected_map.keys.each do |io|
               if io == @select_wakeup_pipe[0]
@@ -329,6 +342,10 @@ module Baykit
             while true
               st = @try_write_list.shift
               break if st.nil?
+              if st.rudder.nil?
+                # RudderState was cleaned up after being added to try_write_list.
+                next
+              end
               begin
                 on_writable(st)
               rescue Sink

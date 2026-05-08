@@ -46,6 +46,7 @@ module Baykit
           DEFAULT_DIRECT_BOARDINGS = 128
           DEFAULT_MAX_CARGO_SIZE = 1 * 1024 * 1024
           DEFAULT_MAX_TOURS_PER_SHIP = 128
+          DEFAULT_MAX_EVENTS_PER_RECEIVE = -1
 
           # Default charset
           attr :charset
@@ -76,6 +77,9 @@ module Baykit
 
           # Response buffer size shared by all tours on a ship.
           attr :ship_buffer_size
+
+          # Max IO events per SpiderMultiplexer.receive() call (-1 = unlimited).
+          attr :max_events_per_receive
 
           # Trace req/res header flag
           attr :trace_header
@@ -125,11 +129,15 @@ module Baykit
           # The maximum number of files cached for Direct Boarding (LRU eviction).
           attr :max_direct_boardings
 
-          # The maximum file size to be cached.
+          # The maximum file size to be cached for plain HTTP tours.
           attr :max_cargo_size
 
+          # The maximum file size to be cached for secure (HTTPS) tours.
+          # -1 means "follow max_cargo_size".
+          attr :max_cargo_size_secure
+
           # The maximum file size, in bytes, eligible for the Direct Boarding
-          # path. -1 means no limit (everything that fits in the FileStore
+          # path. -1 means no limit (everything that fits in the DirectBoardingStore
           # gets a rudder); any non-negative value is a hard threshold.
           attr :max_direct_boarding_size
 
@@ -145,6 +153,7 @@ module Baykit
             @socket_timeout_sec = DEFAULT_WAIT_TIMEOUT_SEC
             @keep_timeout_sec = DEFAULT_KEEP_TIMEOUT_SEC
             @ship_buffer_size = DEFAULT_SHIP_BUFFER_SIZE
+            @max_events_per_receive = DEFAULT_MAX_EVENTS_PER_RECEIVE
             @trace_header = DEFAULT_TRACE_HEADER
             @charset = DEFAULT_CHARSET
             @control_port = DEFAULT_CONTROL_PORT
@@ -160,6 +169,7 @@ module Baykit
             @cargo_lifespan_sec = DEFAULT_CARGO_LIFESPAN_SEC
             @max_direct_boardings = DEFAULT_DIRECT_BOARDINGS
             @max_cargo_size = DEFAULT_MAX_CARGO_SIZE
+            @max_cargo_size_secure = -1
             @max_direct_boarding_size = -1
             @max_tours_per_ship = DEFAULT_MAX_TOURS_PER_SHIP
             @barges = Baykit::BayServer::Common::Barges.new
@@ -283,6 +293,13 @@ module Baykit
               @keep_timeout_sec = Integer(kv.value)
             when "shipbuffersize", "tourbuffersize"
               @ship_buffer_size = StringUtil.parse_size(kv.value)
+            when "maxeventsperreceive"
+              v = kv.value.to_i
+              if v == 0
+                raise ConfigException.new(kv.file_name, kv.line_no,
+                  "maxEventsPerReceive must be -1 (disabled) or positive: %s" % kv.value)
+              end
+              @max_events_per_receive = v
             when "traceheader"
               @trace_header = StringUtil.parse_bool(kv.value)
             when "redirectfile"
@@ -348,6 +365,8 @@ module Baykit
 
             when "maxcargosize"
               @max_cargo_size = StringUtil.parse_size(kv.value)
+            when "maxcargosizesecure"
+              @max_cargo_size_secure = StringUtil.parse_size(kv.value)
 
             when "maxdirectboardingsize"
               @max_direct_boarding_size = StringUtil.parse_size(kv.value)
@@ -361,6 +380,10 @@ module Baykit
           #######################
           # Implements Harbor
           #######################
+
+          def max_cargo_size_secure
+            @max_cargo_size_secure >= 0 ? @max_cargo_size_secure : @max_cargo_size
+          end
 
           def find_barge(path)
             return @barges.find_barge(path)
