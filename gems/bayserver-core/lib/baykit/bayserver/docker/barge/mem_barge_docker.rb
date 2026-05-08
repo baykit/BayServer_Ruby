@@ -90,8 +90,9 @@ module Baykit
               BayLog.debug("%s save content len=%d", self, len)
               @buf_length += len
 
-              if @buf_length > BayServer.harbor.max_cargo_size
-                BayLog.debug("%s cargo exceeded: len=%d max=%d", self, @buf_length, BayServer.harbor.max_cargo_size)
+              effective_max = [BayServer.harbor.max_cargo_size, BayServer.harbor.max_cargo_size_secure].max
+              if @buf_length > effective_max
+                BayLog.debug("%s cargo exceeded: len=%d effectiveMax=%d", self, @buf_length, effective_max)
                 @status = EXCEEDED
                 @buf.reset
                 return
@@ -284,14 +285,20 @@ module Baykit
                     tour.res.direct_boarding = false
                   end
                 else
-                  # Cached cargo: direct boarding (sendfile/zero-copy) only
-                  # makes sense when the file was too big to cache and
-                  # harbor.direct_boarding is on. For an in-memory cargo we
-                  # want the body served from the cache, so direct_boarding
-                  # is forced off. (Ruby has no sendfile, so the boarding
-                  # branch is currently a flag-only no-op, but mirrors the
-                  # Java path.)
-                  tour.res.direct_boarding = cgo.exceeded? && BayServer.harbor.direct_boarding
+                  # Per-tour cache threshold: secure tours may cache larger files
+                  # (they cannot use sendfile) than plain tours.
+                  tour_limit = tour.is_secure ?
+                    BayServer.harbor.max_cargo_size_secure :
+                    BayServer.harbor.max_cargo_size
+                  exceeds_for_tour = cgo.exceeded? || cgo.length > tour_limit
+
+                  # Only plain tours can use sendfile — TLS requires user-space
+                  # encryption. (Ruby has no sendfile, so direct_boarding is a
+                  # flag-only no-op, but mirrors the Java path.)
+                  tour.res.direct_boarding =
+                    exceeds_for_tour &&
+                    BayServer.harbor.direct_boarding &&
+                    !tour.is_secure
                 end
               end
               cgo.access

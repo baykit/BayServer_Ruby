@@ -106,18 +106,28 @@ module Baykit
             tur_id = tur.tour_id
             chunk_size = tur.ship.protocol_handler.max_res_packet_data_size
             pos = [0]  # mutable closure over the cursor
+            sending = [false]  # re-entry guard: sendResContent can complete synchronously,
+                               # which fires the consume listener from inside sendChunks itself,
+                               # overflowing the stack for large responses.
 
             tur.res.set_consume_listener do |len, resume|
-              if resume
-                begin
-                  send_chunks(tur, tur_id, cgo, pos, chunk_size)
-                rescue IOError => e
-                  BayLog.error_e(e)
-                end
+              next if !resume || sending[0]
+              sending[0] = true
+              begin
+                send_chunks(tur, tur_id, cgo, pos, chunk_size)
+              rescue IOError => e
+                BayLog.error_e(e)
+              ensure
+                sending[0] = false
               end
             end
 
-            send_chunks(tur, tur_id, cgo, pos, chunk_size)
+            sending[0] = true
+            begin
+              send_chunks(tur, tur_id, cgo, pos, chunk_size)
+            ensure
+              sending[0] = false
+            end
           end
 
           def self.send_chunks(tur, tur_id, cgo, pos, chunk_size)
@@ -317,12 +327,19 @@ module Baykit
                     agt.spider_multiplexer.add_rudder_state(rd, st)
                     agt.spider_multiplexer.req_read(rd)
                     return
-                  elsif cgo.on_barge?
-                    # Cargo is ready (on cache)
+                  elsif cgo.on_barge? && cgo.length <= (
+                      tur.is_secure ?
+                        BayServer.harbor.max_cargo_size_secure :
+                        BayServer.harbor.max_cargo_size)
+                    # Cargo is ready (on cache) and fits this tour's threshold.
                     tur.req.set_content_handler(CargoContentHandler.new(cgo))
                     return
                   else
-                    tur.cargo = cgo
+                    # Cargo is new/loading, EXCEEDED, or LOADED but over this tour's
+                    # threshold.  Only set tur.cargo when the tour itself will populate
+                    # it (new/empty case); on LOADED cargo, endResContent would
+                    # otherwise re-invoke cgo.end_save and raise IllegalStateException.
+                    tur.cargo = cgo unless cgo.on_barge?
                   end
                 end
 
