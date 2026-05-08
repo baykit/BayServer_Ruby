@@ -5,6 +5,7 @@ require 'baykit/bayserver/docker/base/warp_base'
 require 'baykit/bayserver/protocol/packet_store'
 require 'baykit/bayserver/docker/http/h1/package'
 require 'baykit/bayserver/docker/http/h2/package'
+require 'baykit/bayserver/docker/http/warp_ship_pool'
 
 
 module Baykit
@@ -18,18 +19,25 @@ module Baykit
           include Baykit::BayServer::Protocol
           include Baykit::BayServer::Docker::Http::H1
           include Baykit::BayServer::Docker::Http::H2
+          include Baykit::BayServer::Agent
 
           attr :secure
           attr :support_h2
+          attr :enable_h2
           attr :ssl_ctx
           attr :trace_ssl
+
+          # Agent ID => WarpShipPool (only populated when @enable_h2 is true)
+          attr :pools
 
           def initialize
             super
             @secure = false
             @support_h2 = true
+            @enable_h2 = false
             @ssl_ctx = nil
             @trace_ssl = false
+            @pools = {}
           end
 
           ######################################################
@@ -48,6 +56,12 @@ module Baykit
               end
             end
 
+            if @enable_h2
+              # The base WarpBase already registered a listener that owns the
+              # per-agent WarpShipStore. We add a second one here, scoped to
+              # multiplex pools, so every spawned agent gets a pool entry.
+              GrandAgent.add_lifecycle_listener(PoolAgentListener.new(self))
+            end
           end
 
           ######################################################
@@ -57,7 +71,10 @@ module Baykit
           def init_key_val(kv)
             case kv.key.downcase
             when "supporth2"
-              @support_h2 = StringUtil.(kv.value)
+              @support_h2 = StringUtil.parse_bool(kv.value)
+
+            when "enableh2"
+              @enable_h2 = StringUtil.parse_bool(kv.value)
 
             when "tracessl"
               @trace_ssl = StringUtil.parse_bool(kv.value)
@@ -84,7 +101,10 @@ module Baykit
           ######################################################
 
           def protocol()
-            return H1_PROTO_NAME
+            # When enableh2 is set, the warp speaks HTTP/2 from the start:
+            #   secure=false -> h2c (cleartext H2 with prior knowledge)
+            #   secure=true  -> h2 over TLS without ALPN negotiation
+            @enable_h2 ? H2_PROTO_NAME : H1_PROTO_NAME
           end
 
           def new_transporter(agt, rd, sip)
@@ -108,6 +128,65 @@ module Baykit
             return tp
           end
 
+          ######################################################
+          # Multiplex hooks (only active when enable_h2 is true)
+          ######################################################
+
+          def pick_reusable_ship(agt, tour)
+            return nil unless @enable_h2
+            pool = @pools[agt.agent_id]
+            pool ? pool.find_idlest : nil
+          end
+
+          def on_ship_rented(agt, wsip)
+            return unless @enable_h2
+            pool = @pools[agt.agent_id]
+            pool.add(wsip) if pool
+          end
+
+          def keep(wsip)
+            if @enable_h2
+              # Multiplex mode: ship stays in the per-agent pool until the
+              # backend connection closes. Returning it to the WarpShipStore
+              # keepList would yank the ship out of the reuse pool.
+              return
+            end
+            super
+          end
+
+          def on_end_ship(wsip)
+            if @enable_h2
+              pool = @pools[wsip.agent_id]
+              pool.remove(wsip) if pool
+            end
+            super
+          end
+
+          def exclude_from_pool(wsip)
+            return unless @enable_h2
+            pool = @pools[wsip.agent_id]
+            pool.remove(wsip) if pool
+          end
+
+          ######################################################
+          # Inner classes
+          ######################################################
+
+          class PoolAgentListener
+            include Baykit::BayServer::Agent::LifecycleListener
+
+            def initialize(dkr)
+              @docker = dkr
+            end
+
+            def add(agt_id)
+              @docker.pools[agt_id] = WarpShipPool.new
+            end
+
+            def remove(agt_id)
+              @docker.pools.delete(agt_id)
+            end
+          end
 
           ######################################################
           # Class initializer
@@ -133,4 +212,3 @@ module Baykit
     end
   end
 end
-

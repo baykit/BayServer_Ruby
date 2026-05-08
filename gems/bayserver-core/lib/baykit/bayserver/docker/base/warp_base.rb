@@ -178,6 +178,21 @@ module Baykit
 
           def arrive(tur)
             agt = GrandAgent.get(tur.ship.agent_id)
+
+            # Subclass hook: a multiplex-capable docker can return an existing
+            # shared WarpShip here. When non-nil, skip the rent path entirely.
+            reused = pick_reusable_ship(agt, tur)
+            if reused != nil
+              begin
+                @lock.synchronize { @tour_list.append(tur) }
+                reused.start_warp_tour(tur)
+              rescue SystemCallError => e
+                BayLog.error_e(e, "%s Error on starting warp tour", reused)
+                raise HttpException.new(HttpStatus::INTERNAL_SERVER_ERROR, "%s", e)
+              end
+              return
+            end
+
             sto = get_ship_store(agt.agent_id)
 
             wsip = sto.rent()
@@ -214,6 +229,9 @@ module Baykit
 
               wsip.start_warp_tour(tur)
 
+              # Notify subclass after a fresh ship has been rented and started.
+              on_ship_rented(agt, wsip)
+
               if need_connect
                 st = RudderStateStore.get_store(agt.agent_id).rent()
                 st.init(wsip.rudder, tp)
@@ -231,6 +249,23 @@ module Baykit
           end
 
 
+
+          ######################################################
+          # Subclass hooks for multiplex-aware dockers
+          ######################################################
+
+          # Subclasses override to return an existing WarpShip that can carry
+          # an additional tour (H2 stream multiplex). Returning non-nil causes
+          # arrive() to skip the rent/connect path. Default returns nil.
+          def pick_reusable_ship(agt, tour)
+            nil
+          end
+
+          # Subclasses are notified immediately after arrive() rents a fresh
+          # WarpShip and starts its first tour. Use to register the ship in a
+          # reuse pool. Default no-op.
+          def on_ship_rented(agt, wsip)
+          end
 
           ######################################################
           # Implements Warp

@@ -145,6 +145,10 @@ module Baykit
           # Other methods
           ################################
 
+          def tour_count
+            @tour_map.size
+          end
+
           def warp_handler
             return @protocol_handler.command_handler
           end
