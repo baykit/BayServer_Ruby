@@ -9,7 +9,7 @@ require 'baykit/bayserver/docker/harbor'
 require 'baykit/bayserver/rudders/io_rudder'
 require 'baykit/bayserver/tours/read_file_taxi'
 require 'baykit/bayserver/tours/content_consume_listener'
-require 'baykit/bayserver/tours/file_store'
+require 'baykit/bayserver/tours/direct_boarding_store'
 require 'baykit/bayserver/tours/send_file_ship'
 
 require 'baykit/bayserver/util/counter'
@@ -267,7 +267,7 @@ module Baykit
              !@tour.ship.port_docker.secure &&
              @direct_boarding
             # Send via directBoarding if the protocol is HTTP/1.x and unencrypted.
-            info = FileStore.get_file_info(path)
+            info = DirectBoardingStore.get_file_info(path)
             rd = info.rudder
             file_size = info.file_length
             @direct_boarding = info.rudder != nil

@@ -6,7 +6,7 @@ require 'baykit/bayserver/util/directory_exception'
 module Baykit
   module BayServer
     module Tours
-      class FileStore
+      class DirectBoardingStore
 
         class FileInfo
           attr_accessor :file_name
@@ -35,7 +35,7 @@ module Baykit
           end
         end
 
-        @@file_store = nil
+        @@store = nil
 
         attr :max_cargos
 
@@ -88,21 +88,20 @@ module Baykit
         end
 
         def self.get_file_info(path)
-          get_file_store.get(path)
+          get_store.get(path)
         end
 
-        def self.get_file_store
-          if @@file_store == nil
-            @@file_store = FileStore.new(
+        private
+
+        def self.get_store
+          if @@store == nil
+            @@store = DirectBoardingStore.new(
               BayServer.harbor.cargo_lifespan_sec,
               BayServer.harbor.max_direct_boardings,
               BayServer.harbor.max_cargo_size)
           end
-          return @@file_store
+          return @@store
         end
-        private_class_method :get_file_store
-
-        private
 
         def evict_eldest
           while @files.size > @max_cargos
