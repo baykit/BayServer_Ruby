@@ -97,18 +97,22 @@ module Baykit
 
               @pos = 0
               if @server_mode && !@preface_read
-                len = CONNECTION_PREFACE.length - @tmp_buf.length
+                prev_len = @tmp_buf.length
+                len = CONNECTION_PREFACE.length - prev_len
                 if len > buf.length
                   len = buf.length
                 end
                 @tmp_buf.put(buf, @pos, len)
                 @pos += len
-                if @tmp_buf.length == CONNECTION_PREFACE.length
-                  @tmp_buf.length.times do |i|
-                    if CONNECTION_PREFACE[i] != @tmp_buf.buf[i]
-                      raise ProtocolException.new "Invalid connection preface: #{@tmp_buf.bytes[0, @tmp_buf.length]}"
-                    end
+                # Validate each newly arrived byte against the expected preface
+                # so that a malformed client is rejected immediately rather than
+                # only after all 24 bytes have been accumulated.
+                prev_len.upto(@tmp_buf.length - 1) do |i|
+                  if CONNECTION_PREFACE[i] != @tmp_buf.buf[i]
+                    raise ProtocolException.new("Invalid connection preface at byte #{i}: got #{@tmp_buf.buf[i].ord & 0xFF}")
                   end
+                end
+                if @tmp_buf.length == CONNECTION_PREFACE.length
                   pkt = @pkt_store.rent(H2Type::PREFACE)
                   pkt.data_accessor().put_bytes(@tmp_buf.buf, 0, @tmp_buf.length)
                   nstat = @cmd_unpacker.packet_received(pkt)
@@ -130,6 +134,11 @@ module Baykit
                     @payload_len = ((@item.get(@tmp_buf, 0) & 0xFF) << 16 |
                                     (@item.get(@tmp_buf, 1) & 0xFF) << 8 |
                                     (@item.get(@tmp_buf, 2) & 0xFF))
+                    # RFC 7540 § 4.2: payload size must not exceed SETTINGS_MAX_FRAME_SIZE
+                    # (16384 is the initial value, which BayServer currently never negotiates up).
+                    if @payload_len > H2Packet::DEFAULT_PAYLOAD_MAXLEN
+                      raise ProtocolException.new("Frame size #{@payload_len} exceeds MAX_FRAME_SIZE #{H2Packet::DEFAULT_PAYLOAD_MAXLEN}")
+                    end
                     @item = FrameHeaderItem.new(@tmp_buf.length, FRAME_LEN_TYPE)
                     change_state STATE_READ_TYPE
                   end

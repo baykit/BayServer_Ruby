@@ -16,11 +16,9 @@ module Baykit
 
               def initialize(stream_id, flags=nil, opaque_data=nil)
                 super(H2Type::PING, stream_id, flags)
-                if opaque_data == nil
-                  @opaque_data = [0, 0, 0, 0, 0, 0, 0, 0].pack("C*")
-                else
-                  @opaque_data = opaque_data
-                end
+                # RFC 7540 § 6.7: echo the received opaque_data back; the
+                # constructor previously always allocated zeros and dropped it.
+                @opaque_data = (opaque_data != nil) ? opaque_data : [0, 0, 0, 0, 0, 0, 0, 0].pack("C*")
               end
 
               def unpack(pkt)

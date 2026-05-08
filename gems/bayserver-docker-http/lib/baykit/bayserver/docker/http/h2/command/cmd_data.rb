@@ -37,9 +37,21 @@ module Baykit
 
               def unpack(pkt)
                 super
+                acc = pkt.data_accessor()
+
+                pad_length = 0
+                if pkt.flags.padded?
+                  pad_length = acc.get_byte
+                end
+
                 @data = pkt.buf
-                @start = pkt.header_len
-                @length = pkt.data_len()
+                @start = pkt.header_len + acc.pos
+                @length = pkt.data_len() - acc.pos - pad_length
+
+                # RFC 7540 § 6.1: padding length must leave at least one octet of data.
+                if @length < 0
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("DATA pad length exceeds payload: pad=#{pad_length}")
+                end
               end
 
               def pack(pkt)

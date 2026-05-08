@@ -14,11 +14,16 @@ module Baykit
                 attr :root
               end
 
+              # RFC 7541 defines the EOS symbol with value 256; it must never appear
+              # in a header's payload except as the padding prefix at the tail.
+              EOS_SYMBOL = 256
+
               @root = HNode.new
 
               def self.decode(data)
                 w = ""
                 cur = @root
+                bits_since_last_leaf = 0
                 data.length.times do |i|
                   if data[i] == nil
                     BayLog.info "NIL"
@@ -33,14 +38,50 @@ module Baykit
                       cur = cur.zero
                     end
 
+                    if cur == nil
+                      # Bit pattern does not match any Huffman code.
+                      raise Baykit::BayServer::Protocol::ProtocolException.new("Huffman decode: invalid code sequence")
+                    end
+                    bits_since_last_leaf += 1
+
                     if cur.value > 0
                       # leaf node
+                      # RFC 7541 § 5.2: EOS must not appear inside a string literal.
+                      if cur.value == EOS_SYMBOL
+                        raise Baykit::BayServer::Protocol::ProtocolException.new("Huffman decode: EOS symbol in string literal")
+                      end
                       w.concat(cur.value.chr)
                       cur = @root
+                      bits_since_last_leaf = 0
                     end
                   end
                 end
+
+                if cur != @root
+                  # RFC 7541 § 5.2: any trailing bits form a padding that must be a
+                  # strict prefix of the EOS code (which is all 1s) and be no longer
+                  # than 7 bits.
+                  if bits_since_last_leaf > 7
+                    raise Baykit::BayServer::Protocol::ProtocolException.new(
+                      "Huffman decode: padding longer than 7 bits (#{bits_since_last_leaf})")
+                  end
+                  if !is_eos_prefix(cur)
+                    raise Baykit::BayServer::Protocol::ProtocolException.new("Huffman decode: padding must be MSB of EOS (all 1s)")
+                  end
+                end
+
                 return w
+              end
+
+              # Returns true iff the path from @root to node traverses
+              # only the one (= 1-bit) branch (prefix of the EOS code).
+              def self.is_eos_prefix(node)
+                cur = @root
+                while cur != node
+                  return false if cur.one == nil
+                  cur = cur.one
+                end
+                return true
               end
 
               def self.insert(code, len_in_bits, sym)

@@ -36,6 +36,11 @@ module Baykit
                 @excluded = H2Packet.extract_flag(val) == 1
                 @stream_dependency = H2Packet.extract_int31(val)
                 @weight = acc.get_byte
+
+                # RFC 7540 § 5.3.1: a stream MUST NOT depend on itself.
+                if @stream_dependency == stream_id
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("PRIORITY stream depends on itself: #{stream_id}")
+                end
               end
 
               def pack(pkt)

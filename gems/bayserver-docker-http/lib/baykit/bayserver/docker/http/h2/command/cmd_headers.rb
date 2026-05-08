@@ -59,10 +59,19 @@ module Baykit
                   @excluded = H2Packet.extract_flag(val) == 1
                   @stream_dependency = H2Packet.extract_int31(val)
                   @weight = acc.get_byte
+                  # RFC 7540 § 5.3.1: a stream MUST NOT depend on itself.
+                  if @stream_dependency == stream_id
+                    raise Baykit::BayServer::Protocol::ProtocolException.new("HEADERS stream depends on itself: #{stream_id}")
+                  end
                 end
                 @data = pkt.buf
                 @start = pkt.header_len + acc.pos
-                @length = pkt.data_len - acc.pos
+                @length = pkt.data_len - acc.pos - @pad_length
+
+                # RFC 7540 § 6.2: padding length must leave at least one octet of payload.
+                if @length < 0
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("HEADERS pad length exceeds payload: pad=#{@pad_length}")
+                end
               end
 
               def pack(pkt)

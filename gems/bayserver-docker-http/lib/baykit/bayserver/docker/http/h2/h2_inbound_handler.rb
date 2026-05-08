@@ -49,6 +49,12 @@ module Baykit
             include Baykit::BayServer::Util
             include Baykit::BayServer::Docker::Http::H2::Command
 
+            # RFC 7540 § 6.9.1: the flow-control window must not exceed 2^31-1.
+            # We track (but do not yet enforce on send) the outbound window so that
+            # WINDOW_UPDATE frames that would overflow it can be rejected per spec.
+            MAX_WINDOW = 0x7FFFFFFF
+            DEFAULT_INITIAL_WINDOW = 65535
+
             attr :protocol_handler
             attr :req_cont_len
             attr :req_cont_read
@@ -68,6 +74,8 @@ module Baykit
               @req_header_tbl = HeaderTable.create_dynamic_table()
               @res_header_tbl = HeaderTable.create_dynamic_table()
               @header_buffer = SimpleBuffer.new
+              @conn_send_window = DEFAULT_INITIAL_WINDOW
+              @stream_send_windows = {}
             end
 
             ######################################################
@@ -79,6 +87,11 @@ module Baykit
               @req_cont_len = 0
               @req_cont_read = 0
               @header_buffer.reset
+
+              # Flow-control tracking is per-connection; pooled handlers must start
+              # each new connection with fresh windows.
+              @conn_send_window = DEFAULT_INITIAL_WINDOW
+              @stream_send_windows.clear
             end
 
             def init(proto_handler)
@@ -154,6 +167,16 @@ module Baykit
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s send_res_content len=%d", self, len)
+              # Account for the bytes we are about to send against the flow-control
+              # windows. Without this, handle_window_update only ever sees
+              # WINDOW_UPDATE additions and eventually trips the > 2^31-1 guard
+              # on long-lived high-throughput connections.
+              if len > 0
+                stream_id = tur.req.key
+                @conn_send_window -= len
+                str_win = (@stream_send_windows[stream_id] || DEFAULT_INITIAL_WINDOW) - len
+                @stream_send_windows[stream_id] = str_win
+              end
               cmd = CmdData.new(tur.req.key, nil, bytes, ofs, len);
               return @protocol_handler.post(cmd, false, &callback)
             end
@@ -167,6 +190,8 @@ module Baykit
               cmd = CmdData.new(tur.req.key, nil, [], 0, 0)
               cmd.flags.set_end_stream(true)
               @protocol_handler.post(cmd, true, &callback)
+              # NOTE: We intentionally do NOT mark the stream CLOSED in the
+              # command unpacker here. See the Java commit notes for why.
             end
 
             def on_protocol_error(err)
@@ -174,11 +199,19 @@ module Baykit
               cmd = CmdGoAway.new(H2ProtocolHandler::CTL_STREAM_ID)
               cmd.stream_id = H2ProtocolHandler::CTL_STREAM_ID
               cmd.last_stream_id = H2ProtocolHandler::CTL_STREAM_ID
-              cmd.error_code = H2ErrorCode::PROTOCOL_ERROR
+              # H2ProtocolException carries a caller-specified error code;
+              # bare ProtocolException defaults to PROTOCOL_ERROR per RFC 7540 § 5.4.
+              if err.respond_to?(:error_code)
+                cmd.error_code = err.error_code
+              else
+                cmd.error_code = H2ErrorCode::PROTOCOL_ERROR
+              end
               cmd.debug_data = "Thank you!"
               begin
-                @protocol_handler.post(cmd, true)
-                @protocol_handler.ship.post_close()
+                # Defer the close until the GOAWAY frame has actually been written.
+                @protocol_handler.post(cmd, true) do |avail|
+                  @protocol_handler.ship.post_close()
+                end
               rescue IOError => e
                 BayLog.error_e(e)
               end
@@ -241,6 +274,16 @@ module Baykit
               end
               if !tur.reading?
                 raise ProtocolException.new("%s Tour is not reading.", tur)
+              end
+
+              # RFC 7540 § 8.1.2.6: if content-length is given, the sum of DATA
+              # payload lengths MUST match it. Check on the END_STREAM boundary.
+              if cmd.flags.end_stream?
+                cont_len = tur.req.headers.content_length
+                if cont_len >= 0 && tur.req.bytes_posted + cmd.length != cont_len
+                  raise ProtocolException.new(
+                    "content-length #{cont_len} does not match DATA payload #{tur.req.bytes_posted + cmd.length}")
+                end
               end
 
               begin
@@ -318,15 +361,29 @@ module Baykit
                   @settings.header_table_size = item.value
 
                 when CmdSettings::ENABLE_PUSH
+                  # RFC 7540 § 6.5.2: ENABLE_PUSH must be 0 or 1.
+                  if item.value != 0 && item.value != 1
+                    raise ProtocolException.new("SETTINGS_ENABLE_PUSH must be 0 or 1, got #{item.value}")
+                  end
                   @settings.enable_push = (item.value != 0)
 
                 when CmdSettings::MAX_CONCURRENT_STREAMS
                   @settings.max_concurrent_streams = item.value
 
                 when CmdSettings::INITIAL_WINDOW_SIZE
+                  # RFC 7540 § 6.5.2: INITIAL_WINDOW_SIZE must not exceed 2^31-1;
+                  # larger values are FLOW_CONTROL_ERROR.
+                  if item.value < 0
+                    raise H2ProtocolException.new(H2ErrorCode::FLOW_CONTROL_ERROR,
+                      "SETTINGS_INITIAL_WINDOW_SIZE exceeds 2^31-1: #{item.value}")
+                  end
                   @settings.initial_window_size = item.value
 
                 when CmdSettings::MAX_FRAME_SIZE
+                  # RFC 7540 § 6.5.2: MAX_FRAME_SIZE must be within [2^14, 2^24-1].
+                  if item.value < H2Packet::DEFAULT_PAYLOAD_MAXLEN || item.value > H2Packet::MAX_PAYLOAD_LEN
+                    raise ProtocolException.new("SETTINGS_MAX_FRAME_SIZE out of range: #{item.value}")
+                  end
                   @settings.max_frame_size = item.value
 
                 when CmdSettings::MAX_HEADER_LIST_SIZE
@@ -344,13 +401,33 @@ module Baykit
             end
 
             def handle_window_update(cmd)
-              BayLog.debug("%s handleWindowUpdate: stmid=%d siz=%d", ship,  cmd.stream_id, cmd.window_size_increment);
-
               if cmd.window_size_increment == 0
                 raise ProtocolException.new("Invalid increment value")
               end
+              BayLog.debug("%s handleWindowUpdate: stmid=%d siz=%d", ship,  cmd.stream_id, cmd.window_size_increment);
 
-              window_size = cmd.window_size_increment
+              # RFC 7540 § 6.9.1: adding the increment must not push the window
+              # above 2^31-1. Overflow at the connection level is a connection
+              # error FLOW_CONTROL_ERROR (GOAWAY); at the stream level it is a
+              # stream error (RST_STREAM).
+              if cmd.stream_id == 0
+                @conn_send_window += (cmd.window_size_increment & 0xFFFFFFFF)
+                if @conn_send_window > MAX_WINDOW
+                  raise H2ProtocolException.new(H2ErrorCode::FLOW_CONTROL_ERROR,
+                    "Connection send window overflow: #{@conn_send_window}")
+                end
+              else
+                win = (@stream_send_windows[cmd.stream_id] || DEFAULT_INITIAL_WINDOW) +
+                      (cmd.window_size_increment & 0xFFFFFFFF)
+                if win > MAX_WINDOW
+                  rst = CmdRstStream.new(cmd.stream_id)
+                  rst.error_code = H2ErrorCode::FLOW_CONTROL_ERROR
+                  @protocol_handler.post(rst, true)
+                  @stream_send_windows.delete(cmd.stream_id)
+                  return NextSocketAction::CONTINUE
+                end
+                @stream_send_windows[cmd.stream_id] = win
+              end
               return NextSocketAction::CONTINUE
             end
 
@@ -361,7 +438,14 @@ module Baykit
             end
 
             def handle_ping(cmd)
-              BayLog.debug("%s handle_ping: stm=%d", ship, cmd.stream_id)
+              BayLog.debug("%s handle_ping: stm=%d ack=%s", ship, cmd.stream_id, cmd.flags.ack?)
+
+              # RFC 7540 § 6.7: a PING frame with the ACK flag is a response to a
+              # PING the endpoint sent; we never send PINGs, and in any case an
+              # endpoint MUST NOT respond to PING with ACK set.
+              if cmd.flags.ack?
+                return NextSocketAction::CONTINUE
+              end
 
               res = CmdPing.new(cmd.stream_id, H2Flags.new(H2Flags::FLAGS_ACK), cmd.opaque_data)
               @protocol_handler.post(res, true)
@@ -450,9 +534,28 @@ module Baykit
               tur.go
             end
 
+            def has_upper_case(s)
+              return false if s == nil
+              s.each_char { |c| return true if c >= 'A' && c <= 'Z' }
+              false
+            end
+
             def on_end_header(tur, buf, start, len)
 
-              header_blocks = HeaderBlockParser.new(buf, start, len).parse_header_blocks()
+              begin
+                header_blocks = HeaderBlockParser.new(buf, start, len).parse_header_blocks()
+              rescue RuntimeError => e
+                # Truncated/corrupt HPACK input surfaces as various errors.
+                # Convert those to a protocol-level COMPRESSION_ERROR per RFC 7541 § 2.3.3.
+                raise ProtocolException.new("HPACK decode failed: #{e.message}")
+              end
+
+              # Pseudo-header + header-field validation (RFC 7540 § 8.1.2).
+              saw_method = false
+              saw_scheme = false
+              saw_path = false
+              saw_authority = false
+              saw_regular_header = false
 
               header_blocks.each do |blk|
                 if blk.op == HeaderBlock::UPDATE_DYNAMIC_TABLE_SIZE
@@ -467,22 +570,67 @@ module Baykit
 
                 if @analyzer.name == nil
                   next
+                end
 
-                elsif @analyzer.name[0] != ":"
+                # § 8.1.2: header field names must be lowercase.
+                if has_upper_case(@analyzer.raw_name)
+                  raise ProtocolException.new("Header name must be lowercase: #{@analyzer.raw_name}")
+                end
+
+                if @analyzer.pseudo
+                  # § 8.1.2.1: pseudo-header fields must precede regular headers.
+                  if saw_regular_header
+                    raise ProtocolException.new("Pseudo-header #{@analyzer.raw_name} appears after a regular header")
+                  end
+
+                  case @analyzer.raw_name
+                  when HeaderTable::PSEUDO_HEADER_METHOD
+                    raise ProtocolException.new("Duplicated :method") if saw_method
+                    saw_method = true
+                    tur.req.method = @analyzer.method
+
+                  when HeaderTable::PSEUDO_HEADER_SCHEME
+                    raise ProtocolException.new("Duplicated :scheme") if saw_scheme
+                    saw_scheme = true
+
+                  when HeaderTable::PSEUDO_HEADER_PATH
+                    raise ProtocolException.new("Duplicated :path") if saw_path
+                    if @analyzer.path == nil || @analyzer.path.empty?
+                      raise ProtocolException.new("Empty :path pseudo-header")
+                    end
+                    saw_path = true
+                    tur.req.uri = @analyzer.path
+
+                  when HeaderTable::PSEUDO_HEADER_AUTHORITY
+                    raise ProtocolException.new("Duplicated :authority") if saw_authority
+                    saw_authority = true
+                    tur.req.headers.add(@analyzer.name, @analyzer.value)
+
+                  when HeaderTable::PSEUDO_HEADER_STATUS
+                    raise ProtocolException.new(":status pseudo-header is invalid in a request")
+
+                  else
+                    raise ProtocolException.new("Unknown pseudo-header: #{@analyzer.raw_name}")
+                  end
+
+                else
+                  saw_regular_header = true
+                  # § 8.1.2.2: connection-specific header fields are forbidden in HTTP/2.
+                  lower_name = @analyzer.name.downcase
+                  if ["connection", "keep-alive", "proxy-connection", "transfer-encoding", "upgrade"].include?(lower_name)
+                    raise ProtocolException.new("Connection-specific header in HTTP/2: #{@analyzer.name}")
+                  end
+                  if lower_name == "te" && @analyzer.value.downcase != "trailers"
+                    raise ProtocolException.new("TE header with value other than 'trailers': #{@analyzer.value}")
+                  end
                   tur.req.headers.add(@analyzer.name, @analyzer.value)
-
-                elsif @analyzer.method != nil
-                  tur.req.method = @analyzer.method
-
-                elsif @analyzer.path != nil
-                  tur.req.uri = @analyzer.path
-
-                elsif @analyzer.scheme != nil
-
-                elsif @analyzer.status != nil
-                  raise RuntimeError.new("Illegal State")
                 end
               end
+
+              # § 8.1.2.3: request MUST include :method, :scheme, :path.
+              raise ProtocolException.new("Missing :method pseudo-header") if !saw_method
+              raise ProtocolException.new("Missing :scheme pseudo-header") if !saw_scheme
+              raise ProtocolException.new("Missing :path pseudo-header") if !saw_path
 
               tur.req.protocol = "HTTP/2.0"
               BayLog.debug("%s H2 read header method=%s protocol=%s uri=%s contlen=%d",

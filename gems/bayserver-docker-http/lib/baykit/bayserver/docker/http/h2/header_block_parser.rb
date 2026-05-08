@@ -12,6 +12,10 @@ module Baykit
             include Baykit::BayServer::Util
             include Baykit::BayServer::Docker::Http::H2::Huffman
 
+            # RFC 7541 default for SETTINGS_HEADER_TABLE_SIZE; BayServer does not
+            # currently advertise a different value in its initial SETTINGS frame.
+            MAX_DYNAMIC_TABLE_SIZE = 4096
+
             attr :buf
             attr :start
             attr :pos
@@ -28,9 +32,21 @@ module Baykit
             def parse_header_blocks
 
               header_blocks = []
+              # RFC 7541 § 4.2: dynamic-table size updates must appear at the very
+              # start of a header block. Once we see any other representation, any
+              # later size update is a decoding error.
+              seen_non_size_update = false
 
               while @pos < @length
                 blk = parse_header_block()
+                if blk.op == HeaderBlock::UPDATE_DYNAMIC_TABLE_SIZE
+                  if seen_non_size_update
+                    raise Baykit::BayServer::Protocol::ProtocolException.new(
+                      "Dynamic table size update must appear at the start of a header block")
+                  end
+                else
+                  seen_non_size_update = true
+                end
                 BayLog.trace("h2: header block read: %s", blk)
                 header_blocks << blk
               end
@@ -52,6 +68,10 @@ module Baykit
                 # +---+---------------------------+
                 blk.op = HeaderBlock::INDEX
                 blk.index = index & 0x7F
+                # RFC 7541 § 6.1: index 0 is not used and MUST be treated as a decoding error.
+                if blk.index == 0
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("Indexed header field with index 0")
+                end
               else
                 # literal header field
                 update_index = (index & 0x40) != 0
@@ -101,6 +121,12 @@ module Baykit
                     size = index & 0x1F
                     if size == 0x1F
                       size = size + get_hpack_int_rest
+                    end
+                    # RFC 7541 § 6.3: the dynamic table size update must not exceed
+                    # the maximum advertised in SETTINGS_HEADER_TABLE_SIZE.
+                    if size > MAX_DYNAMIC_TABLE_SIZE
+                      raise Baykit::BayServer::Protocol::ProtocolException.new(
+                        "Dynamic table size update #{size} exceeds SETTINGS_HEADER_TABLE_SIZE #{MAX_DYNAMIC_TABLE_SIZE}")
                     end
                     blk.op = HeaderBlock::UPDATE_DYNAMIC_TABLE_SIZE
                     blk.size = size

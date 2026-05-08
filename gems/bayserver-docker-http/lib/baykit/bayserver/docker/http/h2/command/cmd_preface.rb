@@ -33,8 +33,18 @@ module Baykit
               end
 
               def pack(pkt)
-                acc = pkt.data_accessor()
-                acc.put_bytes(PREFACE_BYTES)
+                # The H2 client connection preface is 24 raw bytes that MUST appear
+                # at the very start of the connection — it is NOT wrapped in an H2
+                # frame (RFC 7540 § 3.5). H2Packet reserves FRAME_HEADER_LEN bytes
+                # at buf[0..FRAME_HEADER_LEN] for the frame header; using
+                # data_accessor here would produce 9 zero bytes followed by the
+                # preface, which servers reject. Write the preface bytes directly
+                # into the buffer from position 0 and set buf_len accordingly.
+                while pkt.buf.length < PREFACE_BYTES.length
+                  pkt.expand
+                end
+                pkt.buf[0, PREFACE_BYTES.length] = PREFACE_BYTES
+                pkt.buf_len = PREFACE_BYTES.length
               end
 
               def handle(cmd_handler)

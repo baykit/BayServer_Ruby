@@ -7,35 +7,51 @@ module Baykit
 
             attr :name
             attr :value
+            # The original header name before any renaming (e.g. :authority -> host).
+            # Needed by pseudo-header validation that must distinguish :authority
+            # from a literal "host" header the client might also send.
+            attr :raw_name
             attr :method
             attr :path
             attr :scheme
             attr :status
+            # True iff raw_name started with ':' (i.e. this was a pseudo-header).
+            attr :pseudo
 
             def clear
               @name = nil
               @value = nil
+              @raw_name = nil
               @method = nil
               @path = nil
               @scheme = nil
               @status = nil
+              @pseudo = false
             end
 
             def analyze_header_block(blk, tbl)
               clear
               case blk.op
               when HeaderBlock::INDEX
-                kv = tbl.get(blk.index)
+                begin
+                  kv = tbl.get(blk.index)
+                rescue ArgumentError => e
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("Invalid header index: #{blk.index}")
+                end
                 if kv == nil
-                  raise RuntimeError.new "Invalid header index: #{blk.index}"
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("Invalid header index: #{blk.index}")
                 end
                 @name = kv.name
                 @value = kv.value
 
               when HeaderBlock::KNOWN_HEADER, HeaderBlock::OVERLOAD_KNOWN_HEADER
-                kv = tbl.get(blk.index)
+                begin
+                  kv = tbl.get(blk.index)
+                rescue ArgumentError => e
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("Invalid header index: #{blk.index}")
+                end
                 if kv == nil
-                  raise RuntimeError.new "Invalid header index: #{blk.index}"
+                  raise Baykit::BayServer::Protocol::ProtocolException.new("Invalid header index: #{blk.index}")
                 end
                 @name = kv.name
                 @value = blk.value
@@ -60,7 +76,10 @@ module Baykit
 
               end
 
-              if @name != nil && @name[0] == ":"
+              @raw_name = @name
+              @pseudo = @name != nil && !@name.empty? && @name[0] == ":"
+
+              if @pseudo
                 case @name
                 when HeaderTable::PSEUDO_HEADER_AUTHORITY
                   @name = "host"
