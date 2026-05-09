@@ -1,0 +1,14 @@
+Gem::Specification.new do |s|
+  s.name        = 'bayserver-docker-http3'
+  s.version     = '${VERSION}'
+  s.date        = '${DATE}'
+  s.summary     = "HTTP/3 docker of BayServer"
+  s.description = "BayServer HTTP/3 (QUIC) docker using quiche via the croute binding."
+  s.authors     = ["Michisuke-P"]
+  s.email       = 'michisukep@gmail.com'
+  s.homepage    = 'https://baykit.yokohama'
+  s.license     = 'MIT'
+  s.files       = Dir["LICENSE.BAYKIT", "README.md", "lib/**/*.rb"]
+  s.add_dependency "bayserver-core", "=${VERSION}"
+  s.add_dependency "croute"
+end

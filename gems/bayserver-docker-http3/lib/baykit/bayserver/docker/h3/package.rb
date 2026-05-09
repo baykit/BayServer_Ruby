@@ -1,0 +1,8 @@
+require 'baykit/bayserver/docker/h3/h3_docker'
+require 'baykit/bayserver/docker/h3/h3port_docker'
+require 'baykit/bayserver/docker/h3/qic_transporter'
+require 'baykit/bayserver/docker/h3/qic_protocol_handler'
+require 'baykit/bayserver/docker/h3/qic_inbound_handler'
+require 'baykit/bayserver/docker/h3/command/cmd_header'
+require 'baykit/bayserver/docker/h3/command/cmd_data'
+require 'baykit/bayserver/docker/h3/command/cmd_finished'

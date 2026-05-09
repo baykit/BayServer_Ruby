@@ -2,6 +2,7 @@ require 'socket'
 require 'objspace'
 
 require 'baykit/bayserver/sink'
+require 'baykit/bayserver/rudders/udp_rudder'
 require 'baykit/bayserver/agent/command_receiver'
 require 'baykit/bayserver/agent/letters/package'
 require 'baykit/bayserver/agent/multiplexer/spider_multiplexer'
@@ -193,19 +194,19 @@ module Baykit
             end
           end
 
-          # Set up unanchorable channel
-=begin
-          for ch in GrandAgent.unanchorable_port_map.keys() do
-            port_dkr = GrandAgent.unanchorable_port_map[ch]
-            tp = port_dkr.new_transporter(self, ch)
-            @unanchorable_transporters[ch] = tp
-            @non_blocking_handler.add_channel_listener(ch, tp)
-            @non_blocking_handler.ask_to_start(ch)
-            if !@anchorable
-              @non_blocking_handler.ask_to_read(ch)
+          # Set up unanchorable (UDP) channels
+          BayServer.unanchorable_port_map.each do |io_rd, port_dkr|
+            # Wrap the UDP socket in UdpRudder for sender-address support
+            udp_rd = Baykit::BayServer::Rudders::UdpRudder.new(io_rd.io)
+            if @net_multiplexer.is_non_blocking
+              udp_rd.set_non_blocking
             end
+            tp = port_dkr.new_transporter(@agent_id, udp_rd)
+            st = RudderStateStore.get_store(@agent_id).rent
+            st.init(udp_rd, tp)
+            @net_multiplexer.add_rudder_state(udp_rd, st)
+            @net_multiplexer.req_read(udp_rd)
           end
-=end
 
 
           @net_multiplexer.on_free

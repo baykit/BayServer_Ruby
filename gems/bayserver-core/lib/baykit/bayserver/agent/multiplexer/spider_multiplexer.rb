@@ -609,7 +609,8 @@ module Baykit
               end
 
               BayLog.debug("%s read %d bytes", self, len)
-              @agent.send_read_letter(st.rudder, self, len, nil, false)
+              adr = st.rudder.respond_to?(:last_sender) ? st.rudder.last_sender : nil
+              @agent.send_read_letter(st.rudder, self, len, adr, false)
 
             rescue Exception => e
               BayLog.debug_e(e, "%s Unhandled error", self)
@@ -703,7 +704,16 @@ module Baykit
                 end
 
                 begin
-                  n = st.rudder.write(buf_to_write)
+                  if st.rudder.respond_to?(:udp?) && st.rudder.udp?
+                    # UDP: each WriteUnit is one datagram — send wunit only (no gather).
+                    # The adr stored per-unit is the destination for this datagram.
+                    n = wunit.adr ? st.rudder.send_to(wunit.remaining_buf, wunit.adr) : 0
+                    # Force single-unit accounting by limiting batch to just wunit.
+                    batch = [wunit]
+                    total = wunit.remaining
+                  else
+                    n = st.rudder.write(buf_to_write)
+                  end
                 rescue OpenSSL::SSL::SSLErrorWaitWritable, IO::WaitWritable => e
                   BayLog.debug_e(e, "%s Cannot write data", self)
                   n = 0

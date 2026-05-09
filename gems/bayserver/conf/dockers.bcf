@@ -1,6 +1,7 @@
 harbor              Baykit::BayServer::Docker::BuiltIn::BuiltInHarborDocker
 port                Baykit::BayServer::Docker::Http::HtpPortDocker
 port:http           Baykit::BayServer::Docker::Http::HtpPortDocker
+port:h3             Baykit::BayServer::Docker::H3::H3PortDocker
 port:ajp            Baykit::BayServer::Docker::Ajp::AjpPortDocker
 port:fcgi           Baykit::BayServer::Docker::Fcgi::FcgPortDocker
 city                Baykit::BayServer::Docker::BuiltIn::BuiltInCityDocker
