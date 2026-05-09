@@ -50,12 +50,16 @@ module Baykit
             @send_info         = Croute::Binding.new_send_info
           end
 
+          def init(ship)
+            @ship = ship
+          end
+
           def to_s
             @ship ? @ship.to_s : "h3"
           end
 
           def protocol
-            PROTO_NAME
+            PROTOCOL
           end
 
           # Called by InboundShip#notify_read with raw UDP datagram bytes.

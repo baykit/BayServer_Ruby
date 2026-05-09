@@ -1,3 +1,4 @@
+require 'baykit/bayserver/rudders/rudder'
 require 'baykit/bayserver/rudders/rudder_base'
 
 module Baykit

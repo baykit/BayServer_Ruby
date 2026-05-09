@@ -339,7 +339,8 @@ module Baykit
               skt.setsockopt(Socket::SOL_SOCKET,Socket::SO_REUSEADDR, true)
             end
             begin
-              skt.bind(adr)
+              sockaddr_udp = Socket.sockaddr_in(adr[0], adr[1])
+              skt.bind(sockaddr_udp)
             rescue SystemCallError => e
               BayLog.error_e(e, BayMessage.get(:INT_CANNOT_OPEN_PORT, dkr.host, dkr.port, e))
               raise e
