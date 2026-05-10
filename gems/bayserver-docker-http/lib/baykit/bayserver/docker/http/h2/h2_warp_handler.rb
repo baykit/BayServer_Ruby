@@ -1,5 +1,6 @@
 require 'baykit/bayserver/common/warp_handler'
 require 'baykit/bayserver/protocol/protocol_exception'
+require 'baykit/bayserver/docker/http/h2/command/package'
 
 module Baykit
   module BayServer
@@ -33,6 +34,8 @@ module Baykit
             include Baykit::BayServer::Agent
             include Baykit::BayServer::Common
             include Baykit::BayServer::Tours
+            include Baykit::BayServer::Util
+            include Baykit::BayServer::Docker::Http::H2::Command
 
             # 16 MiB advertised stream + connection window. Far above any single
             # bench body; reactive WINDOW_UPDATEs in handle_data top it back up.
@@ -108,7 +111,7 @@ module Baykit
               stream_id = WarpData.get(tur).warp_id
               cmd = CmdData.new(stream_id, nil, [], 0, 0)
               cmd.flags.set_end_stream(true)
-              ship.post(cmd, &lis)
+              ship.post(cmd, true, &lis)
             end
 
             def verify_protocol(proto)
@@ -149,11 +152,11 @@ module Baykit
                 if !cmd.flags.end_stream?
                   upd = CmdWindowUpdate.new(cmd.stream_id)
                   upd.window_size_increment = cmd.length
-                  ship.post(upd)
+                  ship.post(upd, false)
                 end
                 upd2 = CmdWindowUpdate.new(0)
                 upd2.window_size_increment = cmd.length
-                ship.post(upd2)
+                ship.post(upd2, true)
               end
 
               if !available
@@ -245,7 +248,7 @@ module Baykit
               # Acknowledge it and move on.
               if !cmd.flags.ack?
                 ack = CmdSettings.new(0, H2Flags.new(H2Flags::FLAGS_ACK))
-                ship.post(ack)
+                ship.post(ack, true)
               end
               return NextSocketAction::CONTINUE
             end
@@ -315,7 +318,7 @@ module Baykit
               # commands in cmd_buf while !connected and drains them via flush()
               # after notify_connect.
               preface = CmdPreface.new(0, nil)
-              ship.post(preface)
+              ship.post(preface, false)
 
               # 2. Initial SETTINGS frame on the control stream (id=0), no ACK.
               set = CmdSettings.new(H2ProtocolHandler::CTL_STREAM_ID)
@@ -324,14 +327,14 @@ module Baykit
                 [BayServer.harbor.max_tours_per_ship, 100].max))
               set.items.append(CmdSettings::Item.new(CmdSettings::INITIAL_WINDOW_SIZE,
                 INITIAL_WINDOW_SIZE_OUT))
-              ship.post(set)
+              ship.post(set, false)
 
               # 3. Connection-level WINDOW_UPDATE: bump stream 0's window so
               #    multi-MB bodies aren't rate-limited by the connection window
               #    before our reactive WINDOW_UPDATEs in handle_data kick in.
               conn_up = CmdWindowUpdate.new(0)
               conn_up.window_size_increment = INITIAL_WINDOW_SIZE_OUT
-              ship.post(conn_up)
+              ship.post(conn_up, false)
 
               @prelude_sent = true
             end
@@ -384,7 +387,7 @@ module Baykit
                 hcmd.length = 0
                 hcmd.flags.set_end_headers(true)
                 hcmd.flags.set_end_stream(true) if end_stream
-                sip.post(hcmd)
+                sip.post(hcmd, true)
                 return
               end
 
@@ -411,15 +414,15 @@ module Baykit
                   cmd.flags.set_end_stream(true) if end_stream
                 end
                 # Use ship.post: it buffers when !connected (during start_warp_tour,
-                # before notify_connect fires).
-                sip.post(cmd)
+                # before notify_connect fires). Flush only on the last frame.
+                sip.post(cmd, len == 0)
               end
             end
 
             def send_req_data_command(tur, buf, start, len, &lis)
               stream_id = WarpData.get(tur).warp_id
               cmd = CmdData.new(stream_id, nil, buf, start, len)
-              ship.post(cmd, &lis)
+              ship.post(cmd, true, &lis)
             end
 
             def end_res_content(tur)

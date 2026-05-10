@@ -2,6 +2,7 @@ require 'socket'
 require 'objspace'
 
 require 'baykit/bayserver/sink'
+require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/rudders/udp_rudder'
 require 'baykit/bayserver/agent/command_receiver'
 require 'baykit/bayserver/agent/letters/package'
@@ -36,6 +37,7 @@ module Baykit
         include Baykit::BayServer::Docker
         include Baykit::BayServer::Util
         include Baykit::BayServer::Common
+        include Baykit::BayServer::Protocol
 
         SELECT_TIMEOUT_SEC = 10
 
