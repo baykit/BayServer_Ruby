@@ -1,6 +1,7 @@
 require 'fiddle'
 require 'fiddle/closure'
 require 'baykit/bayserver/bay_log'
+require 'baykit/bayserver/util/headers'
 require 'baykit/bayserver/util/http_status'
 
 module Baykit
@@ -187,11 +188,20 @@ module Baykit
 
             begin
               # Lazy header send on the first chunk. Content-Length is
-              # unknown up front; BayServer will use chunked / conn-close
-              # framing as appropriate.
+              # unknown up front, so the response must be framed by
+              # close: BayServer Ruby's H1InboundHandler only switches to
+              # Connection:Close when (a) the response Connection header
+              # is explicitly non-keepalive AND (b) content-length is -1
+              # AND (c) content-type starts with "text/". We satisfy (b)
+              # and (c) by default; (a) requires setting Connection:close
+              # explicitly here. Without this, the client sees
+              # Connection:Keep-Alive without Content-Length and can't
+              # detect end-of-body.
               unless ctx.headers_sent
                 tour.res.headers.status = Baykit::BayServer::Util::HttpStatus::OK
                 tour.res.headers.set_content_type("text/html; charset=UTF-8")
+                tour.res.headers.set(
+                  Baykit::BayServer::Util::Headers::CONNECTION, "close")
                 tour.res.set_consume_listener { |_len, _r| }
                 tour.res.send_headers(tour.tour_id)
                 ctx.headers_sent = true
