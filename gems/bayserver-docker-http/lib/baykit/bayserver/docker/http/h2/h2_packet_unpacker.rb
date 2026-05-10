@@ -166,8 +166,15 @@ module Baykit
                         (@item.get(@tmp_buf, 2) << 8) |
                         @item.get(@tmp_buf, 3)
 
-                    @item = FrameHeaderItem.new(@tmp_buf.length, @payload_len)
-                    change_state STATE_READ_FLAME_PAYLOAD
+                    if @payload_len == 0
+                      # Zero-payload frame: skip STATE_READ_FLAME_PAYLOAD so the
+                      # packet is processed in this same loop iteration even when
+                      # @pos == buf.length (e.g. DATA+END_STREAM at the end of a read).
+                      change_state STATE_END
+                    else
+                      @item = FrameHeaderItem.new(@tmp_buf.length, @payload_len)
+                      change_state STATE_READ_FLAME_PAYLOAD
+                    end
                   end
 
                 when STATE_READ_FLAME_PAYLOAD
