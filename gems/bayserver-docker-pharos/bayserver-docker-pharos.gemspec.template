@@ -1,0 +1,13 @@
+Gem::Specification.new do |s|
+  s.name        = 'bayserver-docker-pharos'
+  s.version     = '${VERSION}'
+  s.date        = '${DATE}'
+  s.summary     = "Pharos (in-process PHP) docker for BayServer"
+  s.description = "BayServer docker that runs PHP scripts in-process via an embedded libphp.so (ZTS embed build). Each grand agent gets its own TSRM context; per-request lifecycle mirrors php-fpm."
+  s.authors     = ["Michisuke-P"]
+  s.email       = 'michisukep@gmail.com'
+  s.homepage    = 'https://baykit.yokohama'
+  s.license     = 'MIT'
+  s.files       = Dir["LICENSE.BAYKIT", "README.md", "lib/**/*.rb"]
+  s.add_dependency "bayserver-core", "=${VERSION}"
+end

@@ -11,6 +11,7 @@ club:file           Baykit::BayServer::Docker::SendFile::SendFileDocker
 club:servlet        Baykit::BayServer::Docker::Servlet::ServletDocker
 club:cgi            Baykit::BayServer::Docker::Cgi::CgiDocker
 club:phpCgi         Baykit::BayServer::Docker::Cgi::PhpCgiDocker
+club:pharos         Baykit::BayServer::Docker::Pharos::PharosDocker
 club:ajpWarp        Baykit::BayServer::Docker::Ajp::AjpWarpDocker
 club:fcgiWarp       Baykit::BayServer::Docker::Fcgi::FcgWarpDocker
 club:httpWarp       Baykit::BayServer::Docker::Http::HtpWarpDocker
