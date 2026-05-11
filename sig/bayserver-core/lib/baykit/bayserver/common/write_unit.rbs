@@ -1,18 +1,31 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Common
-        class WriteUnit
-          @buf: String
-          @adr: Addrinfo
-          @tag: Object
-          @listener: untyped  #  Proc[() -> void]
+      class WriteUnit
+        include Baykit::BayServer::Util::Reusable
 
-          def initialize: (String string, Addrinfo adr, Object tag, untyped lis) -> void
-          def done: -> void
-        end
+        @buf: String
+        @len: Integer
+        @wrote: Integer
+        @adr: untyped
+        @tag: Object | nil
+        @listener: Proc | nil
+
+        attr_reader buf: String
+        attr_accessor len: Integer
+        attr_accessor wrote: Integer
+        attr_reader adr: untyped
+        attr_reader tag: Object | nil
+        attr_reader listener: Proc | nil
+
+        def initialize: -> void
+        def init: (String src, Integer ofs, Integer len, untyped adr, Object? tag) ?{ (?bool) -> void } -> void
+        def remaining: -> Integer
+        def remaining_buf: -> String
+        def done: (?bool buffer_available) -> void
+        def reset: -> void
+      end
     end
   end
 end

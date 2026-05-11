@@ -1,14 +1,15 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
-        class ErrorLetter
-          @err: Exception
+        class ErrorLetter < Letter
+          @err: Exception | nil
 
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx,  Exception err) -> void
+          attr_accessor err: Exception | nil
+
+          def init: (Rudders::Rudder rd, Common::Multiplexer mpx, Exception err) -> void
+          def reset: -> void
         end
       end
     end

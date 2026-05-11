@@ -1,0 +1,54 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2WarpHandler
+            include Baykit::BayServer::Common::WarpHandler
+            include H2Handler
+
+            @protocol_handler: H2ProtocolHandler | nil
+            @warp_id_counter: Integer
+            @preface_sent: bool
+
+            def initialize: -> void
+            def init: (H2ProtocolHandler proto_handler) -> void
+            def to_s: -> String
+            def reset: -> void
+            def next_warp_id: -> Integer
+            def new_warp_data: (Integer warp_id) -> Common::WarpData
+            def send_res_headers: (Tours::Tour tur) -> void
+            def send_res_content: (Tours::Tour tur, String buf, Integer start, Integer len) ?{ (?bool) -> void } -> bool
+            def send_end_tour: (Tours::Tour tur, bool keep_alive) ?{ (?bool) -> void } -> void
+            def verify_protocol: (String proto) -> void
+            def max_multiplexed_tours: -> Integer
+            def handle_preface: (Command::CmdPreface cmd) -> Integer
+            def handle_data: (Command::CmdData cmd) -> Integer
+            def handle_headers: (Command::CmdHeaders cmd) -> Integer
+            def handle_priority: (Command::CmdPriority cmd) -> Integer
+            def handle_settings: (Command::CmdSettings cmd) -> Integer
+            def handle_window_update: (Command::CmdWindowUpdate cmd) -> Integer
+            def handle_go_away: (Command::CmdGoAway cmd) -> Integer
+            def handle_ping: (Command::CmdPing cmd) -> Integer
+            def handle_rst_stream: (Command::CmdRstStream cmd) -> Integer
+            def handle_continuation: (Command::CmdContinuation cmd) -> Integer
+
+            private
+            def ship: -> Common::WarpShip
+            def send_prelude_if_needed: -> void
+            def send_req_header_command: (Tours::Tour tur) -> void
+            def send_req_data_command: (Tours::Tour tur, String buf, Integer start, Integer len) ?{ (?bool) -> void } -> void
+            def end_res_content: (Tours::Tour tur) -> void
+
+            class WarpProtocolHandlerFactory
+              include Baykit::BayServer::Protocol::ProtocolHandlerFactory
+
+              def create_protocol_handler: (Protocol::PacketStore pkt_store) -> H2ProtocolHandler
+            end
+          end
+        end
+      end
+    end
+  end
+end

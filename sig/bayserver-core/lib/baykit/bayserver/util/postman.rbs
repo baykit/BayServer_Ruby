@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      module Postman
+        def post: (String buf, untyped adr, Object? tag, Proc? lis) -> void
+        def flush: -> void
+        def post_end: -> void
+        def is_zombie: -> bool
+        def abort: -> void
+        def open_valve: -> void
+      end
+    end
+  end
+end

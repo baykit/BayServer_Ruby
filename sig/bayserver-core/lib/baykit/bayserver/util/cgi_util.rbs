@@ -1,0 +1,54 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class CgiUtil
+        REQUEST_METHOD: String
+        REQUEST_URI: String
+        SERVER_PROTOCOL: String
+        GATEWAY_INTERFACE: String
+        SERVER_NAME: String
+        SERVER_PORT: String
+        QUERY_STRING: String
+        SCRIPT_NAME: String
+        SCRIPT_FILENAME: String
+        PATH_TRANSLATED: String
+        PATH_INFO: String
+        CONTENT_TYPE: String
+        CONTENT_LENGTH: String
+        REMOTE_ADDR: String
+        REMOTE_PORT: String
+        REMOTE_USER: String
+        HTTP_ACCEPT: String
+        HTTP_COOKIE: String
+        HTTP_HOST: String
+        HTTP_USER_AGENT: String
+        HTTP_ACCEPT_ENCODING: String
+        HTTP_ACCEPT_LANGUAGE: String
+        HTTP_CONNECTION: String
+        HTTP_UPGRADE_INSECURE_REQUESTS: String
+        HTTPS: String
+        PATH: String
+        SERVER_SIGNATURE: String
+        SERVER_SOFTWARE: String
+        SERVER_ADDR: String
+        DOCUMENT_ROOT: String
+        REQUEST_SCHEME: String
+        CONTEXT_PREFIX: String
+        CONTEXT_DOCUMENT_ROOT: String
+        SERVER_ADMIN: String
+        REQUEST_TIME_FLOAT: String
+        REQUEST_TIME: String
+        UNIQUE_ID: String
+        X_FORWARDED_HOST: String
+        X_FORWARDED_FOR: String
+        X_FORWARDED_PROTO: String
+        X_FORWARDED_PORT: String
+
+        def self.get_env_hash: (String path, String doc_root, String script_base, untyped tur) -> Hash[String, String]
+        def self.get_env: (String path, String doc_root, String script_base, untyped tur) { (String, String) -> void } -> void
+        def self.add_env: (String key, untyped value) { (String, String) -> void } -> void
+      end
+    end
+  end
+end

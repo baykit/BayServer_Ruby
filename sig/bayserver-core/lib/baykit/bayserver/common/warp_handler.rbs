@@ -1,13 +1,14 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Common
       module WarpHandler
+        include Baykit::BayServer::Tours::TourHandler
+
         def next_warp_id: -> Integer
         def new_warp_data: (Integer warp_id) -> WarpData
         def verify_protocol: (String protocol) -> void
+        def max_multiplexed_tours: -> Integer
       end
     end
   end

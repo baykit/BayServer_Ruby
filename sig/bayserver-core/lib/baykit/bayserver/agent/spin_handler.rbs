@@ -1,0 +1,41 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      class SpinHandler
+        include Baykit::BayServer::Agent::TimerHandler
+
+        module SpinListener
+        end
+
+        class ListenerInfo
+          @listener: untyped
+          @last_access: Integer
+
+          attr_reader listener: untyped
+          attr_reader last_access: Integer
+
+          def initialize: (untyped lis, Integer last_access) -> void
+        end
+
+        @listeners: Array[ListenerInfo]
+        @lock: Mutex
+        @agent: untyped
+        @spin_count: Integer
+
+        attr_reader listeners: Array[ListenerInfo]
+        attr_reader lock: Mutex
+        attr_reader agent: untyped
+        attr_reader spin_count: Integer
+
+        def initialize: (untyped agt) -> void
+        def to_s: -> String
+        def on_timer: -> void
+        def process_data: -> bool
+        def ask_to_callback: (untyped lis) -> void
+        def empty?: -> bool
+        def stop_timeout_spins: -> void
+      end
+    end
+  end
+end

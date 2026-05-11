@@ -1,0 +1,18 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpWarpDocker < Baykit::BayServer::Docker::Base::WarpBase
+          include Baykit::BayServer::Docker::Ajp::AjpDocker
+
+          def secure: -> bool
+
+          private
+          def protocol: -> String
+          def new_transporter: (Agent::GrandAgent agt, Rudders::Rudder rd, Common::WarpShip sip) -> untyped
+        end
+      end
+    end
+  end
+end

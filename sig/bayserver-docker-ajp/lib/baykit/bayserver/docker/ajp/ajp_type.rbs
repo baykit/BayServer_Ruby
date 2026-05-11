@@ -1,0 +1,20 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpType
+          DATA: Integer
+          FORWARD_REQUEST: Integer
+          SEND_BODY_CHUNK: Integer
+          SEND_HEADERS: Integer
+          END_RESPONSE: Integer
+          GET_BODY_CHUNK: Integer
+          SHUTDOWN: Integer
+          PING: Integer
+          CPING: Integer
+        end
+      end
+    end
+  end
+end

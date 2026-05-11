@@ -1,0 +1,107 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInCityDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::City # implements
+
+          class ClubMatchInfo
+            include Baykit::BayServer::Util::Reusable
+
+            @club: untyped
+            @script_name: String | nil
+            @path_info: String | nil
+
+            attr_accessor club: untyped
+            attr_accessor script_name: String | nil
+            attr_accessor path_info: String | nil
+
+            def initialize: -> void
+            def reset: -> void
+          end
+
+          class MatchInfo
+            include Baykit::BayServer::Util::Reusable
+
+            @town: untyped
+            @club_match: ClubMatchInfo | nil
+            @query_string: String | nil
+            @redirect_uri: String | nil
+            @rewritten_uri: String | nil
+
+            attr_accessor town: untyped
+            attr_accessor club_match: ClubMatchInfo | nil
+            attr_accessor query_string: String | nil
+            attr_accessor redirect_uri: String | nil
+            attr_accessor rewritten_uri: String | nil
+
+            def reset: -> void
+          end
+
+          class CargoContentHandler
+            include Baykit::BayServer::Tours::ReqContentHandler # implements
+
+            @cgo: untyped
+
+            def initialize: (untyped cgo) -> void
+            def on_read_req_content: (Tours::Tour tur, String buf, Integer start, Integer len) ?{ (?bool) -> void } -> void
+            def on_end_req_content: (Tours::Tour tur) -> void
+            def on_abort_req: (Tours::Tour tur) -> bool
+          end
+
+          class FileExistenceCache
+            TTL_MILLI_SEC: Integer
+
+            @entries: Hash[String, Array[untyped]]
+            @lock: Thread::Mutex
+
+            def initialize: -> void
+            def is_file: (String path) -> bool
+          end
+
+          @towns: Array[untyped]
+          @default_town: untyped
+          @clubs: Array[untyped]
+          @default_club: untyped
+          @log_list: Array[untyped]
+          @permission_list: Array[untyped]
+          @barges: Baykit::BayServer::Common::Barges
+          @trouble: untyped
+          @name: String | nil
+          @file_existence_cache: FileExistenceCache
+          @match_info_store: Baykit::BayServer::Util::ObjectStore
+          @club_match_info_store: Baykit::BayServer::Util::ObjectStore
+
+          attr_reader towns: Array[untyped]
+          attr_reader default_town: untyped
+          attr_reader clubs: Array[untyped]
+          attr_reader default_club: untyped
+          attr_reader log_list: Array[untyped]
+          attr_reader permission_list: Array[untyped]
+          attr_reader barges: Baykit::BayServer::Common::Barges
+          attr_reader trouble: untyped
+          attr_reader name: String | nil
+
+          def self.send_cached_content_chunked: (Tours::Tour tur, untyped cgo) -> void
+          def self.send_chunks: (Tours::Tour tur, Integer tur_id, untyped cgo, Array[Integer] pos, Integer chunk_size) -> void
+
+          def initialize: -> void
+          def rent_match_info: -> MatchInfo
+          def return_match_info: (MatchInfo mi) -> void
+          def rent_club_match_info: -> ClubMatchInfo
+          def to_s: -> String
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_docker: (Docker dkr) -> bool
+          def enter: (Tours::Tour tur) -> void
+          def log: (Tours::Tour tur) -> void
+
+          private
+          def club_maches: (Array[untyped] club_list, String rel_uri, String town_name) -> (ClubMatchInfo | nil)
+          def get_town_and_club: (String? req_uri) -> (MatchInfo | nil)
+          def lookup_barge: (Tours::Tour tur, untyped twn) -> untyped
+        end
+      end
+    end
+  end
+end

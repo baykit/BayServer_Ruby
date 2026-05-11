@@ -1,0 +1,39 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      class NonBlockingHandler
+        include Baykit::BayServer::Agent::TimerHandler
+
+        @agent: untyped
+        @ch_map: Hash[untyped, untyped]
+        @ch_count: Integer
+        @operations: Array[untyped]
+        @operations_lock: untyped
+
+        attr_reader agent: untyped
+        attr_reader ch_map: Hash[untyped, untyped]
+        attr_reader ch_count: Integer
+
+        def initialize: (untyped ship_agent) -> void
+        def to_s: -> String
+        def on_timer: -> void
+        def close_timeout_sockets: -> void
+        def add_channel_listener: (untyped ch, untyped lis) -> untyped
+        def ask_to_start: (untyped ch) -> void
+        def ask_to_connect: (untyped ch, untyped addr) -> void
+        def ask_to_read: (untyped ch) -> void
+        def ask_to_write: (untyped ch) -> void
+        def ask_to_close: (untyped ch) -> void
+        def close_all: -> void
+
+        private
+        def close_channel: (untyped ch, untyped ch_state) -> void
+        def add_channel_state: (untyped ch, untyped ch_state) -> void
+        def remove_channel_state: (untyped ch) -> void
+        def find_channel_state: (untyped ch) -> untyped
+        def self.op_mode: (untyped mode) -> void
+      end
+    end
+  end
+end

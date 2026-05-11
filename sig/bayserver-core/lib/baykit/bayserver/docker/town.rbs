@@ -15,6 +15,7 @@ module Baykit
         def location: -> String
         def welcome_file: -> String
         def clubs: -> Array[Club]
+        def find_barge: (String path) -> untyped
         def reroute: (String uri) -> String
         def matches: (String uri) -> Integer
         def check_admitted: (Tours::Tour tur) -> void

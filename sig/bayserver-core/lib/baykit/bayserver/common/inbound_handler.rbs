@@ -1,0 +1,10 @@
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      module InboundHandler
+        include Baykit::BayServer::Tours::TourHandler
+      end
+    end
+  end
+end

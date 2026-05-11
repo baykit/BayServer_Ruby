@@ -1,12 +1,12 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Protocol
       class PacketPacker
-        def reset: () -> void
-        def post: (Ships::Ship sip, Packet pkt) -> void
+        include Baykit::BayServer::Util::Reusable
+
+        def reset: -> void
+        def post: (Ships::Ship sip, Packet pkt, bool flush) { (?bool) -> void } -> bool
       end
     end
   end

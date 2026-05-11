@@ -1,0 +1,18 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2ProtocolException < Baykit::BayServer::Protocol::ProtocolException
+            @error_code: Integer
+
+            attr_reader error_code: Integer
+
+            def initialize: (Integer error_code, String message) -> void
+          end
+        end
+      end
+    end
+  end
+end

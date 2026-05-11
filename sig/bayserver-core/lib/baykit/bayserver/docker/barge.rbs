@@ -1,0 +1,27 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Barge
+        include Docker
+
+        module Cargo
+          def path: -> String
+          def headers: -> Util::Headers
+          def content: -> String
+          def length: -> Integer
+          def on_barge?: -> bool
+          def exceeded?: -> bool
+          def save_headers: (Util::Headers headers) -> void
+          def save_content: (String bytes, Integer offset, Integer len) -> void
+          def end_save: -> void
+          def release_rudder: (Rudders::Rudder rudder) -> void
+        end
+
+        def name: -> String
+        def capacity: -> Integer
+        def get_cargo: (Tours::Tour tour) -> Array[untyped]  # [Cargo, Rudder | nil]
+      end
+    end
+  end
+end

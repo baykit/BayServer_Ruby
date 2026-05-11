@@ -1,14 +1,15 @@
-# TypeProf 0.21.3
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
-        class AcceptedLetter
-          @client_rudder: Rudders::Rudder
+        class AcceptedLetter < Letter
+          @client_rudder: Rudders::Rudder | nil
 
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd) -> void
+          attr_accessor client_rudder: Rudders::Rudder | nil
+
+          def init: (Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd) -> void
+          def reset: -> void
         end
       end
     end

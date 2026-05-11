@@ -1,20 +1,25 @@
-# TypeProf 0.21.3
-
 # Classes
 module Baykit
   module BayServer
     module Util
       class SimpleBuffer
+        include Baykit::BayServer::Util::Reusable
+
         INITIAL_BUFFER_SIZE: Integer
+
         @capacity: Integer
         @buf: String
         @length: Integer
+
+        attr_reader buf: String
+        attr_reader length: Integer
+        attr_reader capacity: Integer
 
         def initialize: (?Integer init) -> void
         def bytes: -> String
         def reset: -> void
         def put_byte: (Integer b) -> void
-        def put: (String bytes, Integer pos, Integer len) -> void
+        def put: (String bytes, ?Integer pos, ?Integer len) -> void
         def extend_buf: -> void
       end
     end

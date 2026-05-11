@@ -1,23 +1,45 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Docker
       module Http
-        class HtpWarpDocker
-          include OpenSSL
+        class HtpWarpDocker < Baykit::BayServer::Docker::Base::WarpBase
+          include Baykit::BayServer::Docker::Http::HtpDocker
+
           @secure: bool
           @support_h2: bool
-          @ssl_ctx: OpenSSL::SSL::SSLContext
+          @enable_h2: bool
+          @ssl_ctx: OpenSSL::SSL::SSLContext | nil
           @trace_ssl: bool
+          @pools: Hash[Integer, WarpShipPool]
+
+          attr_reader secure: bool
+          attr_reader support_h2: bool
+          attr_reader enable_h2: bool
+          attr_reader ssl_ctx: OpenSSL::SSL::SSLContext | nil
+          attr_reader trace_ssl: bool
+          attr_reader pools: Hash[Integer, WarpShipPool]
 
           def initialize: -> void
-          def init: (Bcf::BcfElement elm, BayServer::Docker parent) -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
           def init_key_val: (Bcf::BcfKeyVal kv) -> bool
-          def secure: -> bool
           def protocol: -> String
-          def new_transporter: (Agent::GrandAgent agt, Rudders::Rudder rd, Ships::Ship sip) -> Agent::Multiplexer::PlainTransporter
+          def new_transporter: (Agent::GrandAgent agt, Rudders::Rudder rd, Common::WarpShip sip) -> untyped
+          def pick_reusable_ship: (Agent::GrandAgent agt, Tours::Tour tour) -> (Common::WarpShip | nil)
+          def on_ship_rented: (Agent::GrandAgent agt, Common::WarpShip wsip) -> void
+          def keep: (Common::WarpShip wsip) -> void
+          def on_end_ship: (Common::WarpShip wsip) -> void
+          def exclude_from_pool: (Common::WarpShip wsip) -> void
+
+          class PoolAgentListener
+            include Baykit::BayServer::Agent::LifecycleListener
+
+            @docker: HtpWarpDocker
+
+            def initialize: (HtpWarpDocker dkr) -> void
+            def add: (Integer agt_id) -> void
+            def remove: (Integer agt_id) -> void
+          end
         end
       end
     end

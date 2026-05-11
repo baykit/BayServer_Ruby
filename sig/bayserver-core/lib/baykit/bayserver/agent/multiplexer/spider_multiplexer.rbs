@@ -1,14 +1,11 @@
-# TypeProf 0.21.11
-
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Multiplexer
         class SpiderMultiplexer < MultiplexerBase
-          include TimerHandler #implements
-          include Common::Recipient  # implements
+          include TimerHandler
+          include Common::Recipient
 
           @anchorable: bool
           @selector: Util::Selector
@@ -16,13 +13,18 @@ module Baykit
           @operations_lock: Thread::Mutex
           @operations: Hash[Rudders::Rudder, ChannelOperation]
           @select_wakeup_pipe: [IO, IO]
+          @channel_op_store: Util::ObjectStore
+          @scratch_buf: String
+
+          def self.apply_quick_ack: (untyped rd) -> void
 
           def initialize: (GrandAgent agt, bool anchorable) -> void
           def to_s: -> String
           def req_accept: (Rudders::Rudder rd) -> void
-          def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
+          def req_connect: (Rudders::Rudder rd, untyped adr) -> void
           def req_read: (Rudders::Rudder rd) -> void
-          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) { () -> void }  -> void
+          def req_write: (Rudders::Rudder rd, String buf, Integer ofs, Integer len, untyped adr, Object tag, bool flush) ?{ (?bool) -> void } -> void
+          def req_transfer: (Rudders::Rudder rd, Rudders::Rudder file_rd, Integer ofs, Integer len) ?{ () -> void } -> void
           def req_end: (Rudders::Rudder rd) -> void
           def req_close: (Rudders::Rudder rd) -> void
           def shutdown: -> void
@@ -33,25 +35,39 @@ module Baykit
           def next_accept: (Common::RudderState st) -> void
           def next_read: (Common::RudderState st) -> void
           def next_write: (Common::RudderState st) -> void
+          def close_rudder: (Rudders::Rudder rd) -> void
+          def on_busy: -> void
+          def on_free: -> void
+          def on_timer: -> void
+          def receive: (bool wait) -> bool
+          def wakeup: -> void
+          def rent_channel_operation: -> ChannelOperation
+          def return_channel_operation: (ChannelOperation co) -> void
 
           private
-          def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect, ?bool ) -> void
+          def add_operation: (Rudders::Rudder rd, Integer op, ?bool to_connect) -> void
           def register_channel_ops: -> Integer
-          def handle_channel: (IO ch, Integer op) -> void
+          def handle_channel: (IO io, Integer op) -> void
           def on_acceptable: (Common::RudderState st) -> void
           def on_connectable: (Common::RudderState st) -> void
           def on_readable: (Common::RudderState st) -> void
           def on_writable: (Common::RudderState st) -> void
-          def on_close_req: (Common::RudderState st) -> void
-          def self.op_mode: (Integer mode) -> void
-          def on_waked_up: () -> void
+          def on_waked_up: -> void
+          def self.op_mode: (Integer mode) -> String
+          def handshake: (Common::RudderState st) -> void
 
           class ChannelOperation
-            @rudder: Rudders::Rudder
+            include Baykit::BayServer::Util::Reusable
+
+            @rudder: Rudders::Rudder | nil
 
             attr_accessor op: Integer
             attr_accessor to_connect: bool
-            def initialize: (Rudders::Rudder rd, Integer op, bool to_connect) -> void
+            attr_reader rudder: Rudders::Rudder | nil
+
+            def initialize: -> void
+            def init: (Rudders::Rudder rd, Integer op, bool to_connect) -> void
+            def reset: -> void
           end
         end
       end

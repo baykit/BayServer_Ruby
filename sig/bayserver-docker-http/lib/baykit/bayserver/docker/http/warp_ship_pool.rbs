@@ -1,0 +1,19 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        class WarpShipPool
+          @ships: Array[Baykit::BayServer::Common::WarpShip]
+          @lock: Thread::Mutex
+
+          def initialize: -> void
+          def find_idlest: -> (Baykit::BayServer::Common::WarpShip | nil)
+          def add: (Baykit::BayServer::Common::WarpShip ws) -> void
+          def remove: (Baykit::BayServer::Common::WarpShip ws) -> void
+          def size: -> Integer
+        end
+      end
+    end
+  end
+end

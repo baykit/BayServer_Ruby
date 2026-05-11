@@ -1,0 +1,38 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2Flags
+            FLAGS_NONE: Integer
+            FLAGS_ACK: Integer
+            FLAGS_END_STREAM: Integer
+            FLAGS_END_HEADERS: Integer
+            FLAGS_PADDED: Integer
+            FLAGS_PRIORITY: Integer
+
+            @flags: Integer
+
+            attr_reader flags: Integer
+
+            def initialize: (?Integer flags) -> void
+            def flag?: (Integer flag) -> bool
+            def set_flag: (Integer flag, bool val) -> void
+            def ack?: -> bool
+            def set_ack: (bool val) -> void
+            def end_stream?: -> bool
+            def set_end_stream: (bool val) -> void
+            def end_headers?: -> bool
+            def set_end_headers: (bool val) -> void
+            def padded?: -> bool
+            def set_padded: (bool val) -> void
+            def priority?: -> bool
+            def set_priority: (bool val) -> void
+            def to_s: -> String
+          end
+        end
+      end
+    end
+  end
+end

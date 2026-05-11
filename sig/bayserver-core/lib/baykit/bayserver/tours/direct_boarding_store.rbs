@@ -1,0 +1,37 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class DirectBoardingStore
+        class FileInfo
+          attr_accessor file_name: String
+          attr_accessor rudder: Rudders::IORudder | nil
+          attr_accessor file_length: Integer
+          attr_accessor last_access_time: Integer
+
+          def initialize: (String file_name, Rudders::IORudder | nil rd, Integer len) -> void
+          def access: -> Integer
+          def close: -> void
+        end
+
+        self.@store: DirectBoardingStore | nil
+
+        @lifespan_milli_sec: Integer
+        @max_cargos: Integer
+        @max_cargo_size: Integer
+        @files: Hash[String, FileInfo]
+        @lock: Thread::Mutex
+
+        attr_reader max_cargos: Integer
+
+        def initialize: (Integer timeout_sec, Integer max_cargos, Integer max_cargo_size) -> void
+        def get: (String path) -> FileInfo
+        def self.get_file_info: (String path) -> FileInfo
+
+        private
+        def self.get_store: -> DirectBoardingStore
+        def evict_eldest: -> void
+      end
+    end
+  end
+end

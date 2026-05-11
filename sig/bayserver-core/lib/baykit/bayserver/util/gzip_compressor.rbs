@@ -1,0 +1,34 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class GzipCompressor
+        class CompressListener
+        end
+
+        class CallbackWriter
+          @gzip_comp: GzipCompressor
+          @done_listener: Proc | nil
+
+          attr_reader gzip_comp: GzipCompressor
+          attr_accessor done_listener: Proc | nil
+
+          def initialize: (GzipCompressor gzip_comp) -> void
+          def write: (*String str) -> void
+        end
+
+        @listener: Proc
+        @gout: untyped
+        @cb_writer: CallbackWriter
+
+        attr_reader listener: Proc
+        attr_reader gout: untyped
+        attr_reader cb_writer: CallbackWriter
+
+        def initialize: (Proc comp_lis) -> void
+        def compress: (String buf, Integer ofs, Integer len) ?{ (?bool) -> void } -> void
+        def finish: -> void
+      end
+    end
+  end
+end

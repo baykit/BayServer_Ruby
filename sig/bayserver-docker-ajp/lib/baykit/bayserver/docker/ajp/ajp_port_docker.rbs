@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpPortDocker < Baykit::BayServer::Docker::Base::PortBase
+          include Baykit::BayServer::Docker::Ajp::AjpDocker
+
+          def protocol: -> String
+          def support_anchored: -> bool
+          def support_unanchored: -> bool
+        end
+      end
+    end
+  end
+end

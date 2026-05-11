@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderBlockBuilder
+            def build_header_block: (String name, String value, HeaderTable tbl) -> HeaderBlock
+            def build_status_block: (Integer status, HeaderTable tbl) -> HeaderBlock
+          end
+        end
+      end
+    end
+  end
+end

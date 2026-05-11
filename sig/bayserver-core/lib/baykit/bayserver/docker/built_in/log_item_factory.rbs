@@ -1,0 +1,11 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class LogItemFactory
+        end
+      end
+    end
+  end
+end

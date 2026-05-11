@@ -1,0 +1,21 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class DockerBase
+          include Baykit::BayServer::Docker::Docker # implements
+
+          @type: String
+
+          attr_reader type: String
+
+          def to_s: -> String
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_docker: (Docker dkr) -> bool
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+        end
+      end
+    end
+  end
+end

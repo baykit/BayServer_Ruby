@@ -1,0 +1,26 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class InboundDataListener
+          include Baykit::BayServer::Agent::Transporter::DataListener # implements
+
+          @ship: untyped
+
+          attr_reader ship: untyped
+
+          def initialize: (untyped sip) -> void
+          def to_s: -> String
+          def notify_connect: -> void
+          def notify_handshake_done: (String? protocol) -> Integer
+          def notify_read: (String buf, untyped adr) -> Integer
+          def notify_eof: -> Integer
+          def notify_protocol_error: (Exception err) -> bool
+          def notify_close: -> void
+          def check_timeout: (Integer duration_sec) -> bool
+        end
+      end
+    end
+  end
+end

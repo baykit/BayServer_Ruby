@@ -1,14 +1,15 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
-        class WroteLetter
+        class WroteLetter < Letter
           @n_bytes: Integer
 
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx,  Integer n) -> void
+          attr_accessor n_bytes: Integer
+
+          def init: (Rudders::Rudder rd, Common::Multiplexer mpx, Integer n) -> void
+          def reset: -> void
         end
       end
     end

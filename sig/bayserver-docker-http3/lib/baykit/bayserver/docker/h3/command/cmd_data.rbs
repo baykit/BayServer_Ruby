@@ -1,0 +1,20 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        module Command
+          class CmdData
+            TYPE: Symbol
+
+            @stm_id: Integer
+
+            attr_reader stm_id: Integer
+
+            def initialize: (Integer stm_id) -> void
+          end
+        end
+      end
+    end
+  end
+end

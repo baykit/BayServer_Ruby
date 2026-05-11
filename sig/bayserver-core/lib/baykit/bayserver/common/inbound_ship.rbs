@@ -1,55 +1,59 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Common
-      class InboundShip
+      class InboundShip < Baykit::BayServer::Ships::Ship
         MAX_TOURS: Integer
-        include BayServer
-        self.@err_counter: Util::Counter
-        @lock: Thread::Mutex
-        @active_tours: Array[Tours::Tour]
-        @protocol_handler: untyped
-        @agent_id: bot
-        @ship_id: bot
-        @object_id: bot
-        @port_docker: untyped
-        @socket_timeout_sec: untyped
-        @tour_store: untyped
-        @keeping: bot
 
+        self.@err_counter: Util::Counter
+
+        @lock: ::Monitor
+        @active_tours: Array[Tours::Tour]
+        @protocol_handler: Protocol::ProtocolHandler | nil
+        @port_docker: Docker::Port | nil
+        @socket_timeout_sec: Integer
+        @tour_store: Tours::TourStore
+        @need_end: bool
+
+        attr_reader port_docker: Docker::Port | nil
+        attr_reader protocol_handler: Protocol::ProtocolHandler | nil
         attr_accessor need_end: bool
+        attr_reader socket_timeout_sec: Integer
+        attr_reader tour_store: Tours::TourStore
+        attr_reader active_tours: Array[Tours::Tour]
+        attr_reader lock: ::Monitor
+
+        def self.err_counter: -> Util::Counter
+
         def initialize: -> void
         def to_s: -> String
-        def init_inbound: (untyped rd, untyped agt_id, untyped tp, untyped port_dkr, untyped proto_hnd) -> untyped
-        def reset: -> false
-        def notify_handshake_done: (untyped proto) -> untyped
-        def notify_connect: -> bot
-        def notify_read: (untyped buf) -> untyped
-        def notify_eof: -> untyped
-        def notify_error: (untyped e) -> untyped
-        def notify_protocol_error: (untyped e) -> untyped
-        def notify_close: -> true
-        def check_timeout: (untyped duration_sec) -> false
-        def set_protocol_handler: (untyped proto_handler) -> untyped
-        def get_tour: (untyped tur_key, ?false force, ?true rent) -> nil
-        def get_error_tour: -> untyped
-        def send_headers: (untyped check_id, Tours::Tour tur) -> nil
-        def send_redirect: (untyped check_id, Tours::Tour tur, untyped status, untyped location) -> nil
-        def send_res_content: (untyped check_id, Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
-        def send_end_tour: (untyped chk_ship_id, Tours::Tour tur) -> untyped
-        def send_error: (untyped chk_id, Tours::Tour tour, untyped status, untyped message, untyped e) -> nil
-        def end_ship: -> untyped
-        def abort_tours: -> Array[untyped]
+        def init_inbound: (Rudders::Rudder rd, Integer agt_id, Common::Transporter tp, Docker::Port port_dkr, Protocol::ProtocolHandler proto_hnd) -> void
+        def reset: -> void
+        def notify_handshake_done: (String? proto) -> Integer
+        def notify_connect: -> void
+        def notify_read: (String buf) -> Integer
+        def notify_eof: -> Integer
+        def notify_error: (Exception e) -> void
+        def notify_protocol_error: (Exception e) -> bool
+        def notify_close: -> void
+        def check_timeout: (Integer duration_sec) -> bool
+        def set_protocol_handler: (Protocol::ProtocolHandler proto_handler) -> void
+        def get_tour: (Integer tur_key, ?bool force, ?bool rent) -> (Tours::Tour | nil)
+        def get_error_tour: -> Tours::Tour
+        def send_headers: (Integer check_id, Tours::Tour tur) -> void
+        def send_redirect: (Integer check_id, Tours::Tour tur, Integer status, String location) -> void
+        def send_res_content: (Integer check_id, Tours::Tour tur, String bytes, Integer ofs, Integer len) ?{ (?bool) -> void } -> bool
+        def transfer_res_content: (Integer check_id, Tours::Tour tur, Rudders::Rudder file_rd, Integer ofs, Integer len) ?{ () -> void } -> void
+        def send_end_tour: (Integer chk_ship_id, Tours::Tour tur) ?{ (?bool) -> void } -> void
+        def send_error: (Integer chk_id, Tours::Tour tour, Integer status, String? message, Exception? e) -> void
+        def end_ship: -> void
+        def abort_tours: -> void
         def tour_handler: -> untyped
-        def send_error_content: (untyped chk_id, untyped tour, String content) -> nil
+        def return_tour: (Tours::Tour tur) -> void
 
         private
-        def self.uniq_key: (nil sip_id, untyped tur_key) -> untyped
-
-        public
-        def return_tour: (Tours::Tour tur) -> untyped
+        def send_error_content: (Integer chk_id, Tours::Tour tour, String content) -> void
+        def self.uniq_key: (Integer sip_id, Integer tur_key) -> Integer
       end
     end
   end

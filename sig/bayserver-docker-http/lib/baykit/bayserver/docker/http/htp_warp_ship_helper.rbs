@@ -1,0 +1,11 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        class HtpWarpShipHelper
+        end
+      end
+    end
+  end
+end

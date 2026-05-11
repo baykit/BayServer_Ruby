@@ -1,0 +1,21 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Pharos
+        class PharosContentHandler
+          include Baykit::BayServer::Tours::ReqContentHandler
+
+          @tour: Tours::Tour
+          @file: String
+          @runtime: PharosRuntime
+
+          def initialize: (Tours::Tour tour, String file, PharosRuntime runtime) -> void
+          def on_read_req_content: (Tours::Tour tur, String buf, Integer start, Integer len) { (Integer, bool) -> void } -> void
+          def on_end_req_content: (Tours::Tour tur) -> void
+          def on_abort_req: (Tours::Tour tur) -> bool
+        end
+      end
+    end
+  end
+end

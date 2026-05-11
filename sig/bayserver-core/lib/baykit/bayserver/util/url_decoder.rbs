@@ -1,0 +1,11 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class URLDecoder
+        def self.decode: (String str, String? enc) -> String
+        def self.parse_special: (String str, String? enc) -> String
+      end
+    end
+  end
+end

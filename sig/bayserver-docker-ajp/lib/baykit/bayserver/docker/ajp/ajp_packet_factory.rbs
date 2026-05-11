@@ -1,0 +1,12 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpPacketFactory < Baykit::BayServer::Protocol::PacketFactory
+          def create_packet: (Integer `type`) -> AjpPacket
+        end
+      end
+    end
+  end
+end

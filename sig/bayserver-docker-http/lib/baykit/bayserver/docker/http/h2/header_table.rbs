@@ -1,0 +1,44 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderTable
+            PSEUDO_HEADER_AUTHORITY: String
+            PSEUDO_HEADER_METHOD: String
+            PSEUDO_HEADER_PATH: String
+            PSEUDO_HEADER_SCHEME: String
+            PSEUDO_HEADER_STATUS: String
+
+            @idx_map: Array[Util::KeyVal]
+            @add_count: Integer
+            @name_map: Hash[String, Array[Integer]]
+
+            self.@static_table: HeaderTable
+            self.@static_size: Integer
+
+            attr_reader idx_map: Array[Util::KeyVal]
+            attr_reader add_count: Integer
+            attr_reader name_map: Hash[String, Array[Integer]]
+
+            def self.static_table: -> HeaderTable
+            def self.static_size: -> Integer
+
+            def initialize: -> void
+            def get: (Integer idx) -> (Util::KeyVal | nil)
+            def get_idx_list: (String name) -> Array[Integer]
+            def insert: (String name, String value) -> void
+            def set_size: (Integer size) -> void
+            def put: (Integer idx, String name, String value) -> void
+
+            private
+            def add_to_name_map: (String name, Integer idx) -> void
+
+            def self.create_dynamic_table: -> HeaderTable
+          end
+        end
+      end
+    end
+  end
+end

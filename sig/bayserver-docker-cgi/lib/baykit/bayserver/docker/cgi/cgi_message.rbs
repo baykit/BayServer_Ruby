@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Cgi
+        class CgiMessage
+          self.@msg: Util::Message
+
+          def self.init: -> void
+          def self.get: (Symbol | String key, *untyped args) -> String
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class KeyVal
+        @name: String
+        @value: String
+
+        attr_reader name: String
+        attr_reader value: String
+
+        def initialize: (String name, String val) -> void
+      end
+    end
+  end
+end

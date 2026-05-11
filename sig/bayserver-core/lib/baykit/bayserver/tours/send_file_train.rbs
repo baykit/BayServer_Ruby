@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class SendFileTrain < Baykit::BayServer::Train::Train
+        @file: String
+
+        attr_reader file: String
+
+        def initialize: (untyped tur, String file) -> void
+        def run: -> void
+      end
+    end
+  end
+end

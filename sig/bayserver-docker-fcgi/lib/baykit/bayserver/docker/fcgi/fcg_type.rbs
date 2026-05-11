@@ -1,0 +1,22 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgType
+          BEGIN_REQUEST: Integer
+          ABORT_REQUEST: Integer
+          END_REQUEST: Integer
+          PARAMS: Integer
+          STDIN: Integer
+          STDOUT: Integer
+          STDERR: Integer
+          DATA: Integer
+          GET_VALUES: Integer
+          GET_VALUES_RESULT: Integer
+          UNKNOWN_TYPE: Integer
+        end
+      end
+    end
+  end
+end

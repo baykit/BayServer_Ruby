@@ -14,7 +14,8 @@ module Baykit
           def req_accept: (Rudders::Rudder rd) -> void
           def req_connect: (Rudders::Rudder rd, Addrinfo adr) -> void
           def req_read: (Rudders::Rudder rd) -> void
-          def req_write: (Rudders::Rudder rd, String buf, Addrinfo adr, Object tag) { () -> void } -> void
+          def req_write: (Rudders::Rudder rd, String buf, Integer ofs, Integer len, untyped adr, Object tag, bool flush) ?{ (?bool) -> void } -> void
+          def req_transfer: (Rudders::Rudder rd, Rudders::Rudder file_rd, Integer ofs, Integer len) ?{ () -> void } -> void
           def req_close: (Rudders::Rudder rd) -> void
           def is_non_blocking: -> bool
           def use_async_api: -> bool

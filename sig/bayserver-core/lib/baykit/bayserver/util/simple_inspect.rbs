@@ -1,0 +1,10 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      module SimpleInspect
+        def inspect: -> String
+      end
+    end
+  end
+end

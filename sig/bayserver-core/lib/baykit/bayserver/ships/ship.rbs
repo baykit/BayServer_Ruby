@@ -1,39 +1,51 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Ships
       class Ship
+        include Baykit::BayServer::Util::Reusable
+
         SHIP_ID_NOCHECK: Integer
         INVALID_SHIP_ID: Integer
+
         self.@oid_counter: Util::Counter
         self.@ship_id_counter: Util::Counter
+
         @object_id: Integer
         @ship_id: Integer
         @initialized: bool
-        @agentId: Integer
-        @rudder: Rudders::Rudder
-        @transporter: Agent::Multiplexer::Transporter
+        @rudder: Rudders::Rudder | nil
+        @transporter: Common::Transporter | nil
         @agent_id: Integer
+        @keeping: bool
 
+        attr_reader object_id: Integer
+        attr_reader ship_id: Integer
+        attr_reader agent_id: Integer
+        attr_reader rudder: Rudders::Rudder | nil
+        attr_reader transporter: Common::Transporter | nil
+        attr_reader initialized: bool
         attr_accessor keeping: bool
 
+        def self.oid_counter: -> Util::Counter
+        def self.ship_id_counter: -> Util::Counter
+
         def initialize: -> void
-        def init: (Integer agt_id, Rudders::Rudder rd, Agent::Multiplexer::Transporter tp) -> void
+        def init: (Integer agt_id, Rudders::Rudder rd, Common::Transporter tp) -> void
         def reset: -> void
         def id: -> Integer
+        def buffer_available?: -> bool
         def check_ship_id: (Integer check_id) -> void
         def resume_read: (Integer check_id) -> void
         def post_close: -> void
-        def notify_handshake_done: (String proto) -> void
-        def notify_connect: -> void
-        def notify_read: (String buf) -> void
-        def notify_eof: -> void
+        def notify_handshake_done: (String? proto) -> Integer
+        def notify_connect: -> Integer
+        def notify_read: (String buf) -> Integer
+        def notify_eof: -> Integer
         def notify_error: (Exception e) -> void
-        def notify_protocol_error: (Protocol::ProtocolException e) -> void
+        def notify_protocol_error: (Exception e) -> bool
         def notify_close: -> void
-        def check_timeout: (Integer duration_sec) -> void
+        def check_timeout: (Integer duration_sec) -> bool
       end
     end
   end

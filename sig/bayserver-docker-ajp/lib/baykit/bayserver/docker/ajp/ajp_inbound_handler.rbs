@@ -1,0 +1,59 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Ajp
+        class AjpInboundHandler
+          include Baykit::BayServer::Common::InboundHandler
+          include AjpHandler
+
+          STATE_READ_FORWARD_REQUEST: Symbol
+          STATE_READ_DATA: Symbol
+          DUMMY_KEY: Integer
+
+          @cur_tour_id: Integer
+          @req_command: Command::CmdForwardRequest | nil
+          @protocol_handler: AjpProtocolHandler | nil
+          @state: Symbol
+          @keeping: bool
+
+          attr_reader cur_tour_id: Integer
+          attr_reader req_command: Command::CmdForwardRequest | nil
+          attr_reader protocol_handler: AjpProtocolHandler | nil
+          attr_reader state: Symbol
+          attr_reader keeping: bool
+
+          def initialize: -> void
+          def init: (AjpProtocolHandler proto_handler) -> void
+          def reset: -> void
+          def send_res_headers: (Tours::Tour tur) -> void
+          def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) ?{ (?bool) -> void } -> bool
+          def transfer_content: (Tours::Tour tur, Rudders::Rudder file_rd, Integer ofs, Integer len) ?{ () -> void } -> void
+          def send_end_tour: (Tours::Tour tur) ?{ (?bool) -> void } -> void
+          def on_protocol_error: (Exception e) -> bool
+          def handle_forward_request: (Command::CmdForwardRequest cmd) -> Integer
+          def handle_data: (Command::CmdData cmd) -> Integer
+          def handle_send_body_chunk: (Command::CmdSendBodyChunk cmd) -> Integer
+          def handle_send_headers: (Command::CmdSendHeaders cmd) -> Integer
+          def handle_shutdown: (Command::CmdShutdown cmd) -> Integer
+          def handle_end_response: (Command::CmdEndResponse cmd) -> Integer
+          def handle_get_body_chunk: (Command::CmdGetBodyChunk cmd) -> Integer
+          def need_data: -> bool
+
+          private
+          def ship: -> Common::InboundShip
+          def reset_state: -> void
+          def change_state: (Symbol new_state) -> void
+          def end_req_content: (Tours::Tour tur) -> void
+          def start_tour: (Tours::Tour tur) -> void
+
+          class InboundProtocolHandlerFactory
+            include Baykit::BayServer::Protocol::ProtocolHandlerFactory
+
+            def create_protocol_handler: (Protocol::PacketStore pkt_store) -> AjpProtocolHandler
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Cgi
+        class PhpCgiDocker < Baykit::BayServer::Docker::Cgi::CgiDocker
+          ENV_PHP_SELF: String
+          ENV_REDIRECT_STATUS: String
+
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def create_command: (Hash[String, String] env) -> String
+        end
+      end
+    end
+  end
+end

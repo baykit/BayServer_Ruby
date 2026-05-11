@@ -1,0 +1,12 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Signal
+        class SignalProxy
+          def self.register: (String sig) { () -> void } -> void
+        end
+      end
+    end
+  end
+end

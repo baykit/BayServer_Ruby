@@ -1,0 +1,11 @@
+# Classes
+module Baykit
+  module BayServer
+    class BayMessage
+      @@msg: Baykit::BayServer::Util::Message
+
+      def self.init: (String conf_name, untyped locale) -> void
+      def self.get: (Symbol key, *untyped args) -> String
+    end
+  end
+end

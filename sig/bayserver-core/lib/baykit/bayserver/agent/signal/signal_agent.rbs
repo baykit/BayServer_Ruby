@@ -1,0 +1,30 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Signal
+        class SignalAgent
+          COMMAND_RELOAD_CERT: String
+          COMMAND_MEM_USAGE: String
+          COMMAND_RESTART_AGENTS: String
+          COMMAND_SHUTDOWN: String
+          COMMAND_ABORT: String
+
+          self.@commands: Array[String]
+          self.@signal_map: Hash[String, String]
+          self.@signal_agent: SignalAgent | nil
+
+          def self.commands: -> Array[String]
+          def self.signal_map: -> Hash[String, String]
+          def self.signal_agent: -> (SignalAgent | nil)
+
+          def self.init: (Integer bay_port) -> void
+          def self.handle_command: (String cmd) -> void
+          def self.get_signal_from_command: (String command) -> (String | nil)
+          def self.init_signal_map: -> void
+          def self.run_signal_agent: (Integer port) -> Thread
+        end
+      end
+    end
+  end
+end

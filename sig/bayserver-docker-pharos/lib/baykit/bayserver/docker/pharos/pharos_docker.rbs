@@ -1,0 +1,25 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Pharos
+        class PharosDocker < Baykit::BayServer::Docker::Base::ClubBase
+          RUNTIME_MU: Thread::Mutex
+
+          self.@runtime: PharosRuntime | nil
+
+          @lib_php_path: String | nil
+          @ini_path: String | nil
+
+          def self.runtime: -> (PharosRuntime | nil)
+          def self.runtime=: (PharosRuntime | nil) -> (PharosRuntime | nil)
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def arrive: (Tours::Tour tur) -> void
+        end
+      end
+    end
+  end
+end

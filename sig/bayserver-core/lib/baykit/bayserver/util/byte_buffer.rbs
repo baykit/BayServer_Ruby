@@ -1,0 +1,16 @@
+# Classes
+module Util
+  class ByteBuffer
+    @buf: untyped
+    @ofs: Integer
+    @length: Integer
+    @pos: Integer
+
+    attr_reader buf: untyped
+    attr_reader ofs: Integer
+    attr_reader length: Integer
+    attr_reader pos: Integer
+
+    def initialize: (untyped buf, ?Integer ofs, ?Integer len) -> void
+  end
+end

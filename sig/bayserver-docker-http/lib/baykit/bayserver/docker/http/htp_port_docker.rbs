@@ -1,0 +1,25 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        class HtpPortDocker < Baykit::BayServer::Docker::Base::PortBase
+          include Baykit::BayServer::Docker::Http::HtpDocker
+
+          DEFAULT_SUPPORT_H2: bool
+
+          @support_h2: bool
+
+          attr_reader support_h2: bool
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def protocol: -> String
+          def support_anchored: -> bool
+          def support_unanchored: -> bool
+        end
+      end
+    end
+  end
+end

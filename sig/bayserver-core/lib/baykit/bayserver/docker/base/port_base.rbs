@@ -1,0 +1,51 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class PortBase < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Port # implements
+
+          @permission_list: Array[Baykit::BayServer::Docker::Permission]
+          @host: String | nil
+          @port: Integer
+          @anchored: bool
+          @additional_headers: Array[Array[String]]
+          @socket_path: String | nil
+          @timeout_sec: Integer
+          @secure_docker: Baykit::BayServer::Docker::Secure | nil
+          @cities: Baykit::BayServer::Util::Cities
+
+          attr_reader permission_list: Array[Baykit::BayServer::Docker::Permission]
+          attr_reader host: String | nil
+          attr_reader port: Integer
+          attr_reader anchored: bool
+          attr_reader additional_headers: Array[Array[String]]
+          attr_reader socket_path: String | nil
+          attr_reader timeout_sec: Integer
+          attr_reader secure_docker: Baykit::BayServer::Docker::Secure | nil
+          attr_reader cities: Baykit::BayServer::Util::Cities
+
+          def initialize: -> void
+          def to_s: -> String
+          def support_anchored: -> bool
+          def support_unanchored: -> bool
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_docker: (Docker dkr) -> bool
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def address: -> untyped
+          def secure: -> bool
+          def find_city: (String name) -> untyped
+          def on_connected: (Integer agt_id, Rudders::Rudder rd) -> void
+          def return_protocol_handler: (Integer agt_id, Protocol::ProtocolHandler proto_hnd) -> void
+          def return_ship: (untyped sip) -> void
+
+          private
+          def check_admitted: (Rudders::Rudder rd) -> void
+          def self.get_ship_store: (Integer agt_id) -> untyped
+          def self.get_protocol_handler_store: (String proto, Integer agt_id) -> untyped
+        end
+      end
+    end
+  end
+end

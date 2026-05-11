@@ -1,0 +1,24 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          module Huffman
+            class HTree
+              EOS_SYMBOL: Integer
+
+              self.@root: HNode
+
+              def self.root: -> HNode
+              def self.decode: (String data) -> String
+              def self.is_eos_prefix: (HNode node) -> bool
+              def self.insert: (Integer code, Integer len_in_bits, Integer sym) -> void
+              def self.insert_bits: (Array[Integer] code, Integer sym) -> void
+            end
+          end
+        end
+      end
+    end
+  end
+end

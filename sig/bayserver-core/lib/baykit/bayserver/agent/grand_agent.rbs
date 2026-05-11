@@ -1,5 +1,3 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
@@ -17,9 +15,10 @@ module Baykit
         self.@agent_count: Integer
         self.@max_agent_id: Integer
         self.@max_ships: Integer
-        self.@agents: Hash[Integer, GrandAgent]
+        self.@agents: Array[GrandAgent]
         self.@listeners: Array[LifecycleListener]
         self.@finale: bool
+
         @agent_id: Integer
         @max_inbound_ships: Integer
         @anchorable: bool
@@ -33,40 +32,66 @@ module Baykit
         @letter_queue_lock: Thread::Mutex
         @postpone_queue: Array[Common::Postpone]
         @postpone_queue_lock: Thread::Mutex
-        @selector: Util::Selector
+        @accepted_letter_store: Util::ObjectStore
+        @connected_letter_store: Util::ObjectStore
+        @read_letter_store: Util::ObjectStore
+        @wrote_letter_store: Util::ObjectStore
+        @closed_letter_store: Util::ObjectStore
+        @error_letter_store: Util::ObjectStore
         @command_receiver: CommandReceiver
         @net_multiplexer: Common::Multiplexer
         @spin_multiplexer: Common::Multiplexer
+        @file_multiplexer: Common::Multiplexer
         @recipient: Common::Recipient
-        @last_timeout_check: Time
+        @last_timeout_check: Integer
         @busy: bool
 
-        def initialize: (Integer agent_id, Integer max_ships, true anchorable) -> void
+        attr_reader agent_id: Integer
+        attr_reader anchorable: bool
+        attr_reader net_multiplexer: Common::Multiplexer
+        attr_reader job_multiplexer: Common::Multiplexer
+        attr_reader taxi_multiplexer: Multiplexer::TaxiMultiplexer
+        attr_reader spin_multiplexer: Common::Multiplexer
+        attr_reader spider_multiplexer: Common::Multiplexer
+        attr_reader file_multiplexer: Common::Multiplexer
+        attr_reader recipient: Common::Recipient
+        attr_reader max_inbound_ships: Integer
+        attr_reader aborted: bool
+        attr_reader command_receiver: CommandReceiver
+        attr_reader timer_handlers: Array[TimerHandler]
+        attr_reader last_timeout_check: Integer
+        attr_reader letter_queue: Array[Letters::Letter]
+        attr_reader letter_queue_lock: Thread::Mutex
+        attr_reader postpone_queue: Array[Common::Postpone]
+        attr_reader postpone_queue_lock: Thread::Mutex
+
+        def initialize: (Integer agent_id, Integer max_ships, bool anchorable) -> void
         def to_s: -> String
         def inspect: -> String
+        def start: -> Thread
         def run: -> void
-        def abort_agent: -> nil
+        def abort_agent: -> void
         def req_shutdown: -> void
         def print_usage: -> void
         def add_timer_handler: (TimerHandler handler) -> void
         def remove_timer_handler: (TimerHandler handler) -> void
         def add_command_receiver: (Rudders::Rudder rd) -> void
-        def send_accepted_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd, bool wakeup) -> void
-        def send_connected_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
-        def send_read_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, untyped adr, bool wakeup) -> void
-        def send_wrote_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, bool wakeup) -> void
-        def send_closed_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
-        def send_error_letter: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Exception err, bool wakeup) -> void
+        def send_accepted_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, Rudders::Rudder client_rd, bool wakeup) -> void
+        def send_connected_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
+        def send_read_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, untyped adr, bool wakeup) -> void
+        def send_wrote_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, bool wakeup) -> void
+        def send_closed_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, bool wakeup) -> void
+        def send_error_letter: (Rudders::Rudder rd, Common::Multiplexer mpx, Exception err, bool wakeup) -> void
+        def return_letter: (Letters::Letter let) -> void
         def shutdown: -> void
         def abort: -> void
         def reload_cert: -> void
         def add_postpone: (Common::Postpone p) -> void
-        def count_postpone: -> Integer
         def req_catch_up: -> void
         def catch_up: -> void
 
         private
-        def ring: -> Time
+        def ring: -> void
         def send_letter: (Letters::Letter let, bool wakeup) -> void
         def on_accepted: (Letters::AcceptedLetter let, Common::RudderState st) -> void
         def on_connected: (Letters::ConnectedLetter let, Common::RudderState st) -> void
@@ -75,8 +100,10 @@ module Baykit
         def on_closed: (Letters::ClosedLetter let, Common::RudderState st) -> void
         def on_error: (Letters::ErrorLetter let, Common::RudderState st) -> void
         def next_action: (Common::RudderState st, Integer act, bool reading) -> void
+        def count_postpone: -> Integer
+
         def self.init: (Array[Integer] agt_ids, Integer max_ships) -> void
-        def self.get: (Interrupt agt_id) -> GrandAgent
+        def self.get: (Integer agt_id) -> GrandAgent
         def self.add: (Integer agt_id, bool anchorable) -> GrandAgent
         def self.add_lifecycle_listener: (LifecycleListener lis) -> void
       end

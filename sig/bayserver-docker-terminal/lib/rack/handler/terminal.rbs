@@ -1,0 +1,8 @@
+# Classes
+module Rack
+  module Handler
+    module Terminal
+      def self.run: (untyped app, **untyped options) -> void
+    end
+  end
+end

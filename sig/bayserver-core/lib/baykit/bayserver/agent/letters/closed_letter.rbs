@@ -1,12 +1,9 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
-        class ClosedLetter
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx) -> void
+        class ClosedLetter < Letter
         end
       end
     end

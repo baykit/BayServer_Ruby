@@ -1,0 +1,19 @@
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class Barges
+        @any_barge: untyped  # Docker::Barge | nil
+        @barges: Array[untyped]  # Array[Docker::Barge]
+
+        attr_reader any_barge: untyped
+        attr_reader barges: Array[untyped]
+
+        def initialize: -> void
+        def add: (untyped b) -> void
+        def find_barge: (String path) -> untyped
+        def match: (untyped b, String path) -> bool
+      end
+    end
+  end
+end

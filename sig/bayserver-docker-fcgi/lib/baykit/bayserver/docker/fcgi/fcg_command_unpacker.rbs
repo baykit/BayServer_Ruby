@@ -1,0 +1,18 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgCommandUnPacker < Baykit::BayServer::Protocol::CommandUnPacker
+          @handler: FcgCommandHandler
+
+          attr_reader handler: FcgCommandHandler
+
+          def initialize: (FcgCommandHandler handler) -> void
+          def reset: -> void
+          def packet_received: (FcgPacket pkt) -> Integer
+        end
+      end
+    end
+  end
+end

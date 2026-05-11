@@ -1,0 +1,12 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgPacketFactory < Baykit::BayServer::Protocol::PacketFactory
+          def create_packet: (Integer `type`) -> FcgPacket
+        end
+      end
+    end
+  end
+end

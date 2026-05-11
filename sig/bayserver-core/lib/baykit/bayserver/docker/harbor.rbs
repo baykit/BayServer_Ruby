@@ -1,32 +1,34 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Docker
       module Harbor
+        include Docker
+
         MULTIPLEXER_TYPE_SPIDER: Integer
         MULTIPLEXER_TYPE_SPIN: Integer
         MULTIPLEXER_TYPE_PIGEON: Integer
         MULTIPLEXER_TYPE_JOB: Integer
         MULTIPLEXER_TYPE_TAXI: Integer
         MULTIPLEXER_TYPE_TRAIN: Integer
+
         RECIPIENT_TYPE_SPIDER: Integer
         RECIPIENT_TYPE_PIPE: Integer
-        include Docker
 
         def charset: -> String
-        def locale: -> String
+        def locale: -> String?
         def grand_agents: -> Integer
         def train_runners: -> Integer
         def taxi_runners: -> Integer
         def max_ships: -> Integer
-        def trouble: -> Trouble
+        def max_tours_per_ship: -> Integer
+        def trouble: -> untyped
         def socket_timeout_sec: -> Integer
         def keep_timeout_sec: -> Integer
         def trace_header: -> bool
-        def tour_buffer_size: -> Integer
-        def redirect_file: -> bool
+        def ship_buffer_size: -> Integer
+        def max_events_per_receive: -> Integer
+        def redirect_file: -> String?
         def control_port: -> Integer
         def gzip_comp: -> bool
         def net_multiplexer: -> Integer
@@ -34,15 +36,20 @@ module Baykit
         def log_multiplexer: -> Integer
         def cgi_multiplexer: -> Integer
         def recipient: -> Integer
-        def pid_file: -> Integer
+        def pid_file: -> String
         def multi_core: -> bool
-        def self.get_multiplexer_type_name: (Integer `type`) -> String?
-        def self.get_multiplexer_type: (String `type`) -> Integer
-        def get_recipient_type_name: (Integer `type`) -> String?
-        def get_recipient_type: (String `type`) -> Integer
-        def enable_cache: -> bool
-        def cache_lifespan_sec: -> Integer
-        def cache_size_mb: -> Integer
+        def direct_boarding: -> bool
+        def cargo_lifespan_sec: -> Integer
+        def max_direct_boardings: -> Integer
+        def max_cargo_size: -> Integer
+        def max_cargo_size_secure: -> Integer
+        def max_direct_boarding_size: -> Integer
+        def find_barge: (String path) -> untyped
+
+        def self.get_multiplexer_type_name: (Integer `type`) -> (String | nil)
+        def self.get_multiplexer_type: (String? `type`) -> Integer
+        def self.get_recipient_type_name: (Integer `type`) -> (String | nil)
+        def self.get_recipient_type: (String? `type`) -> Integer
       end
     end
   end

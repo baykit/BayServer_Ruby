@@ -1,49 +1,76 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Tours
       class TourReq
+        include Baykit::BayServer::Util::Reusable
+
         @headers: Util::Headers
         @tour: Tour
         @key: Integer
+        @uri: String | nil
+        @protocol: String | nil
+        @method: String | nil
+        @rewritten_uri: String | nil
+        @query_string: String | nil
+        @path_info: String | nil
+        @script_name: String | nil
+        @req_host: String | nil
+        @req_port: Integer
+        @remote_user: String | nil
+        @remote_pass: String | nil
+        @remote_address: String | nil
+        @remote_port: Integer
+        @remote_host_func: Proc | nil
+        @server_address: String | nil
+        @server_port: Integer
+        @server_name: String | nil
+        @charset: String | nil
         @bytes_posted: Integer
         @bytes_consumed: Integer
         @bytes_limit: Integer
         @available: bool
-        @content_handler: ReqContentHandler
-        @consume_listener: untyped
+        @content_handler: ReqContentHandler | nil
         @ended: bool
 
-        attr_accessor uri: String
-        attr_accessor protocol: String
-        attr_accessor method: String
-        attr_accessor rewritten_uri: String
-        attr_accessor query_string: String
-        attr_accessor path_info: String
-        attr_accessor script_name: String
-        attr_accessor req_host: String
+        attr_reader tour: Tour
+        attr_reader key: Integer
+        attr_accessor uri: String | nil
+        attr_accessor protocol: String | nil
+        attr_accessor method: String | nil
+        attr_reader headers: Util::Headers
+        attr_accessor rewritten_uri: String | nil
+        attr_accessor query_string: String | nil
+        attr_accessor path_info: String | nil
+        attr_accessor script_name: String | nil
+        attr_accessor req_host: String | nil
         attr_accessor req_port: Integer
-        attr_accessor remote_user: String
-        attr_accessor remote_pass: String
-        attr_accessor remote_address: String
+        attr_accessor remote_user: String | nil
+        attr_accessor remote_pass: String | nil
+        attr_accessor remote_address: String | nil
         attr_accessor remote_port: Integer
-        attr_accessor remote_host_func: untyped
-        attr_accessor server_address: String
+        attr_accessor remote_host_func: Proc | nil
+        attr_accessor server_address: String | nil
         attr_accessor server_port: Integer
-        attr_accessor server_name: String
-        attr_accessor charset: String
+        attr_accessor server_name: String | nil
+        attr_accessor charset: String | nil
+        attr_reader content_handler: ReqContentHandler | nil
+        attr_reader bytes_posted: Integer
+        attr_reader bytes_consumed: Integer
+        attr_reader bytes_limit: Integer
+        attr_reader available: bool
+        attr_reader ended: bool
+
         def initialize: (Tour tur) -> void
         def init: (Integer key) -> void
         def reset: -> void
         def remote_host: -> String
         def set_limit: (Integer limit) -> void
-        def post_req_content: (Integer check_id, String data, Integer start, Integer len) -> bool
+        def post_req_content: (Integer check_id, String data, Integer start, Integer len) ?{ (Integer, bool) -> void } -> bool
         def end_req_content: (Integer check_id) -> void
-        def consumed: (Integer chk_id, Integer length) -> void
+        def consumed: (Integer chk_id, Integer length) { (Integer, bool) -> void } -> void
         def abort: -> bool
-        def set_content_handler: (untyped hnd) -> void
+        def set_content_handler: (ReqContentHandler hnd) -> void
         def buffer_available: -> bool
       end
     end

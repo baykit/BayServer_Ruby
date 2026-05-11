@@ -1,0 +1,36 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2CommandUnPacker < Baykit::BayServer::Protocol::CommandUnPacker
+            STREAM_STATE_OPEN: Symbol
+            STREAM_STATE_HALF_CLOSED_REMOTE: Symbol
+            STREAM_STATE_CLOSED: Symbol
+            KNOWN_TYPES: Array[Integer]
+
+            @cmd_handler: H2CommandHandler
+            @in_header_block: bool
+            @header_block_stream_id: Integer
+            @pending_end_stream: bool
+            @stream_states: Hash[Integer, Symbol]
+            @highest_seen_stream_id: Integer
+
+            attr_reader cmd_handler: H2CommandHandler
+
+            def initialize: (H2CommandHandler cmd_handler) -> void
+            def reset: -> void
+            def packet_received: (H2Packet pkt) -> Integer
+
+            private
+            def validate_frame: (H2Packet pkt) -> void
+            def validate_stream_state: (H2Packet pkt) -> void
+            def update_header_block_state: (H2Packet pkt) -> void
+            def update_stream_state: (H2Packet pkt) -> void
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,33 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class HeaderBlockAnalyzer
+            @name: String | nil
+            @value: String | nil
+            @raw_name: String | nil
+            @method: String | nil
+            @path: String | nil
+            @scheme: String | nil
+            @status: String | nil
+            @pseudo: bool
+
+            attr_reader name: String | nil
+            attr_reader value: String | nil
+            attr_reader raw_name: String | nil
+            attr_reader method: String | nil
+            attr_reader path: String | nil
+            attr_reader scheme: String | nil
+            attr_reader status: String | nil
+            attr_reader pseudo: bool
+
+            def clear: -> void
+            def analyze_header_block: (HeaderBlock blk, HeaderTable tbl) -> void
+          end
+        end
+      end
+    end
+  end
+end

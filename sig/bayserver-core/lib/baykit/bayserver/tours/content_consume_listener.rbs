@@ -1,0 +1,10 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      module ContentConsumeListener
+        DEV_NULL: Proc
+      end
+    end
+  end
+end

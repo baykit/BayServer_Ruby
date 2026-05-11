@@ -1,0 +1,13 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module HtpDocker
+          H1_PROTO_NAME: String
+          H2_PROTO_NAME: String
+        end
+      end
+    end
+  end
+end

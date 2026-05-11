@@ -1,0 +1,10 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class ClassUtil
+        def self.get_local_name: (Class cls) -> String
+      end
+    end
+  end
+end

@@ -1,0 +1,39 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class ReadFileTaxi < Baykit::BayServer::Taxi::Taxi
+        include Baykit::BayServer::Util::Valve
+
+        @infile: untyped
+        @ch_valid: bool
+        @data_listener: untyped
+        @buf: String
+        @buf_size: Integer
+        @running: bool
+        @lock: untyped
+        @agent_id: Integer
+        @start_time: Integer
+
+        attr_reader infile: untyped
+        attr_reader ch_valid: bool
+        attr_reader data_listener: untyped
+        attr_reader buf: String
+        attr_reader buf_size: Integer
+        attr_reader running: bool
+        attr_reader lock: untyped
+        attr_reader agent_id: Integer
+        attr_reader start_time: Integer
+
+        def initialize: (Integer agt_id, Integer buf_size) -> void
+        def to_s: -> String
+        def init: (untyped infile, untyped data_listener) -> void
+        def open_valve: -> void
+        def depart: -> void
+        def on_timer: -> void
+        def next_run: -> void
+        def close: -> void
+      end
+    end
+  end
+end

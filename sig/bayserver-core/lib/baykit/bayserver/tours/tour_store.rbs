@@ -1,0 +1,39 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class TourStore
+        class AgentListener
+          include Baykit::BayServer::Agent::LifecycleListener
+
+          def add: (Integer agt_id) -> void
+          def remove: (Integer agt_id) -> void
+        end
+
+        MAX_TOURS: Integer
+
+        @free_tours: Array[untyped]
+        @active_tour_map: Hash[untyped, untyped]
+        @lock: untyped
+
+        attr_reader free_tours: Array[untyped]
+        attr_reader active_tour_map: Hash[untyped, untyped]
+
+        self.@max_count: Integer
+        self.@stores: Hash[Integer, TourStore]
+
+        def self.max_count: -> Integer
+        def self.stores: -> Hash[Integer, TourStore]
+
+        def initialize: -> void
+        def get: (untyped key) -> untyped
+        def rent: (untyped key, untyped ship, ?bool force) -> untyped
+        def Return: (untyped key) -> void
+        def print_usage: (Integer indent) -> void
+
+        def self.init: (Integer max_tours) -> void
+        def self.get_store: (Integer agent_id) -> TourStore
+      end
+    end
+  end
+end

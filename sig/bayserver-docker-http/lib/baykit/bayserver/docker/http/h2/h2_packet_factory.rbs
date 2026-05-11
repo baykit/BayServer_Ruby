@@ -1,0 +1,14 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2PacketFactory < Baykit::BayServer::Protocol::PacketFactory
+            def create_packet: (Integer `type`) -> H2Packet
+          end
+        end
+      end
+    end
+  end
+end

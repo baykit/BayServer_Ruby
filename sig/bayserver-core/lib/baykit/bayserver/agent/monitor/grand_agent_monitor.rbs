@@ -1,0 +1,57 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Monitor
+        class GrandAgentMonitor
+          self.@num_agents: Integer
+          self.@cur_id: Integer
+          self.@monitors: Hash[Integer, GrandAgentMonitor]
+          self.@finale: bool
+
+          def self.num_agents: -> Integer
+          def self.cur_id: -> Integer
+          def self.monitors: -> Hash[Integer, GrandAgentMonitor]
+          def self.finale: -> bool
+
+          @agent_id: Integer
+          @anchorable: bool
+          @rudder: untyped
+          @child_thread: Thread | nil
+          @child_pid: Integer | nil
+
+          attr_reader agent_id: Integer
+          attr_reader anchorable: bool
+          attr_reader rudder: untyped
+          attr_reader child_thread: Thread | nil
+          attr_reader child_pid: Integer | nil
+
+          def initialize: (Integer agt_id, bool anchorable, untyped rd, Thread? child_thread, Integer? child_pid) -> void
+          def to_s: -> String
+          def run: -> void
+          def shutdown: -> void
+          def abort: -> void
+          def reload_cert: -> void
+          def print_usage: -> void
+          def send: (Integer cmd) -> void
+          def close: -> void
+          def on_read_catch_up: -> void
+          def req_catch_up: -> void
+          def start: -> Thread
+
+          def self.init: (Integer num_agents) -> void
+          def self.add: (bool anchoroable) -> void
+          def self.agent_aborted: (Integer agt_id, Integer? pid, bool anchorable) -> void
+          def self.join: -> void
+          def self.reload_cert_all: -> void
+          def self.restart_all: -> void
+          def self.shutdown_all: -> void
+          def self.abort_all: -> void
+          def self.print_usage_all: -> void
+          def self.buffer_to_int: (String buf) -> Integer
+          def self.int_to_buffer: (Integer val) -> String
+        end
+      end
+    end
+  end
+end

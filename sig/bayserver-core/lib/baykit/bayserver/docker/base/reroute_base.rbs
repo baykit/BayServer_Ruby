@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class RerouteBase < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Reroute # implements
+
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def match: (String uri) -> bool
+        end
+      end
+    end
+  end
+end

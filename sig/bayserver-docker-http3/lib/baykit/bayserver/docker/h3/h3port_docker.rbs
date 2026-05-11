@@ -1,0 +1,27 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        class H3PortDocker < Baykit::BayServer::Docker::Base::PortBase
+          include H3Docker
+
+          ALPN_PROTOS: Array[String]
+
+          @quic_config: untyped  # Croute::Quic::Config
+          @h3_config: untyped    # Croute::H3::Config
+
+          attr_reader quic_config: untyped
+          attr_reader h3_config: untyped
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def protocol: -> String
+          def support_anchored: -> bool
+          def support_unanchored: -> bool
+          def new_transporter: (Integer agent_id, Rudders::Rudder rd) -> QicTransporter
+        end
+      end
+    end
+  end
+end

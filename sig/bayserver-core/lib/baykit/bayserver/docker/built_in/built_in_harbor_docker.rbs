@@ -1,18 +1,18 @@
-# TypeProf 0.21.3
-
 # Classes
 module Baykit
   module BayServer
     module Docker
       module BuiltIn
-        class BuiltInHarborDocker
+        class BuiltInHarborDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Harbor
+
           DEFAULT_MAX_SHIPS: Integer
           DEFAULT_SHIP_AGENTS: Integer
           DEFAULT_TRAIN_RUNNERS: Integer
           DEFAULT_TAXI_RUNNERS: Integer
           DEFAULT_WAIT_TIMEOUT_SEC: Integer
           DEFAULT_KEEP_TIMEOUT_SEC: Integer
-          DEFAULT_TOUR_BUFFER_SIZE: Integer
+          DEFAULT_SHIP_BUFFER_SIZE: Integer
           DEFAULT_TRACE_HEADER: bool
           DEFAULT_CHARSET: String
           DEFAULT_CONTROL_PORT: Integer
@@ -24,18 +24,23 @@ module Baykit
           DEFAULT_CGI_MULTIPLEXER: Integer
           DEFAULT_RECIPIENT: Integer
           DEFAULT_PID_FILE: String
-          DEFAULT_ENABLE_CACHE: bool
-          DEFAULT_CACHE_LIFESPAN_SEC: Integer
-          DEFAULT_CACHE_SIZE_MB: Integer
-          include Baykit::BayServer
+          DEFAULT_DIRECT_BOARDING: bool
+          DEFAULT_CARGO_LIFESPAN_SEC: Integer
+          DEFAULT_DIRECT_BOARDINGS: Integer
+          DEFAULT_MAX_CARGO_SIZE: Integer
+          DEFAULT_MAX_TOURS_PER_SHIP: Integer
+          DEFAULT_MAX_EVENTS_PER_RECEIVE: Integer
+
           @grand_agents: Integer
           @train_runners: Integer
           @taxi_runners: Integer
           @max_ships: Integer
+          @max_tours_per_ship: Integer
           @groups: Common::Groups
           @socket_timeout_sec: Integer
           @keep_timeout_sec: Integer
-          @tour_buffer_size: Integer
+          @ship_buffer_size: Integer
+          @max_events_per_receive: Integer
           @trace_header: bool
           @charset: String
           @control_port: Integer
@@ -47,17 +52,54 @@ module Baykit
           @cgi_multiplexer: Integer
           @recipient: Integer
           @pid_file: String
-          @trouble: Trouble
-          @locale: String
-          @redirect_file: String
-          @enable_cache: bool
-          @cache_lifespan_sec: Integer
-          @cache_size_mb: Integer
+          @trouble: Trouble | nil
+          @locale: String | nil
+          @redirect_file: String | nil
+          @direct_boarding: bool
+          @cargo_lifespan_sec: Integer
+          @max_direct_boardings: Integer
+          @max_cargo_size: Integer
+          @max_cargo_size_secure: Integer
+          @max_direct_boarding_size: Integer
+          @barges: Common::Barges
+
+          attr_reader charset: String
+          attr_reader locale: String | nil
+          attr_reader grand_agents: Integer
+          attr_reader train_runners: Integer
+          attr_reader taxi_runners: Integer
+          attr_reader max_ships: Integer
+          attr_reader max_tours_per_ship: Integer
+          attr_reader socket_timeout_sec: Integer
+          attr_reader keep_timeout_sec: Integer
+          attr_reader ship_buffer_size: Integer
+          attr_reader max_events_per_receive: Integer
+          attr_reader trace_header: bool
+          attr_reader trouble: Trouble | nil
+          attr_reader groups: Common::Groups
+          attr_reader redirect_file: String | nil
+          attr_reader gzip_comp: bool
+          attr_reader control_port: Integer
+          attr_reader multi_core: bool
+          attr_reader net_multiplexer: Integer
+          attr_reader file_multiplexer: Integer
+          attr_reader log_multiplexer: Integer
+          attr_reader cgi_multiplexer: Integer
+          attr_reader recipient: Integer
+          attr_reader pid_file: String
+          attr_reader direct_boarding: bool
+          attr_reader cargo_lifespan_sec: Integer
+          attr_reader max_direct_boardings: Integer
+          attr_reader max_cargo_size: Integer
+          attr_reader max_direct_boarding_size: Integer
+          attr_reader barges: Common::Barges
 
           def initialize: -> void
-          def init: (untyped bcf, untyped parent) -> void
-          def init_docker: (untyped dkr) -> bool
-          def init_key_val: (untyped kv) -> bool
+          def init: (Bcf::BcfElement bcf, untyped parent) -> void
+          def init_docker: (Docker dkr) -> bool
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def max_cargo_size_secure: -> Integer
+          def find_barge: (String path) -> untyped
         end
       end
     end

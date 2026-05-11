@@ -1,0 +1,22 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        module Command
+          class CmdHeader
+            TYPE: Symbol
+
+            @stm_id: Integer
+            @req_headers: Array[Array[String]]
+
+            attr_reader stm_id: Integer
+            attr_reader req_headers: Array[Array[String]]
+
+            def initialize: (Integer stm_id, Array[Array[String]] req_headers) -> void
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,15 @@
+# Classes
+module Baykit
+  module BayServer
+    module Train
+      class TrainRunner
+        self.@runner: untyped
+
+        def self.runner: -> untyped
+
+        def self.init: (Integer max_trains) -> void
+        def self.post: (Integer agt_id, Train train) -> void
+      end
+    end
+  end
+end

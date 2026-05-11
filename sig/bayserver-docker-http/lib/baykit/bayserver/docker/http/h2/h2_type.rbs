@@ -1,0 +1,24 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2Type
+            PREFACE: Integer
+            DATA: Integer
+            HEADERS: Integer
+            PRIORITY: Integer
+            RST_STREAM: Integer
+            SETTINGS: Integer
+            PUSH_PROMISE: Integer
+            PING: Integer
+            GOAWAY: Integer
+            WINDOW_UPDATE: Integer
+            CONTINUATION: Integer
+          end
+        end
+      end
+    end
+  end
+end

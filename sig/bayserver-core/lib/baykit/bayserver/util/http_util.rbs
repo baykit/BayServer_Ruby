@@ -1,0 +1,19 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class HttpUtil
+        MAX_LINE_LEN: Integer
+
+        def self.read_line: (untyped file) -> (String | nil)
+        def self.parse_message_headers: (untyped file, Headers header) -> void
+        def self.send_mime_headers: (Headers headers, SimpleBuffer buf) -> void
+        def self.send_new_line: (SimpleBuffer buf) -> void
+        def self.parse_authorization: (Tours::Tour tur) -> void
+        def self.parse_host_port: (Tours::Tour tur, Integer default_port) -> void
+        def self.resolve_remote_host: (String? adr) -> (String | nil)
+        def self.check_uri: (String? uri) -> void
+      end
+    end
+  end
+end

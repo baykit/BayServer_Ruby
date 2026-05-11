@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Message
+        @messages: Hash[Symbol, String]
+
+        attr_reader messages: Hash[Symbol, String]
+
+        def initialize: -> void
+        def init: (String file_prefix, untyped locale) -> void
+        def get: (Symbol key, *untyped args) -> String
+      end
+    end
+  end
+end

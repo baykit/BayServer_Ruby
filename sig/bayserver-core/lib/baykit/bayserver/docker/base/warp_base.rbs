@@ -1,0 +1,62 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class WarpBase < Baykit::BayServer::Docker::Base::ClubBase
+          include Baykit::BayServer::Docker::Warp # implements
+
+          class AgentListener
+            include Baykit::BayServer::Agent::LifecycleListener # implements
+
+            @warp_docker: WarpBase
+
+            attr_reader warp_docker: WarpBase
+
+            def initialize: (WarpBase dkr) -> void
+            def add: (Integer agt_id) -> void
+            def remove: (Integer agt_id) -> void
+          end
+
+          @scheme: String | nil
+          @host: String | nil
+          @port: Integer
+          @warp_base: String | nil
+          @max_ships: Integer
+          @host_addr: Array[untyped]
+          @timeout_sec: Integer
+          @tour_list: Array[Tours::Tour]
+          @stores: Hash[Integer, Common::WarpShipStore]
+          @lock: Thread::Mutex
+
+          attr_reader scheme: String | nil
+          attr_reader host: String | nil
+          attr_reader port: Integer
+          attr_reader warp_base: String | nil
+          attr_reader max_ships: Integer
+          attr_reader host_addr: Array[untyped]
+          attr_reader timeout_sec: Integer
+          attr_reader tour_list: Array[Tours::Tour]
+          attr_reader stores: Hash[Integer, Common::WarpShipStore]
+          attr_reader lock: Thread::Mutex
+
+          def secure: -> bool
+          def protocol: -> String
+          def new_transporter: (untyped agent, Rudders::Rudder rd, untyped ship) -> untyped
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def arrive: (Tours::Tour tur) -> void
+          def pick_reusable_ship: (untyped agt, Tours::Tour tour) -> untyped
+          def on_ship_rented: (untyped agt, untyped wsip) -> void
+          def keep: (untyped wsip) -> void
+          def on_end_ship: (untyped wsip) -> void
+          def get_ship_store: (Integer agent_id) -> Common::WarpShipStore
+
+          private
+          def get_protocol_handler_store: (Integer agt_id) -> untyped
+        end
+      end
+    end
+  end
+end

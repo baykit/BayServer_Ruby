@@ -1,0 +1,24 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class StringUtil
+        self.@falses: Array[String]
+        self.@trues: Array[String]
+
+        def self.falses: -> Array[String]
+        def self.trues: -> Array[String]
+
+        def self.set?: (String? str) -> bool
+        def self.empty?: (String? str) -> bool
+        def self.alloc: (Integer len) -> String
+        def self.realloc: (String buf, Integer len) -> String
+        def self.to_bytes: (String buf) -> String
+        def self.repeat: (String str, Integer times) -> String
+        def self.indent: (Integer count) -> String
+        def self.parse_bool: (String val) -> bool
+        def self.parse_size: (String val) -> Integer
+      end
+    end
+  end
+end

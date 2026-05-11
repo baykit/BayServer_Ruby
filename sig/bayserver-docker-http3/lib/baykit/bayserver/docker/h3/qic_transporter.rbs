@@ -1,0 +1,65 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        class QicTransporter
+          CONN_ID_LEN: Integer
+          MAX_PKT_BUF: Integer
+
+          self.@ship_map: Hash[String, untyped]  # Hash[String, InboundShip]
+          self.@ship_map_lock: Thread::Mutex
+
+          @rudder: Rudders::Rudder | nil
+          @port_dkr: H3PortDocker | nil
+          @agent_id: Integer | nil
+          @multiplexer: Common::Multiplexer | nil
+          @local_addr: untyped  # Croute::Quic::Address | nil
+          @conn_id_seed: String
+          @server_name_bytes: String
+          @tmp_post_pkt: String | nil
+          @tmp_post_addr: untyped
+
+          attr_reader rudder: Rudders::Rudder | nil
+          attr_reader port_dkr: H3PortDocker | nil
+          attr_reader agent_id: Integer | nil
+          attr_reader multiplexer: Common::Multiplexer | nil
+          attr_reader local_addr: untyped
+
+          def initialize: -> void
+          def to_s: -> String
+          def ship: -> nil
+          def server_mode: -> bool
+          def secure: -> bool
+          def init_udp: (Integer agent_id, Rudders::Rudder rudder, Common::Multiplexer multiplexer, H3PortDocker port_dkr) -> void
+          def on_read: (Rudders::Rudder rd, String buf, untyped adr) -> Integer
+          def on_connected: (Rudders::Rudder rd) -> Integer
+          def on_error: (Rudders::Rudder rd, Exception e) -> void
+          def on_closed: (Rudders::Rudder rd) -> void
+          def req_read: (Rudders::Rudder rd) -> untyped
+          def req_write: (Rudders::Rudder rd, String buf, Integer ofs, Integer len, untyped adr, untyped tag, bool flush) { (?bool) -> void } -> untyped
+          def req_close: (Rudders::Rudder rd) -> untyped
+          def check_timeout: (Rudders::Rudder rd, Integer duration_sec) -> bool
+          def get_read_buffer_size: -> Integer
+          def reset: -> void
+          def print_usage: (Integer indent) -> void
+
+          private
+          def create_ship: (untyped hdr, untyped adr) -> (untyped | nil)
+          def find_ship: (String dcid) -> untyped
+          def add_ship: (String scid, untyped sip) -> void
+          def mint_token: (untyped hdr, String peer_ip) -> String
+          def validate_token: (String token, String peer_ip) -> (String | nil)
+          def negotiate_version: (untyped hdr, untyped adr) -> void
+          def retry_connection: (untyped hdr, untyped adr) -> void
+          def post_all_packets: -> void
+          def cleanup_connections: -> void
+          def make_address: (untyped adr) -> untyped
+          def extract_ip: (untyped adr) -> String
+          def extract_ip_port: (untyped adr) -> Array[untyped]
+          def as_hex: (String? bytes) -> String
+        end
+      end
+    end
+  end
+end

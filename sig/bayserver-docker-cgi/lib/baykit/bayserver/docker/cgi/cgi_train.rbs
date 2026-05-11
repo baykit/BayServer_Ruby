@@ -1,0 +1,40 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Cgi
+        class CgiTrain < Baykit::BayServer::Train::Train
+          include Baykit::BayServer::Tours::ReqContentHandler
+
+          READ_CHUNK_SIZE: Integer
+
+          @cgi_docker: CgiDocker
+          @env: Hash[String, String]
+          @available: bool
+          @lock: Thread::Mutex
+          @pid: Integer
+          @std_in: [IO, IO]
+          @std_out: [IO, IO]
+          @std_err: [IO, IO]
+
+          attr_reader cgi_docker: CgiDocker
+          attr_reader env: Hash[String, String]
+          attr_reader available: bool
+          attr_reader lock: Thread::Mutex
+          attr_reader pid: Integer
+          attr_reader std_in: [IO, IO]
+          attr_reader std_out: [IO, IO]
+          attr_reader std_err: [IO, IO]
+
+          def initialize: (CgiDocker cgi_docker, Tours::Tour tur) -> void
+          def start_tour: (Hash[String, String] env) -> void
+          def depart: -> void
+          def on_read_content: (Tours::Tour tur, String buf, Integer start, Integer len) -> void
+          def on_end_content: (Tours::Tour tur) -> void
+          def on_abort: (Tours::Tour tur) -> bool
+          def close_pipes: -> void
+        end
+      end
+    end
+  end
+end

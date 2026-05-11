@@ -1,0 +1,17 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module WordPress
+        class WordPressDocker < Baykit::BayServer::Docker::Base::RerouteBase
+          @town_path: String | nil
+
+          attr_reader town_path: String | nil
+
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def reroute: (untyped twn, String uri) -> String
+        end
+      end
+    end
+  end
+end

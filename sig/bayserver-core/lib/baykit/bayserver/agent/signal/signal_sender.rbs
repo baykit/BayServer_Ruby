@@ -1,0 +1,24 @@
+# Classes
+module Baykit
+  module BayServer
+    module Agent
+      module Signal
+        class SignalSender
+          @bay_port: Integer
+          @control_port: Integer
+          @pid_file: String
+
+          attr_reader control_port: Integer
+          attr_reader pid_file: String
+
+          def initialize: -> void
+          def send_command: (String cmd) -> void
+          def parse_bay_port: (String plan) -> void
+          def send: (String host, Integer port, String cmd) -> void
+          def kill: (Integer pid, String sig) -> void
+          def read_pid_file: -> Integer
+        end
+      end
+    end
+  end
+end

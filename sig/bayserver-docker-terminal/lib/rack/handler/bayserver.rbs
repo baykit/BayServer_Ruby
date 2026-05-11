@@ -1,0 +1,14 @@
+# Classes
+module Rack
+  module Handler
+    module BayServer
+      self.@app: untyped
+
+      ENV_BSERV_HOME: String
+      ENV_BSERV_PLAN: String
+
+      def self.app: -> untyped
+      def self.run: (untyped app, **untyped options) -> void
+    end
+  end
+end

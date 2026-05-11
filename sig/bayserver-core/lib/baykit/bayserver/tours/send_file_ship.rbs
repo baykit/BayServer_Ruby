@@ -1,0 +1,26 @@
+# Classes
+module Baykit
+  module BayServer
+    module Tours
+      class SendFileShip < Baykit::BayServer::Common::ReadOnlyShip
+        @file_wrote_len: Integer
+        @tour: Tour | nil
+        @tour_id: Integer
+
+        attr_reader file_wrote_len: Integer
+        attr_reader tour: Tour | nil
+        attr_reader tour_id: Integer
+
+        def initialize: -> void
+        def init: (Rudders::Rudder rd, untyped tp, Tour tur) -> void
+        def to_s: -> String
+        def reset: -> void
+        def notify_read: (String buf) -> Integer
+        def notify_error: (Exception e) -> void
+        def notify_eof: -> Integer
+        def notify_close: -> void
+        def check_timeout: (Integer duration_sec) -> bool
+      end
+    end
+  end
+end

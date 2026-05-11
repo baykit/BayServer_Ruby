@@ -1,15 +1,17 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
-        class ReadLetter
+        class ReadLetter < Letter
           @n_bytes: Integer
-          @address: String
+          @address: untyped  # sender addr (Addrinfo or String)
 
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, ?String adr) -> void
+          attr_accessor n_bytes: Integer
+          attr_accessor address: untyped
+
+          def init: (Rudders::Rudder rd, Common::Multiplexer mpx, Integer n, ?untyped adr) -> void
+          def reset: -> void
         end
       end
     end

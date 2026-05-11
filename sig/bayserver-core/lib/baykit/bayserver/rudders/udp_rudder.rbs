@@ -1,0 +1,27 @@
+# Classes
+module Baykit
+  module BayServer
+    module Rudders
+      class UdpRudder < RudderBase
+        @io: IO
+        @last_sender: Array[untyped] | nil  # [family, port, hostname, ip]
+
+        attr_reader io: IO
+        attr_reader last_sender: Array[untyped] | nil
+
+        def initialize: (IO io) -> void
+        def to_s: -> String
+        def key: -> IO
+        def set_non_blocking: -> void
+        def read: (String buf, Integer len) -> Integer
+        def send_to: (String buf, untyped adr) -> Integer
+        def write: (String buf) -> Integer
+        def close: -> void
+        def udp?: -> bool
+
+        private
+        def extract_ip_port: (untyped adr) -> Array[untyped]
+      end
+    end
+  end
+end

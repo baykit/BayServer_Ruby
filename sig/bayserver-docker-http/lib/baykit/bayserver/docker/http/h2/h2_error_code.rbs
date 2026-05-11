@@ -1,0 +1,35 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2ErrorCode < Baykit::BayServer::Util::Message
+            NO_ERROR: Integer
+            PROTOCOL_ERROR: Integer
+            INTERNAL_ERROR: Integer
+            FLOW_CONTROL_ERROR: Integer
+            SETTINGS_TIMEOUT: Integer
+            STREAM_CLOSED: Integer
+            FRAME_SIZE_ERROR: Integer
+            REFUSED_STREAM: Integer
+            CANCEL: Integer
+            COMPRESSION_ERROR: Integer
+            CONNECT_ERROR: Integer
+            ENHANCE_YOUR_CALM: Integer
+            INADEQUATE_SECURITY: Integer
+            HTTP_1_1_REQUIRED: Integer
+
+            self.@desc: Hash[untyped, untyped]
+            self.@msg: H2ErrorCode | nil
+
+            def self.desc: -> Hash[untyped, untyped]
+            def self.msg: -> (H2ErrorCode | nil)
+            def self.initialized: -> void
+            def self.init: -> void
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,31 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Base
+        class ClubBase < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Club # implements
+
+          @file_name: String | nil
+          @extension: String | nil
+          @charset: String | nil
+          @locale: String | nil
+          @decode_path_info: bool
+
+          attr_reader file_name: String | nil
+          attr_reader extension: String | nil
+          attr_reader charset: String | nil
+          attr_reader locale: String | nil
+          attr_reader decode_path_info: bool
+
+          def initialize: -> void
+          def to_s: -> String
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def matches: (String fname) -> bool
+          def inspect: -> String
+        end
+      end
+    end
+  end
+end

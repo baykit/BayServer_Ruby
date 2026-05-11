@@ -1,0 +1,36 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        class QicInboundHandler
+          H3_MESSAGE_ERROR: Integer
+
+          @protocol_handler: QicProtocolHandler | nil
+
+          attr_accessor protocol_handler: QicProtocolHandler | nil
+
+          def initialize: -> void
+          def init: (QicProtocolHandler proto_handler) -> void
+          def reset: -> void
+          def send_headers: (Tours::Tour tur) -> void
+          def send_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) { (bool) -> void } -> bool
+          def send_end_tour: (Tours::Tour tur) { (bool) -> void } -> void
+          def handle_headers: (Command::CmdHeader cmd) -> void
+          def handle_data: (Command::CmdData cmd) -> void
+          def handle_finished: (Command::CmdFinished cmd) -> void
+          def on_protocol_error: (Exception e) -> bool
+
+          private
+          def get_tour: (Integer stm_id) -> (Tours::Tour | nil)
+          def tour_is_unavailable: (Integer stm_id) -> void
+          def end_req_content: (Integer check_id, Tours::Tour tur) -> void
+          def start_tour: (Tours::Tour tur) -> void
+          def validate_pseudo_headers: (Command::CmdHeader cmd, Integer stm_id) -> bool
+          def close_with_h3_error: (Integer error_code, String reason) -> void
+          def quiche_error: (String msg, Integer stm_id, Integer code) -> IOError
+        end
+      end
+    end
+  end
+end

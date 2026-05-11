@@ -1,0 +1,50 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInSecureDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Secure # implements
+
+          DEFAULT_CLIENT_AUTH: bool
+          DEFAULT_SSL_PROTOCOL: String
+
+          @key_store: String | nil
+          @key_store_pass: String | nil
+          @client_auth: bool
+          @ssl_protocol: String
+          @key_file: String | nil
+          @cert_file: String | nil
+          @certs: String | nil
+          @certs_pass: String | nil
+          @trace_ssl: bool
+          @sslctx: untyped
+          @app_protocols: Array[String]
+
+          attr_reader key_store: String | nil
+          attr_reader key_store_pass: String | nil
+          attr_reader client_auth: bool
+          attr_reader ssl_protocol: String
+          attr_reader key_file: String | nil
+          attr_reader cert_file: String | nil
+          attr_reader certs: String | nil
+          attr_reader certs_pass: String | nil
+          attr_reader trace_ssl: bool
+          attr_reader sslctx: untyped
+          attr_reader app_protocols: Array[String]
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def set_app_protocols: (Array[String] protocols) -> void
+          def new_transporter: (Integer agt_id, untyped sip, Integer buf_size) -> untyped
+          def reload_cert: -> void
+          def init_ssl: -> void
+
+          private
+          def get_file_path: (String file) -> String
+        end
+      end
+    end
+  end
+end

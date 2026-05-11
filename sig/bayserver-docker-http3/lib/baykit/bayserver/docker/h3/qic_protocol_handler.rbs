@@ -1,0 +1,71 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module H3
+        class QicProtocolHandler
+          MAX_DATAGRAM_SIZE: Integer
+          PROTOCOL: String
+
+          class PartialResponse
+            @headers: Array[Array[String]] | nil
+            @body: String | nil
+            @written: Integer
+            @fin: bool
+            @listener: Proc | nil
+            @finished: bool
+
+            attr_accessor headers: Array[Array[String]] | nil
+            attr_accessor body: String | nil
+            attr_accessor written: Integer
+            attr_accessor fin: bool
+            attr_accessor listener: Proc | nil
+            attr_accessor finished: bool
+
+            def initialize: (?headers: Array[Array[String]] | nil, ?body: String | nil, ?written: Integer, ?fin: bool, ?listener: Proc | nil) -> void
+          end
+
+          @ship: untyped  # Common::InboundShip | nil
+          @inbound_handler: QicInboundHandler
+          @con: untyped  # Croute::Quic::Connection
+          @sender: untyped  # Addrinfo or Array
+          @local_addr: untyped  # Croute::Quic::Address
+          @peer_addr: untyped  # Croute::Quic::Address
+          @h3_config: untyped  # Croute::H3::Config
+          @multiplexer: Common::Multiplexer
+          @h3con: untyped  # Croute::H3::Connection | nil
+          @partial_responses: Hash[Integer, Array[PartialResponse]]
+          @send_scratch: String
+          @send_info: untyped
+
+          attr_accessor ship: untyped
+          attr_reader con: untyped
+          attr_reader h3con: untyped
+          attr_reader sender: untyped
+          attr_reader local_addr: untyped
+          attr_reader peer_addr: untyped
+          attr_reader partial_responses: Hash[Integer, Array[PartialResponse]]
+          attr_reader h3_config: untyped
+          attr_reader multiplexer: Common::Multiplexer
+          attr_reader inbound_handler: QicInboundHandler
+
+          def initialize: (QicInboundHandler inbound_handler, untyped con, untyped sender_addr, untyped local_addr, untyped peer_addr, untyped h3_config, Common::Multiplexer multiplexer) -> void
+          def init: (untyped ship) -> void
+          def to_s: -> String
+          def protocol: -> String
+          def bytes_received: (String buf) -> Integer
+          def http3_connection: -> untyped
+          def process_h3_connection: (untyped h3c) -> void
+          def dispatch_event: (untyped ev) -> void
+          def flush_writable: -> void
+          def on_stream_writable: (Integer stm_id) -> void
+          def add_partial_response: (Integer stm_id, PartialResponse part) -> void
+          def post_packets: -> bool
+          def closed?: -> bool
+          def peer_or_local_error_code: -> Integer
+          def reset: -> void
+        end
+      end
+    end
+  end
+end

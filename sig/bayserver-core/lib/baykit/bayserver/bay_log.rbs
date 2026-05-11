@@ -1,5 +1,3 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
@@ -10,28 +8,30 @@ module Baykit
       LOG_LEVEL_WARN: Integer
       LOG_LEVEL_ERROR: Integer
       LOG_LEVEL_FATAL: Integer
-      LOG_LEVEL_NAME: [String, String, String, String, String, String]
-      self.@log_level: Integer
-      self.@full_path: String
+      LOG_LEVEL_NAME: Array[String]
 
-      def self.set_log_level: (String lvl) -> Integer?
-      def self.info: (String fmt, *untyped args) -> nil
-      def self.trace: (String fmt, *untyped args) -> nil
-      def self.debug: (String fmt, *untyped args) -> nil
-      def self.debug_e: (Exception err, ?nil fmt, *untyped args) -> nil
-      def self.warn: (String fmt, *bot args) -> nil
-      def self.warn_e: (Exception err, ?nil fmt, *untyped args) -> nil
-      def self.error: (String fmt, *untyped args) -> nil
-      def self.error_e: (Exception err, ?nil fmt, *untyped args) -> nil
-      def self.fatal: (String fmt, *untyped args) -> nil
-      def self.fatal_e: (Exception err, ?nil fmt, *untyped args) -> bot
-      def self.log: (Integer lvl, Integer stack_idx, Exception err, String? fmt, Array[untyped] args) -> nil
+      self.@log_level: Integer
+      self.@full_path: bool
+
+      def self.set_log_level: (String lvl) -> void
+      def self.info: (String fmt, *untyped args) -> void
+      def self.trace: (String fmt, ?untyped arg1, ?untyped arg2, ?untyped arg3, ?untyped arg4, ?untyped arg5, ?untyped arg6, ?untyped arg7, ?untyped arg8, ?untyped arg9, ?untyped arg10) -> void
+      def self.trace_e: (Exception err, ?String? fmt, ?untyped arg1, ?untyped arg2, ?untyped arg3, ?untyped arg4, ?untyped arg5, ?untyped arg6, ?untyped arg7, ?untyped arg8, ?untyped arg9, ?untyped arg10) -> void
+      def self.debug: (String fmt, ?untyped arg1, ?untyped arg2, ?untyped arg3, ?untyped arg4, ?untyped arg5, ?untyped arg6, ?untyped arg7, ?untyped arg8, ?untyped arg9, ?untyped arg10) -> void
+      def self.debug_e: (Exception err, ?String? fmt, ?untyped arg1, ?untyped arg2, ?untyped arg3, ?untyped arg4, ?untyped arg5, ?untyped arg6, ?untyped arg7, ?untyped arg8, ?untyped arg9, ?untyped arg10) -> void
+      def self.warn: (String fmt, *untyped args) -> void
+      def self.warn_e: (Exception err, ?String? fmt, *untyped args) -> void
+      def self.error: (String fmt, *untyped args) -> void
+      def self.error_e: (Exception err, ?String? fmt, *untyped args) -> void
+      def self.fatal: (String fmt, *untyped args) -> void
+      def self.fatal_e: (Exception err, ?String? fmt, *untyped args) -> void
+      def self.log: (Integer lvl, Integer stack_idx, Exception? err, String? fmt, Array[untyped] args) -> void
       def self.debug_mode?: -> bool
       def self.trace_mode?: -> bool
-      def self.print_exception: (Exception err) -> nil
+      def self.print_exception: (Exception err) -> void
 
       private
-      def self.parse_caller: (String str) -> [String?, String?, String?]
+      def self.parse_caller: (String str) -> Array[String]
     end
   end
 end

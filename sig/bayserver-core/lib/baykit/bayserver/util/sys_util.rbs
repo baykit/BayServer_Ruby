@@ -16,6 +16,7 @@ module Baykit
         def self.pid: -> Integer
         def self.processor_count: -> Integer
         def self.support_unix_domain_socket_address: -> bool
+        def self.support_reuse_port?: -> bool
       end
     end
   end

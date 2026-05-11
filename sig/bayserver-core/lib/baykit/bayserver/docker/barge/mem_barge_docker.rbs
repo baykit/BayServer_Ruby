@@ -1,0 +1,72 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Barge
+        class MemBargeDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Barge
+
+          class MemCargo
+            include Baykit::BayServer::Docker::Barge::Cargo
+
+            LOADING: Integer
+            LOADED: Integer
+            EXCEEDED: Integer
+
+            @docker: MemBargeDocker
+            @path: String
+            @buf_length: Integer
+            @status: Integer
+            @buf: Util::SimpleBuffer
+            @headers: Util::Headers
+            @last_accessed_time_millis: Integer
+            @waiters: Array[Rudders::Rudder]
+            @lock: Thread::Mutex
+
+            attr_reader docker: MemBargeDocker
+            attr_reader path: String
+            attr_reader buf_length: Integer
+            attr_reader status: Integer
+            attr_reader buf: Util::SimpleBuffer
+            attr_reader headers: Util::Headers
+            attr_reader last_accessed_time_millis: Integer
+            attr_reader waiters: Array[Rudders::Rudder]
+            attr_reader lock: Thread::Mutex
+
+            def initialize: (MemBargeDocker docker, String path) -> void
+            def content: -> String
+            def length: -> Integer
+            def on_barge?: -> bool
+            def exceeded?: -> bool
+            def save_headers: (Util::Headers headers) -> void
+            def save_content: (String bytes, Integer offset, Integer len) -> void
+            def end_save: -> void
+            def release_rudder: (Rudders::Rudder rudder) -> void
+            def access: -> void
+            def expired?: -> bool
+            def try_add_waiter: (Rudders::Rudder rd) -> bool
+          end
+
+          @name: String | nil
+          @capacity: Integer
+          @total_size: Integer
+          @cargo_map: Hash[String, MemCargo]
+          @lock: Thread::Mutex
+
+          attr_reader name: String | nil
+          attr_reader capacity: Integer
+          attr_reader total_size: Integer
+          attr_reader cargo_map: Hash[String, MemCargo]
+          attr_reader lock: Thread::Mutex
+
+          def initialize: -> void
+          def to_s: -> String
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def get_cargo: (Tours::Tour tour) -> Array[untyped]  # [MemCargo, Rudder | nil]
+          def add_total: (Integer len) -> void
+        end
+      end
+    end
+  end
+end

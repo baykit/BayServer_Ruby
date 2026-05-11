@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    class ConfigException < BayException
+      @file_name: String
+      @line_no: Integer
+
+      attr_reader file_name: String
+      attr_reader line_no: Integer
+
+      def initialize: (String file_name, Integer line_no, String fmt, *untyped args) -> void
+      def message: -> String
+      def self.create_message: (String? msg, String fname, Integer line) -> String
+    end
+  end
+end

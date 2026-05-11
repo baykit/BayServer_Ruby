@@ -1,5 +1,3 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
@@ -30,17 +28,20 @@ module Baykit
         CONNECTION_CLOSE: Integer
         CONNECTION_KEEP_ALIVE: Integer
         CONNECTION_UPGRADE: Integer
-        CONNECTION_UNKOWN: Integer
-        include Util
+        CONNECTION_UNKNOWN: Integer
+
         @headers: Hash[String, Array[String]]
         @status: Integer
+
+        attr_reader status: Integer
+        attr_reader headers: Hash[String, Array[String]]
 
         def initialize: -> void
         def to_s: -> String
         def clear: -> void
         def copy_to: (Headers dst) -> void
         def status=: (Integer new_val) -> void
-        def get: (String name) -> String
+        def get: (String name) -> (String | nil)
         def get_int: (String name) -> Integer
         def set: (String name, String value) -> void
         def set_int: (String name, Integer value) -> void
@@ -51,10 +52,10 @@ module Baykit
         def count: -> Integer
         def contains: (String name) -> bool
         def remove: (String name) -> void
-        def content_type: -> String
+        def content_type: -> (String | nil)
         def set_content_type: (String `type`) -> void
         def content_length: -> Integer
-        def set_content_length: (Integer len) -> voi
+        def set_content_length: (Integer len) -> void
         def get_connection: -> Integer
       end
     end

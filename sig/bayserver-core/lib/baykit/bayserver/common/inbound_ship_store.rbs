@@ -1,0 +1,25 @@
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class InboundShipStore < Baykit::BayServer::Util::ObjectStore
+        class AgentListener
+          include Baykit::BayServer::Agent::LifecycleListener
+
+          def add: (Integer agt_id) -> void
+          def remove: (Integer agt_id) -> void
+        end
+
+        self.@stores: Hash[Integer, InboundShipStore]
+
+        def self.stores: -> Hash[Integer, InboundShipStore]
+
+        def initialize: -> void
+        def print_usage: (Integer indent) -> void
+
+        def self.init: -> void
+        def self.get_store: (Integer agent_id) -> InboundShipStore
+      end
+    end
+  end
+end

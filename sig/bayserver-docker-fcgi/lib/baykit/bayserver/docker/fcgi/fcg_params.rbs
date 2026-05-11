@@ -1,0 +1,46 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgParams
+          PATH: String
+          CONTEXT_DOCUMENT_ROOT: String
+          CONTEXT_PREFIX: String
+          CONTENT_TYPE: String
+          CONTENT_LENGTH: String
+          DOCUMENT_ROOT: String
+          GATEWAY_INTERFACE: String
+          HTTP_ACCEPT: String
+          HTTP_ACCEPT_ENCODING: String
+          HTTP_ACCEPT_LANGUAGE: String
+          HTTP_CACHE_CONTROL: String
+          HTTP_COOKIE: String
+          HTTP_CONNECTION: String
+          HTTP_HOST: String
+          HTTP_USER_AGENT: String
+          HTTP_UPGRADE_INSECURE_REQUESTS: String
+          QUERY_STRING: String
+          REMOTE_ADDR: String
+          REQUEST_SCHEME: String
+          REQUEST_URI: String
+          REMOTE_PORT: String
+          REQUEST_METHOD: String
+          SCRIPT_NAME: String
+          SCRIPT_FILENAME: String
+          SERVER_ADDR: String
+          SERVER_ADMIN: String
+          SERVER_NAME: String
+          SERVER_PORT: String
+          SERVER_PROTOCOL: String
+          SERVER_SIGNATURE: String
+          SERVER_SOFTWARE: String
+          UNIQUE_ID: String
+          X_FORWARDED_FOR: String
+          X_FORWARDED_PROTO: String
+          X_FORWARDED_PORT: String
+        end
+      end
+    end
+  end
+end

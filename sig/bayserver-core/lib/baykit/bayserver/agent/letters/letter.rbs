@@ -1,16 +1,20 @@
-# TypeProf 0.21.3
-
 # Classes
 module Baykit
   module BayServer
     module Agent
       module Letters
         class Letter
-          @state_id: Integer
-          @rudder: Rudders::Rudder
-          @multiplexer: Common::Multiplexer
+          include Baykit::BayServer::Util::Reusable
 
-          def initialize: (Integer state_id, Rudders::Rudder rd, Common::Multiplexer mpx) -> void
+          @rudder: Rudders::Rudder | nil
+          @multiplexer: Common::Multiplexer | nil
+
+          attr_accessor rudder: Rudders::Rudder | nil
+          attr_accessor multiplexer: Common::Multiplexer | nil
+
+          def initialize: -> void
+          def init: (Rudders::Rudder rd, Common::Multiplexer mpx) -> void
+          def reset: -> void
         end
       end
     end

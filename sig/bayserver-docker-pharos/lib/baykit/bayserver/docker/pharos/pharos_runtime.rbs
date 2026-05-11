@@ -1,0 +1,46 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Pharos
+        class PharosRuntime
+          NAME_OFFSET: Integer
+          UB_WRITE_OFFSET: Integer
+
+          class ReqCtx
+            @tour: Tours::Tour | nil
+            @headers_sent: bool
+            @error: Exception | nil
+            @tsrm_registered: bool
+
+            attr_accessor tour: Tours::Tour | nil
+            attr_accessor headers_sent: bool
+            attr_accessor error: Exception | nil
+            attr_accessor tsrm_registered: bool
+
+            def initialize: -> void
+          end
+
+          @lib_php_path: String
+          @handle: untyped  # Fiddle::Handle | nil
+          @ub_write_closure: untyped  # Fiddle::Closure | nil
+          @fpm_fcgi_name: untyped  # Fiddle::Pointer | nil
+          @php_embed_init: untyped  # Fiddle::Function
+          @php_request_startup: untyped
+          @php_request_shutdown: untyped
+          @zend_eval_string: untyped
+          @ts_resource_ex: untyped
+
+          def initialize: (String lib_php_path) -> void
+          def init: -> void
+          def run_script: (Tours::Tour tour, String php_code, String label) -> bool
+
+          private
+          def thread_ctx: -> ReqCtx
+          def make_fn: (untyped addr, Array[untyped] arg_types, untyped ret_type) -> untyped
+          def ub_write_impl: (untyped str_addr, Integer length) -> Integer
+        end
+      end
+    end
+  end
+end

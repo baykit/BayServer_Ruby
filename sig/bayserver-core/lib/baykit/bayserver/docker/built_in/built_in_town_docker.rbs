@@ -1,0 +1,39 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInTownDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Baykit::BayServer::Docker::Town # implements
+
+          @name: String | nil
+          @location: String | nil
+          @welcome: String | nil
+          @clubs: Array[untyped]
+          @permission_list: Array[untyped]
+          @city: untyped
+          @reroute_list: Array[untyped]
+          @barges: Baykit::BayServer::Common::Barges
+
+          attr_reader name: String | nil
+          attr_reader location: String | nil
+          attr_reader welcome: String | nil
+          attr_reader clubs: Array[untyped]
+          attr_reader permission_list: Array[untyped]
+          attr_reader city: untyped
+          attr_reader reroute_list: Array[untyped]
+          attr_reader barges: Baykit::BayServer::Common::Barges
+
+          def initialize: -> void
+          def init: (Bcf::BcfElement elm, untyped parent) -> void
+          def init_docker: (Docker dkr) -> bool
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+          def find_barge: (String path) -> untyped
+          def reroute: (String uri) -> String
+          def matches: (String uri) -> Integer
+          def tour_admitted: (Tours::Tour tur) -> void
+        end
+      end
+    end
+  end
+end

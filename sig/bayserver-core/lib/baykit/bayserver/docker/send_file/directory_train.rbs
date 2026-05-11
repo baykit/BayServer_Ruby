@@ -1,0 +1,22 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module SendFile
+        class DirectoryTrain < Baykit::BayServer::Train::Train
+          @path: String
+          @available: bool
+          @abortable: bool
+
+          attr_reader path: String
+          attr_reader available: bool
+          attr_reader abortable: bool
+
+          def initialize: (Tours::Tour tur, String path) -> void
+          def depart: -> void
+          def print_link: (untyped w, String path) -> void
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,83 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H2
+          class H2PacketUnPacker < Baykit::BayServer::Protocol::PacketUnPacker
+            STATE_READ_LENGTH: Integer
+            STATE_READ_TYPE: Integer
+            STATE_READ_FLAGS: Integer
+            STATE_READ_STREAM_IDENTIFIER: Integer
+            STATE_READ_FLAME_PAYLOAD: Integer
+            STATE_END: Integer
+
+            FRAME_LEN_LENGTH: Integer
+            FRAME_LEN_TYPE: Integer
+            FRAME_LEN_FLAGS: Integer
+            FRAME_LEN_STREAM_IDENTIFIER: Integer
+
+            FLAGS_END_STREAM: Integer
+            FLAGS_END_HEADERS: Integer
+            FLAGS_PADDED: Integer
+            FLAGS_PRIORITY: Integer
+
+            CONNECTION_PREFACE: String
+
+            @state: Integer
+            @tmp_buf: Util::SimpleBuffer
+            @item: FrameHeaderItem
+            @preface_read: bool
+            @type: Integer | nil
+            @payload_len: Integer
+            @flags: Integer
+            @stream_id: Integer
+            @cmd_unpacker: H2CommandUnPacker
+            @pkt_store: Protocol::PacketStore
+            @server_mode: bool
+            @cont_len: Integer
+            @read_bytes: Integer
+            @pos: Integer
+
+            attr_reader state: Integer
+            attr_reader tmp_buf: Util::SimpleBuffer
+            attr_reader item: FrameHeaderItem
+            attr_reader preface_read: bool
+            attr_reader type: Integer | nil
+            attr_reader payload_len: Integer
+            attr_reader flags: Integer
+            attr_reader stream_id: Integer
+            attr_reader cmd_unpacker: H2CommandUnPacker
+            attr_reader pkt_store: Protocol::PacketStore
+            attr_reader server_mode: bool
+            attr_reader cont_len: Integer
+            attr_reader read_bytes: Integer
+            attr_reader pos: Integer
+
+            def initialize: (H2CommandUnPacker cmd_unpacker, Protocol::PacketStore pkt_store, bool server_mode) -> void
+            def reset: -> void
+            def reset_state: -> void
+            def bytes_received: (String buf) -> Integer
+
+            private
+            def read_header_item: (String buf) -> bool
+            def change_state: (Integer new_state) -> void
+
+            class FrameHeaderItem
+              @start: Integer
+              @len: Integer
+              @pos: Integer
+
+              attr_reader start: Integer
+              attr_reader len: Integer
+              attr_accessor pos: Integer
+
+              def initialize: (Integer start, Integer len) -> void
+              def get: (Util::SimpleBuffer buf, Integer index) -> Integer
+            end
+          end
+        end
+      end
+    end
+  end
+end

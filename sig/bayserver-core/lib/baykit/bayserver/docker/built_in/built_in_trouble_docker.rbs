@@ -1,0 +1,21 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class BuiltInTroubleDocker < Baykit::BayServer::Docker::Base::DockerBase
+          include Trouble # implements
+
+          @cmd_map: Hash[Integer, untyped]
+
+          attr_reader cmd_map: Hash[Integer, untyped]
+
+          def initialize: -> void
+          def init_key_val: (Bcf::BcfKeyVal kv) -> bool
+        end
+
+        def find: (Integer status) -> untyped
+      end
+    end
+  end
+end

@@ -1,0 +1,17 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class RoughTime
+        INTERVAL_MS: Integer
+
+        self.@cur_ms: Integer | nil
+        self.@timer_thread: Thread | nil
+
+        def self.init: -> void
+        def self.current_time_millis: -> Integer
+        def self.current_time_secs: -> Integer
+      end
+    end
+  end
+end

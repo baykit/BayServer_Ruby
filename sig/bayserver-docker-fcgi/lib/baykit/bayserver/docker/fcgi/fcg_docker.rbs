@@ -1,0 +1,14 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        module FcgDocker
+          include Baykit::BayServer::Docker::Docker
+
+          PROTO_NAME: String
+        end
+      end
+    end
+  end
+end

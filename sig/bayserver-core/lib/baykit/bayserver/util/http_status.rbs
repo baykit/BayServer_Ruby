@@ -1,0 +1,32 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class HttpStatus
+        OK: Integer
+        MOVED_PERMANENTLY: Integer
+        MOVED_TEMPORARILY: Integer
+        NOT_MODIFIED: Integer
+        BAD_REQUEST: Integer
+        UNAUTHORIZED: Integer
+        FORBIDDEN: Integer
+        NOT_FOUND: Integer
+        UPGRADE_REQUIRED: Integer
+        INTERNAL_SERVER_ERROR: Integer
+        SERVICE_UNAVAILABLE: Integer
+        GATEWAY_TIMEOUT: Integer
+        HTTP_VERSION_NOT_SUPPORTED: Integer
+
+        self.@status: Hash[Integer, String]
+        self.@initialized: bool
+        self.@desc_ok: String | nil
+
+        def self.status: -> Hash[Integer, String]
+        def self.initialized: -> bool
+
+        def self.init: (String bcf_file) -> void
+        def self.description: (Integer status_code) -> String
+      end
+    end
+  end
+end

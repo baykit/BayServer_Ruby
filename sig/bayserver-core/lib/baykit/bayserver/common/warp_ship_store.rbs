@@ -1,0 +1,26 @@
+# Classes
+module Baykit
+  module BayServer
+    module Common
+      class WarpShipStore < Baykit::BayServer::Util::ObjectStore
+        @keep_list: Array[untyped]
+        @busy_list: Array[untyped]
+        @max_ships: Integer
+        @lock: Mutex
+
+        attr_reader keep_list: Array[untyped]
+        attr_reader busy_list: Array[untyped]
+        attr_reader max_ships: Integer
+        attr_reader lock: Mutex
+
+        def initialize: (Integer max_ships) -> void
+        def to_s: -> String
+        def rent: -> untyped
+        def keep: (untyped wsip) -> void
+        def Return: (untyped wsip) -> void
+        def count: -> Integer
+        def print_usage: (Integer indent) -> void
+      end
+    end
+  end
+end

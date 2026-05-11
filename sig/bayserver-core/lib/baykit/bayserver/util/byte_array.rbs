@@ -1,0 +1,23 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class ByteArray
+        INITIAL_BUF_SIZE: Integer
+
+        @buf: String
+        @capacity: Integer
+
+        attr_reader buf: String
+
+        def initialize: (?String? buf) -> void
+        def clear: -> void
+        def length: -> Integer
+        def put_bytes: (untyped bytes, ?Integer ofs, ?Integer len) -> void
+
+        private
+        def extend_buf: -> void
+      end
+    end
+  end
+end

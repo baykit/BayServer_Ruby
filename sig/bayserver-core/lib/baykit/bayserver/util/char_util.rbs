@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class CharUtil
+        CR: String
+        LF: String
+        CRLF: String
+        CR_BYTE: Integer
+        LF_BYTE: Integer
+
+        def self.is_ascii: (String c) -> bool
+      end
+    end
+  end
+end

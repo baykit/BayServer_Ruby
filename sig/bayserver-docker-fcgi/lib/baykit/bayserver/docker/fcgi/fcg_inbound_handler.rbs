@@ -1,29 +1,32 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
     module Docker
       module Fcgi
         class FcgInboundHandler
+          include Baykit::BayServer::Common::InboundHandler
+          include FcgHandler
+
           STATE_BEGIN_REQUEST: Integer
           STATE_READ_PARAMS: Integer
           STATE_READ_STDIN: Integer
-          @env: Hash[untyped, untyped]
+
+          @env: Hash[String, String]
           @state: Integer
           @req_id: Integer
           @cont_len: Integer
-          @protocol_handler: untyped
-          @req_keep_alive: untyped
+          @protocol_handler: FcgProtocolHandler | nil
+          @req_keep_alive: bool
 
           def initialize: -> void
-          def init: (untyped proto_handler) -> void
+          def init: (FcgProtocolHandler proto_handler) -> void
           def to_s: -> String
-          def reset: -> Integer
+          def reset: -> void
           def send_res_headers: (Tours::Tour tur) -> void
-          def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) -> void
-          def send_end_tour: (Tours::Tour tur, untyped keep_alive) -> void
-          def on_protocol_error: (untyped err) -> bool
+          def send_res_content: (Tours::Tour tur, String bytes, Integer ofs, Integer len) ?{ (?bool) -> void } -> bool
+          def transfer_content: (Tours::Tour tur, Rudders::Rudder file_rd, Integer ofs, Integer len) ?{ () -> void } -> void
+          def send_end_tour: (Tours::Tour tur) ?{ (?bool) -> void } -> void
+          def on_protocol_error: (Exception err) -> bool
           def handle_begin_request: (Command::CmdBeginRequest cmd) -> Integer
           def handle_end_request: (Command::CmdEndRequest cmd) -> Integer
           def handle_params: (Command::CmdParams cmd) -> Integer
@@ -40,7 +43,9 @@ module Baykit
           def start_tour: (Tours::Tour tur) -> void
 
           class InboundProtocolHandlerFactory
-            def create_protocol_handler: (Protocol::PacketStore pkt_store) -> Protocol::ProtocolHandler
+            include Baykit::BayServer::Protocol::ProtocolHandlerFactory
+
+            def create_protocol_handler: (Protocol::PacketStore pkt_store) -> FcgProtocolHandler
           end
         end
       end

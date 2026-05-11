@@ -1,0 +1,24 @@
+# Classes
+module Baykit
+  module BayServer
+    module Train
+      class Train
+        self.@train_id_counter: Baykit::BayServer::Util::Counter
+
+        def self.train_id_counter: -> Baykit::BayServer::Util::Counter
+
+        @tour: untyped
+        @tour_id: Integer
+        @train_id: Integer
+
+        attr_reader tour: untyped
+        attr_reader tour_id: Integer
+        attr_reader train_id: Integer
+
+        def initialize: (untyped tur) -> void
+        def to_s: -> String
+        def run: -> void
+      end
+    end
+  end
+end

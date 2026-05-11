@@ -1,0 +1,51 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Fcgi
+        class FcgPacketUnPacker < Baykit::BayServer::Protocol::PacketUnPacker
+          STATE_REQD_PREAMBLE: Integer
+          STATE_READ_CONTENT: Integer
+          STATE_READ_PADDING: Integer
+          STATE_END: Integer
+
+          @header_buf: Util::SimpleBuffer
+          @data_buf: Util::SimpleBuffer
+          @version: Integer
+          @type: Integer | nil
+          @req_id: Integer
+          @length: Integer
+          @padding: Integer
+          @padding_read_bytes: Integer
+          @state: Integer
+          @cmd_unpacker: FcgCommandUnPacker
+          @pkt_store: Protocol::PacketStore
+          @cont_len: Integer
+          @read_bytes: Integer
+
+          attr_reader header_buf: Util::SimpleBuffer
+          attr_reader data_buf: Util::SimpleBuffer
+          attr_reader version: Integer
+          attr_reader type: Integer | nil
+          attr_reader req_id: Integer
+          attr_reader length: Integer
+          attr_reader padding: Integer
+          attr_reader padding_read_bytes: Integer
+          attr_reader state: Integer
+          attr_reader cmd_unpacker: FcgCommandUnPacker
+          attr_reader pkt_store: Protocol::PacketStore
+          attr_reader cont_len: Integer
+          attr_reader read_bytes: Integer
+
+          def initialize: (Protocol::PacketStore pkt_store, FcgCommandUnPacker cmd_unpacker) -> void
+          def reset: -> void
+          def bytes_received: (String buf) -> Integer
+          def change_state: (Integer new_state) -> void
+          def header_read_done: -> void
+          def byte_to_int: (Integer b) -> Integer
+          def bytes_to_int: (Integer b1, Integer b2) -> Integer
+        end
+      end
+    end
+  end
+end

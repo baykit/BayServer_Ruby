@@ -1,0 +1,20 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class KeyValListParser
+        @item_sep: String
+        @kv_sep: String
+
+        attr_reader item_sep: String
+        attr_reader kv_sep: String
+
+        def initialize: (?String item_sep, ?String key_val_sep) -> void
+        def parse: (String str) -> Array[KeyVal]
+
+        private
+        def divide_param: (String str) -> KeyVal
+      end
+    end
+  end
+end

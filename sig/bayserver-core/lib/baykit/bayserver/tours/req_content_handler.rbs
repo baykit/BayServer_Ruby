@@ -1,5 +1,3 @@
-# TypeProf 0.21.11
-
 # Classes
 module Baykit
   module BayServer
@@ -7,16 +5,12 @@ module Baykit
       module ReqContentHandler
         DEV_NULL: DevNullReqContentHandler
 
-        def on_read_req_content: (Tour tur, String buf, int start, int len) -> void
+        def on_read_req_content: (Tour tur, String buf, Integer start, Integer len) ?{ (Integer, bool) -> void } -> void
         def on_end_req_content: (Tour tur) -> void
         def on_abort_req: (Tour tur) -> bool
 
         class DevNullReqContentHandler
           include ReqContentHandler
-
-          def on_read_req_content: (Tour tur, String buf, int start, int len) -> void
-          def on_end_req_content: (Tour tur) -> void
-          def on_abort_req: (Tour tur) -> bool
         end
       end
     end

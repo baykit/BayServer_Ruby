@@ -1,0 +1,13 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class Mimes
+        @@mime_map: Hash[String, String]
+
+        def self.init: (String bcf_file) -> void
+        def self.type: (String ext) -> (String | nil)
+      end
+    end
+  end
+end

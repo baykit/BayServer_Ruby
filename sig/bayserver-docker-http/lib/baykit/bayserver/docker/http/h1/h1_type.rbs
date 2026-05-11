@@ -1,0 +1,16 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module Http
+        module H1
+          class H1Type
+            HEADER: Integer
+            CONTENT: Integer
+            END_CONTENT: Integer
+          end
+        end
+      end
+    end
+  end
+end

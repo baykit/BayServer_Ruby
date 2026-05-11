@@ -1,0 +1,9 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class DataConsumeListener
+      end
+    end
+  end
+end

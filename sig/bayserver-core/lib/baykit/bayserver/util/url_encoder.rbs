@@ -1,0 +1,10 @@
+# Classes
+module Baykit
+  module BayServer
+    module Util
+      class URLEncoder
+        def self.encode_tilde: (String url) -> String
+      end
+    end
+  end
+end

@@ -1,0 +1,33 @@
+# Classes
+module Baykit
+  module BayServer
+    module Docker
+      module BuiltIn
+        class WaitCargoShip < Baykit::BayServer::Common::ReadOnlyShip
+          @cargo: untyped  # Docker::Barge::Cargo
+          @club: untyped  # Docker::Club
+          @tour: Tours::Tour | nil
+          @tour_id: Integer
+
+          attr_reader cargo: untyped
+          attr_reader club: untyped
+          attr_reader tour: Tours::Tour | nil
+          attr_reader tour_id: Integer
+
+          def initialize: -> void
+          def init: (Rudders::Rudder rd, untyped tp, Tours::Tour tur, untyped cgo, untyped clb) -> void
+          def to_s: -> String
+          def reset: -> void
+          def notify_read: (String buf) -> Integer
+          def notify_error: (Exception e) -> void
+          def notify_eof: -> Integer
+          def notify_close: -> void
+          def check_timeout: (Integer duration_sec) -> bool
+
+          private
+          def send_cargo_on_board: -> void
+        end
+      end
+    end
+  end
+end
