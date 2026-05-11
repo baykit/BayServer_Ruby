@@ -1,3 +1,5 @@
+require 'baykit/bayserver/protocol/command_handler'
+
 module Baykit
   module BayServer
     module Docker

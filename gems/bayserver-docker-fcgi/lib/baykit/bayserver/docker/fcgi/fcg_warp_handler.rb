@@ -9,6 +9,7 @@ require 'baykit/bayserver/util/simple_buffer'
 require 'baykit/bayserver/util/cgi_util'
 
 require 'baykit/bayserver/common/warp_data'
+require 'baykit/bayserver/common/warp_handler'
 require 'baykit/bayserver/docker/fcgi/fcg_protocol_handler'
 require 'baykit/bayserver/docker/fcgi/command/package'
 require 'baykit/bayserver/docker/fcgi/fcg_params'

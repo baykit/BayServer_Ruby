@@ -1,6 +1,7 @@
 require 'baykit/bayserver/common/transporter'
 require 'baykit/bayserver/protocol/protocol_exception'
 require 'baykit/bayserver/agent/next_socket_action'
+require 'baykit/bayserver/agent/upgrade_exception'
 
 module Baykit
   module BayServer

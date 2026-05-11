@@ -133,21 +133,26 @@ module Baykit
 
               end
 
-              if state == STATE_END
+              if @state == STATE_END
                 pkt = @pkt_store.rent(@type)
                 pkt.req_id = @req_id
                 pkt.header_accessor.put_bytes(@header_buf.buf, 0, @header_buf.length)
                 pkt.data_accessor.put_bytes(@data_buf.buf, 0, @data_buf.length)
+                # Reset accessor positions so unpack() reads from offset 0.
+                # Matches the convention in h2_packet_unpacker; without these
+                # resets, unpack() sees @pos=length and immediately overruns.
+                pkt.header_accessor.reset
+                pkt.data_accessor.reset
 
                 begin
-                  state = @cmd_unpacker.packet_received(pkt)
+                  next_state = @cmd_unpacker.packet_received(pkt)
                 ensure
                   @pkt_store.Return(pkt)
                 end
 
                 reset()
 
-                case state
+                case next_state
                 when NextSocketAction::SUSPEND
                   next_suspend = true
                 when NextSocketAction::CONTINUE
@@ -155,7 +160,7 @@ module Baykit
                 when NextSocketAction::WRITE
                   next_write = true
                 when NextSocketAction::CLOSE
-                  return state
+                  return next_state
                 end
 
               end
