@@ -105,6 +105,18 @@ module Baykit
           @pos += len
         end
 
+        # Allocate a fresh ASCII-8BIT String of the next `len` bytes and
+        # advance the read cursor. Equivalent to the (StringUtil.alloc +
+        # get_bytes) two-step the FCGI param reader used to do, but in
+        # one byteslice -- one alloc, one native copy, no intermediate
+        # zero-fill of the destination.
+        def read_substring(len)
+          check_read(len)
+          s = @packet.buf.byteslice(@start + @pos, len)
+          @pos += len
+          s
+        end
+
         def get_short
           h = get_byte
           l = get_byte

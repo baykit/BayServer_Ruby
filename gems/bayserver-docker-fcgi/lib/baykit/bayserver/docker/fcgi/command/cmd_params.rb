@@ -76,11 +76,11 @@ module Baykit
                 name_len = read_length(acc)
                 value_len = read_length(acc)
 
-                name = StringUtil.alloc(name_len)
-                acc.get_bytes(name, 0, name_len)
-
-                value = StringUtil.alloc(value_len)
-                acc.get_bytes(value, 0, value_len)
+                # byteslice does one alloc + one native copy, where the
+                # old (StringUtil.alloc + get_bytes) pattern did
+                # zero-init + bytesplice -- one extra fill per param.
+                name  = acc.read_substring(name_len)
+                value = acc.read_substring(value_len)
 
                 BayLog.trace("Params: %s=%s", name, value)
                 add_param(name, value)
