@@ -2,6 +2,7 @@ require 'uri'
 
 require 'baykit/bayserver/agent/grand_agent'
 require 'baykit/bayserver/agent/lifecycle_listener'
+require 'baykit/bayserver/agent/multiplexer/spider_multiplexer'
 require 'baykit/bayserver/docker/warp'
 require 'baykit/bayserver/docker/base/club_base'
 require 'baykit/bayserver/common/warp_data'
@@ -210,6 +211,11 @@ module Baykit
                   skt = Socket.new(Socket::AF_UNIX, Socket::SOCK_STREAM, 0)
                 else
                   skt = Socket.new(@host_addr[1].ipv4? ? Socket::AF_INET : Socket::AF_INET6, Socket::SOCK_STREAM, 0)
+                  # Flip QUICKACK on once at connect time so the initial
+                  # ACK after the handshake doesn't get parked on the
+                  # delayed-ACK timer before SpiderMultiplexer's per-read
+                  # re-arm takes over (see commit msg of TCP_QUICKACK port).
+                  Baykit::BayServer::Agent::Multiplexer::SpiderMultiplexer.apply_quick_ack(skt)
                 end
                 rd = IORudder.new(skt)
 
@@ -235,6 +241,13 @@ module Baykit
               if need_connect
                 st = RudderStateStore.get_store(agt.agent_id).rent()
                 st.init(wsip.rudder, tp)
+                # Mark this state so the multiplexer re-arms TCP_QUICKACK
+                # after each read on this upstream socket. Backends like
+                # php-fpm leave Nagle on, so without QUICKACK the proxy's
+                # delayed-ACK timer adds 40ms per response in the few-MTU
+                # body range. Skip for unix-domain sockets (TCP_QUICKACK
+                # is TCP-only on Linux).
+                st.quick_ack = (@host_addr[0] != :UNIX)
                 agt.net_multiplexer.add_rudder_state(wsip.rudder, st)
                 agt.net_multiplexer.get_transporter(wsip.rudder).req_connect(wsip.rudder, @host_addr[1])
               end

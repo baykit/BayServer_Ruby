@@ -41,6 +41,22 @@ module Baykit
           attr_accessor :connecting
           attr_accessor :skip_formalities
 
+          # If true, the SpiderMultiplexer re-arms TCP_QUICKACK on this
+          # socket after every read so the kernel sends the ACK
+          # immediately instead of holding it on the delayed-ACK timer.
+          # Only meaningful for warp upstream connections to backends
+          # that keep Nagle on (= php-fpm and friends): the 40ms
+          # delayed-ACK timer combined with backend Nagle stalls
+          # 10KB-class responses at ~177 rps.
+          #
+          # Inbound (= client-facing) sockets don't need this -- the
+          # client is a wrk / browser / load balancer that sets
+          # TCP_NODELAY itself, and setsockopt per read measurably
+          # costs CPU at high rps -- so warp code sets the flag
+          # explicitly when wiring up the upstream socket, leaving
+          # inbound sockets untouched.
+          attr_accessor :quick_ack
+
           # Per-connection ObjectStore pool for WriteUnits. write_queue
           # holds in-flight units; @write_unit_store is the free-list,
           # both for the same connection. The store persists across
@@ -95,6 +111,7 @@ module Baykit
             @writing = false
             @bytes_read = 0
             @bytes_wrote = 0
+            @quick_ack = false
           end
 
           def to_s
@@ -123,6 +140,7 @@ module Baykit
             @reading = false
             @writing = false
             @timeout_sec = 0
+            @quick_ack = false
           end
 
           #########################################

@@ -1,3 +1,5 @@
+require 'socket'
+
 require 'baykit/bayserver/common/recipient'
 require 'baykit/bayserver/common/write_unit'
 require 'baykit/bayserver/rudders/rudder'
@@ -20,6 +22,30 @@ module Baykit
           include Baykit::BayServer::Rudders
           include Baykit::BayServer::Util
           include Baykit::BayServer::Common
+
+          # TCP_QUICKACK is one-shot on Linux: setting it makes the
+          # kernel send any pending ACK immediately, and the flag
+          # auto-clears on the next packet. Linux exposes it via
+          # setsockopt; macOS / Windows don't, so guard with respond_to?
+          # at load time and skip the syscall on platforms that lack it.
+          TCP_QUICKACK_SUPPORTED = defined?(Socket::TCP_QUICKACK)
+
+          # Apply TCP_QUICKACK to a rudder's underlying socket. Called
+          # from on_readable after each successful read on a warp
+          # upstream socket. The syscall is silently a no-op if the
+          # rudder doesn't expose a setsockopt-capable IO, or on
+          # platforms without TCP_QUICKACK.
+          def self.apply_quick_ack(rd)
+            return unless TCP_QUICKACK_SUPPORTED
+            io = rd.respond_to?(:io) ? rd.io : rd
+            return unless io.respond_to?(:setsockopt)
+            begin
+              io.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_QUICKACK, 1)
+            rescue
+              # Hot path -- swallow per-call failures (= rudder closed
+              # mid-read, non-TCP socket, etc.) rather than logging.
+            end
+          end
 
           class ChannelOperation
             include Baykit::BayServer::Util::Reusable # implements (for ObjectStore)
@@ -609,6 +635,15 @@ module Baykit
               end
 
               BayLog.debug("%s read %d bytes", self, len)
+              # Warp upstreams (= php-fpm, AJP backends) leave Nagle on,
+              # and the kernel's delayed-ACK timer pairs with that to add
+              # a 40ms stall to every response in the few-MTU body range.
+              # Re-arm TCP_QUICKACK on those sockets after each read so
+              # the next ACK fires immediately. Skip for inbound (=
+              # client-facing) sockets to avoid the per-read syscall cost;
+              # clients (wrk / browsers / load balancers) set TCP_NODELAY
+              # themselves and don't need this.
+              SpiderMultiplexer.apply_quick_ack(st.rudder) if st.quick_ack
               adr = st.rudder.respond_to?(:last_sender) ? st.rudder.last_sender : nil
               @agent.send_read_letter(st.rudder, self, len, adr, false)
 
