@@ -82,6 +82,11 @@ module Baykit
               h[m] = m.dup.freeze
             end.freeze
 
+            # Pre-frozen byte strings used by the chunked-encoding output
+            # path. LAST_CHUNK is the HTTP/1.1 terminator (`0\r\n\r\n`).
+            CRLF = "\r\n".b.freeze
+            LAST_CHUNK = "0\r\n\r\n".b.freeze
+
             attr :protocol_handler
             attr :header_read
             attr :state
@@ -89,6 +94,15 @@ module Baykit
             attr :cur_tour
             attr :cur_tour_id
             attr :http_protocol
+
+            # Whether the response in flight is being framed as HTTP/1.1
+            # "Transfer-Encoding: chunked". Set in send_res_headers when the
+            # upstream (or local handler) didn't supply a Content-Length
+            # and the client speaks HTTP/1.1, so we can keep the connection
+            # alive without a known body length. Each subsequent
+            # send_res_content / send_end_tour call inspects this to decide
+            # whether to wrap bytes in chunked frames.
+            attr_accessor :chunked_response
 
             def initialize
               super
@@ -115,29 +129,48 @@ module Baykit
               @remote_addr = nil
               @server_addr = nil
               @cur_req_id = 0
+              @chunked_response = false
             end
 
             ######################################################
             # implements InboundHandler
             ######################################################
             def send_res_headers(tur)
+              @chunked_response = false
 
               # determine Connection header value
               if tur.req.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE && tur.req.headers.get_connection() != Headers::CONNECTION_UNKNOWN
                 # If client doesn't support "Keep-Alive", set "Close"
                 res_con = "Close"
+              elsif tur.res.headers.status != HttpStatus::OK
+                res_con = "Close"
               else
-                res_con = "Keep-Alive"
                 # Client supports "Keep-Alive"
-                if tur.res.headers.get_connection() != Headers::CONNECTION_KEEP_ALIVE && tur.res.headers.get_connection() != Headers::CONNECTION_UNKNOWN
-                  # If tours doesn't need "Keep-Alive"
-                  if tur.res.headers.content_length() == -1
-                    # If content-length not specified
-                    if tur.res.headers.content_type() != nil &&
-                      tur.res.headers.content_type().start_with?("text/")
-                      # If content is text, connection must be closed
-                      res_con = "Close"
+                res_con = "Keep-Alive"
+
+                # If Content-Length is not set and the response has a body, we
+                # need a way to delimit the response. HTTP/1.1 supports
+                # chunked transfer-encoding for this exact case; falling back
+                # to "Connection: Close" (= read until EOF) was the historical
+                # BayServer behaviour but kills keep-alive against any backend
+                # that doesn't pre-compute Content-Length (e.g. php-fpm).
+                #
+                # For HTTP/1.1 + missing Content-Length + already-set
+                # Transfer-Encoding == none, set chunked. HTTP/1.0 / 0.9 don't
+                # support chunked, so they still close.
+                if tur.res.headers.content_length() == -1
+                  existing_te = tur.res.headers.get(Headers::HDR_TRANSFER_ENCODING)
+                  upstream_already_chunked =
+                    existing_te != nil && existing_te.downcase.include?("chunked")
+
+                  if tur.req.protocol == "HTTP/1.1"
+                    if !upstream_already_chunked
+                      tur.res.headers.set(Headers::HDR_TRANSFER_ENCODING, "chunked")
                     end
+                    @chunked_response = true
+                  else
+                    # HTTP/1.0 has no chunked: connection-close framing.
+                    res_con = "Close"
                   end
                 end
               end
@@ -159,6 +192,17 @@ module Baykit
 
             def send_res_content(tur, bytes, ofs, len, &callback)
               BayLog.debug("%s H1 send_res_content len=%d", self, len)
+              if @chunked_response && len > 0
+                # Wrap in chunked transfer-encoding frame:
+                #   <hex-len>\r\n<data>\r\n
+                hex = len.to_s(16)
+                buf = String.new(capacity: hex.bytesize + 2 + len + 2, encoding: Encoding::ASCII_8BIT)
+                buf << hex << CRLF
+                buf << bytes.byteslice(ofs, len)
+                buf << CRLF
+                cmd = CmdContent.new(buf, 0, buf.bytesize)
+                return @protocol_handler.post(cmd, false, &callback)
+              end
               cmd = CmdContent.new(bytes, ofs, len)
               return @protocol_handler.post(cmd, false, &callback)
             end
@@ -170,6 +214,20 @@ module Baykit
             def send_end_tour(tur, &callback)
               keep_alive = tur.res.headers.get_connection() == Headers::CONNECTION_KEEP_ALIVE
               BayLog.trace("%s sendEndTour: tur=%s keep=%s", ship, tur, keep_alive)
+
+              # Close out the chunked stream with the last-chunk + final CRLF.
+              # post() is fire-and-forget here -- the actual end signal is the
+              # CmdEndContent below, which carries the keepalive callback.
+              if @chunked_response
+                begin
+                  @protocol_handler.post(
+                    CmdContent.new(LAST_CHUNK, 0, LAST_CHUNK.bytesize), false)
+                rescue IOError => e
+                  BayLog.debug_e(e, "%s post(last-chunk) failed", ship)
+                  raise e
+                end
+                @chunked_response = false
+              end
 
               # Send dummy end request command
               cmd = CmdEndContent.new()
