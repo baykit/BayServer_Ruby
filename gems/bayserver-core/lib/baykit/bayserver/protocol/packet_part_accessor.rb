@@ -80,10 +80,15 @@ module Baykit
         end
 
         def get_byte
+          # String#getbyte is the Ruby equivalent of Java's `byte[idx] & 0xFF`:
+          # no allocation, returns the byte as an Integer in 0..255. The
+          # previous `@packet.buf[idx].codepoints[0]` did two heap allocs
+          # per byte (1-char String + Array), which dominated FCGI param
+          # parsing (~200 get_byte calls per request).
           check_read(1)
-          b = @packet.buf[@start + @pos]
+          b = @packet.buf.getbyte(@start + @pos)
           @pos += 1
-          return b.codepoints[0]
+          return b
         end
 
         def get_bytes(buf, ofs=0, len=buf.length)
@@ -92,7 +97,11 @@ module Baykit
           end
 
           check_read(len)
-          buf[ofs, len] = @packet.buf[@start + @pos, len]
+          # bytesplice(target_idx, target_len, src, src_idx, src_len) is
+          # the Ruby equivalent of System.arraycopy: it copies bytes from
+          # @packet.buf directly into buf without allocating the
+          # intermediate substring that `@packet.buf[idx, len]` produces.
+          buf.bytesplice(ofs, len, @packet.buf, @start + @pos, len)
           @pos += len
         end
 
